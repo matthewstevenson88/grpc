@@ -143,13 +143,13 @@ class TlsCredentialsOptions {
   grpc_ssl_client_certificate_request_type cert_request_type() const{
     return cert_request_type_;
   }
-  std::shared_ptr<TlsKeyMaterialsConfig> key_materials_config() const {
+  ::std::shared_ptr<TlsKeyMaterialsConfig> key_materials_config() const {
     return key_materials_config_;
   }
-  std::shared_ptr<TlsCredentialReloadConfig> credential_reload_config() const {
+  ::std::shared_ptr<TlsCredentialReloadConfig> credential_reload_config() const {
     return credential_reload_config_;
   }
-  std::shared_ptr<TlsServerAuthorizationConfig> server_authorization_check_config() const {
+  ::std::shared_ptr<TlsServerAuthorizationCheckConfig> server_authorization_check_config() const {
     return server_authorization_check_config_;
   }
 
@@ -159,15 +159,15 @@ class TlsCredentialsOptions {
     cert_request_type_ = type;
   }
   void set_key_materials_config(
-      std::shared_ptr<TlsKeyMaterialsConfig> config) {
+      ::std::shared_ptr<TlsKeyMaterialsConfig> config) {
     key_materials_config_ = config;
   }
   void set_credential_reload_config(
-      std::shared_ptr<TlsCredentialReloadConfig> config) {
+      ::std::shared_ptr<TlsCredentialReloadConfig> config) {
     credential_reload_config_ = config;
   }
   void set_server_authorization_check_config(
-      std::shared_ptr<TlsServerAuthorizationCheckConfig> config) {
+      ::std::shared_ptr<TlsServerAuthorizationCheckConfig> config) {
     server_authorization_check_config_ = config;
   }
 
@@ -176,9 +176,9 @@ class TlsCredentialsOptions {
 
  private:
   grpc_ssl_client_certificate_request_type cert_request_type_;
-  std::shared_ptr<TlsKeyMaterialsConfig> key_materials_config_;
-  std::shared_ptr<TlsCredentialReloadConfig> credential_reload_config_;
-  std::shared_ptr<TlsServerAuthorizationCheckConfig> server_authorization_check_config_;
+  ::std::shared_ptr<TlsKeyMaterialsConfig> key_materials_config_;
+  ::std::shared_ptr<TlsCredentialReloadConfig> credential_reload_config_;
+  ::std::shared_ptr<TlsServerAuthorizationCheckConfig> server_authorization_check_config_;
 };
 
 } // namespace experimental
