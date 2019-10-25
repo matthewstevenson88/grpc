@@ -18,6 +18,9 @@
 
 #include "src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.h"
 
+namespace grpc {
+namespace experimental {
+
 tsi_result s2a_tsi_handshaker_create(
     const grpc_s2a_credentials_options* options, const char* target_name,
     const char* handshaker_service_url, bool is_client,
@@ -41,3 +44,6 @@ void s2a_tsi_handshaker_result_set_unused_bytes(tsi_handshaker_result* result,
 bool s2a_tsi_handshaker_has_shutdown(s2a_tsi_handshaker* handshaker) {
   return false;
 }
+
+} // grpc
+} // experimental

@@ -27,6 +27,9 @@
 #include "src/core/tsi/transport_security_interface.h"
 #include "src/proto/grpc/gcp/s2a.upb.h"
 
+namespace grpc {
+namespace experimental {
+
 typedef struct s2a_tsi_handshaker s2a_tsi_handshaker;
 
 /** This method populates |self| with an instance of the s2a_tsi_handshaker,
@@ -74,5 +77,8 @@ void s2a_tsi_handshaker_result_set_unused_bytes(tsi_handshaker_result* result,
 /** This method returns a boolean value indicating whether or not an
  *  s2a_tsi_handshaker instance has been shutdown. **/
 bool s2a_tsi_handshaker_has_shutdown(s2a_tsi_handshaker* handshaker);
+
+} // grpc
+} // experimantal
 
 #endif  // GRPC_CORE_TSI_S2A_HANDSHAKER_S2A_TSI_HANDSHAKER_H

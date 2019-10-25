@@ -26,6 +26,9 @@
 #include "src/core/lib/iomgr/pollset_set.h"
 #include "src/core/tsi/transport_security_interface.h"
 
+namespace grpc {
+namespace experimental {
+
 typedef struct s2a_tsi_handshaker s2a_tsi_handshaker;
 
 /** The Secure Session Agent (S2A) handshaker client interface. It facilitates
@@ -114,4 +117,6 @@ tsi_result s2a_handshaker_client_create(
  *  status other than TSI_OK.  **/
 void s2a_handshaker_client_destroy(s2a_handshaker_client* client);
 
+} // experimental
+} // grpc
 #endif  // GRPC_CORE_TSI_S2A_HANDSHAKER_S2A_HANDSHAKER_CLIENT_H
