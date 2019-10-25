@@ -23,3 +23,11 @@ proto_library(
     ],
     visibility = ["//visibility:public"],
 )
+
+proto_library(
+    name = "s2a_proto",
+    srcs = [
+        "s2a.proto",
+    ],
+    visibility = ["//visibility:public"],
+)

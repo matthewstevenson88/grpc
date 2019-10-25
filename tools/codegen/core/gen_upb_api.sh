@@ -72,6 +72,7 @@ proto_files=( \
   "google/rpc/status.proto" \
   "src/proto/grpc/gcp/altscontext.proto" \
   "src/proto/grpc/gcp/handshaker.proto" \
+  "src/proto/grpc/gcp/s2a.proto" \
   "src/proto/grpc/gcp/transport_security_common.proto" \
   "src/proto/grpc/health/v1/health.proto" \
   "src/proto/grpc/lb/v1/load_balancer.proto" \

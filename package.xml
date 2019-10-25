@@ -338,6 +338,8 @@
     <file baseinstalldir="/" name="src/core/tsi/ssl_types.h" role="src" />
     <file baseinstalldir="/" name="src/core/tsi/transport_security_grpc.h" role="src" />
     <file baseinstalldir="/" name="src/core/tsi/grpc_shadow_boringssl.h" role="src" />
+    <file baseinstalldir="/" name="src/core/tsi/s2a/handshaker/s2a_handshaker_client.h" role="src" />
+    <file baseinstalldir="/" name="src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.h" role="src" />
     <file baseinstalldir="/" name="src/core/ext/transport/chttp2/server/chttp2_server.h" role="src" />
     <file baseinstalldir="/" name="src/core/ext/transport/inproc/inproc_transport.h" role="src" />
     <file baseinstalldir="/" name="src/core/lib/avl/avl.h" role="src" />
@@ -840,6 +842,8 @@
     <file baseinstalldir="/" name="src/core/tsi/ssl/session_cache/ssl_session_openssl.cc" role="src" />
     <file baseinstalldir="/" name="src/core/tsi/ssl_transport_security.cc" role="src" />
     <file baseinstalldir="/" name="src/core/tsi/transport_security_grpc.cc" role="src" />
+    <file baseinstalldir="/" name="src/core/tsi/s2a/handshaker/s2a_handshaker_client.cc" role="src" />
+    <file baseinstalldir="/" name="src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.cc" role="src" />
     <file baseinstalldir="/" name="src/core/ext/transport/chttp2/server/chttp2_server.cc" role="src" />
     <file baseinstalldir="/" name="src/core/ext/transport/chttp2/client/secure/secure_channel_create.cc" role="src" />
     <file baseinstalldir="/" name="src/core/ext/transport/chttp2/server/insecure/server_chttp2.cc" role="src" />

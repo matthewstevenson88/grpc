@@ -1320,6 +1320,7 @@ filegroups:
   - src/core/lib/surface/init_secure.cc
   uses:
   - alts_tsi
+  - s2a_tsi
   - grpc_base
   - grpc_transport_chttp2_alpn
   - tsi
@@ -1596,6 +1597,17 @@ filegroups:
   - src/core/ext/upb-generated/validate/validate.upb.c
   uses:
   - google_api_upb
+- name: s2a_tsi
+  headers:
+  - src/core/tsi/s2a/handshaker/s2a_handshaker_client.h
+  - src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.h
+  src:
+  - src/core/tsi/s2a/handshaker/s2a_handshaker_client.cc
+  - src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.cc
+  uses:
+  - grpc_base
+  - tsi_interface
+  - tsi
 - name: transport_security_test_lib
   headers:
   - test/core/tsi/transport_security_test_lib.h
