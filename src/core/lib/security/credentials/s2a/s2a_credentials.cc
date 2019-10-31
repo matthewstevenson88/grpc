@@ -20,7 +20,6 @@
 #include <grpc/support/port_platform.h>
 #include "src/core/lib/security/security_connector/s2a/s2a_security_connector.h"
 
-namespace grpc_core {
 namespace experimental {
 
 #define GRPC_S2A_CREDENTIALS_TYPE "s2a"
@@ -64,4 +63,3 @@ grpc_s2a_server_credentials::create_security_connector() {
 }
 
 }  // namespace experimental
-}  // namespace grpc_core

@@ -22,7 +22,6 @@
 #include <grpc/support/port_platform.h>
 #include "src/core/lib/security/security_connector/security_connector.h"
 
-namespace grpc_core {
 namespace experimental {
 
 #define GRPC_S2A_TRANSPORT_SECURITY_TYPE "s2a"
@@ -50,6 +49,5 @@ grpc_s2a_server_security_connector_create(
     grpc_core::RefCountedPtr<grpc_server_credentials> server_creds);
 
 }  // namespace experimental
-}  // namespace grpc_core
 
 #endif  // GRPC_CORE_LIB_SECURITY_SECURITY_CONNECTOR_S2A_S2A_SECURITY_CONNECTOR_H

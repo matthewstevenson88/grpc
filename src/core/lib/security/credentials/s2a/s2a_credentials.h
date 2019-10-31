@@ -22,11 +22,9 @@
 #include <grpc/grpc_security.h>
 #include <grpc/support/port_platform.h>
 #include "src/core/lib/security/credentials/credentials.h"
+#include "src/core/lib/security/credentials/s2a/grpc_s2a_credentials_options.h"
 
-namespace grpc_core {
 namespace experimental {
-
-typedef struct grpc_s2a_credentials_options grpc_s2a_credentials_options;
 
 /** The main client-side struct for securing a gRPC connection using S2A. **/
 class grpc_s2a_credentials final : public grpc_channel_credentials {
@@ -70,6 +68,5 @@ class grpc_s2a_server_credentials final : public grpc_server_credentials {
 };
 
 }  // namespace experimental
-}  // namespace grpc_core
 
 #endif  // GRPC_CORE_LIB_SECURITY_CREDENTIALS_S2A_S2A_CREDENTIALS_H

@@ -698,6 +698,64 @@ GRPCAPI grpc_channel_credentials* grpc_local_credentials_create(
 GRPCAPI grpc_server_credentials* grpc_local_server_credentials_create(
     grpc_local_connect_type type);
 
+/** --- S2A channel/server credentials --- **/
+
+namespace experimental {
+
+/** The main interface for the S2A credentials options. The options will contain
+ *  information that will be passed from gRPC to the TSI layer, such an ordered
+ *  list of supported ciphersuites or target service accounts. The S2A client
+ *  (channel) and server credentials will have their own implementation of this
+ *  interface. The APIs listed in this header are thread-compatible. It is used
+ *  for experimental purpose for now and subject to change. **/
+typedef struct grpc_s2a_credentials_options grpc_s2a_credentials_options;
+
+/** This method creates a grpc S2A credentials client options instance.
+ *  It is used for experimental purpose for now and subject to change. **/
+GRPCAPI grpc_s2a_credentials_options*
+grpc_s2a_credentials_client_options_create(void);
+
+/** This method creates a grpc S2A credentials server options instance.
+ *  It is used for experimental purpose for now and subject to change. **/
+GRPCAPI grpc_alts_credentials_options*
+grpc_alts_credentials_server_options_create(void);
+
+/** This method adds a target service account to grpc client's S2A credentials
+ *  options instance. It is used for experimental purpose for now and subject
+ *  to change.
+ *  - options: grpc S2A credentials options instance.
+ *  - service_account: service account of target endpoint. **/
+GRPCAPI void grpc_s2a_credentials_client_options_add_target_service_account(
+    grpc_s2a_credentials_options* options, const char* service_account);
+
+/** This method destroys a grpc_s2a_credentials_options instance by
+ *  de-allocating all of its occupied memory. It is used for experimental
+ * purpose for now and subject to change.
+ *  - options: a grpc_s2a_credentials_options instance that needs to be
+ *   destroyed. **/
+GRPCAPI void grpc_s2a_credentials_options_destroy(
+    grpc_s2a_credentials_options* options);
+
+/** This method creates an S2A channel credential object. It is used for
+ *  experimental purpose for now and subject to change.
+ *  - options: grpc S2A credentials options instance for a client.
+ *
+ *  On success, it returns the created S2A channel credential object; otherwise,
+ *  it returns nullptr. **/
+GRPCAPI grpc_channel_credentials* grpc_s2a_credentials_create(
+    const grpc_s2a_credentials_options* options);
+
+/** This method creates an S2A server credential object. It is used for
+ *  experimental purpose for now and subject to change.
+ *  - options: grpc S2A credentials options instance for a server.
+ *
+ *  On success, it returns the created S2A server credential object; otherwise,
+ *  it returns nullptr. **/
+GRPCAPI grpc_server_credentials* grpc_s2a_server_credentials_create(
+    const grpc_s2a_credentials_options* options);
+
+}  // namespace experimental
+
 /** --- SPIFFE and HTTPS-based TLS channel/server credentials ---
  * It is used for experimental purpose for now and subject to change. */
 

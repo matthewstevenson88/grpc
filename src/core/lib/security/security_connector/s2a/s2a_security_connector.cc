@@ -32,7 +32,6 @@
 #include "src/core/lib/transport/transport.h"
 #include "src/core/tsi/transport_security.h"
 
-namespace grpc_core {
 namespace experimental {
 
 namespace {
@@ -152,4 +151,3 @@ grpc_s2a_server_security_connector_create(
 }
 
 }  // namespace experimental
-}  // namespace grpc_core

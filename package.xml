@@ -340,6 +340,7 @@
     <file baseinstalldir="/" name="src/core/tsi/ssl_types.h" role="src" />
     <file baseinstalldir="/" name="src/core/tsi/transport_security_grpc.h" role="src" />
     <file baseinstalldir="/" name="src/core/tsi/grpc_shadow_boringssl.h" role="src" />
+    <file baseinstalldir="/" name="src/core/lib/security/credentials/s2a/grpc_s2a_credentials_options.h" role="src" />
     <file baseinstalldir="/" name="src/core/ext/transport/chttp2/server/chttp2_server.h" role="src" />
     <file baseinstalldir="/" name="src/core/ext/transport/inproc/inproc_transport.h" role="src" />
     <file baseinstalldir="/" name="src/core/lib/avl/avl.h" role="src" />
@@ -844,6 +845,7 @@
     <file baseinstalldir="/" name="src/core/tsi/ssl/session_cache/ssl_session_openssl.cc" role="src" />
     <file baseinstalldir="/" name="src/core/tsi/ssl_transport_security.cc" role="src" />
     <file baseinstalldir="/" name="src/core/tsi/transport_security_grpc.cc" role="src" />
+    <file baseinstalldir="/" name="src/core/lib/security/credentials/s2a/grpc_s2a_credentials_options.cc" role="src" />
     <file baseinstalldir="/" name="src/core/ext/transport/chttp2/server/chttp2_server.cc" role="src" />
     <file baseinstalldir="/" name="src/core/ext/transport/chttp2/client/secure/secure_channel_create.cc" role="src" />
     <file baseinstalldir="/" name="src/core/ext/transport/chttp2/server/insecure/server_chttp2.cc" role="src" />

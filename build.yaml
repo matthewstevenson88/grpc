@@ -1327,6 +1327,7 @@ filegroups:
   - grpc_base
   - grpc_transport_chttp2_alpn
   - tsi
+  - s2a_util
   - grpc_shadow_boringssl
 - name: grpc_server_backward_compatibility
   headers:
@@ -1600,6 +1601,15 @@ filegroups:
   - src/core/ext/upb-generated/validate/validate.upb.c
   uses:
   - google_api_upb
+- name: s2a_util
+  public_headers:
+  - include/grpc/grpc_security.h
+  headers:
+  - src/core/lib/security/credentials/s2a/grpc_s2a_credentials_options.h
+  src:
+  - src/core/lib/security/credentials/s2a/grpc_s2a_credentials_options.cc
+  uses:
+  - grpc_base
 - name: transport_security_test_lib
   headers:
   - test/core/tsi/transport_security_test_lib.h
@@ -5108,6 +5118,14 @@ targets:
   deps:
   - grpc_plugin_support
   secure: false
+- name: grpc_s2a_credentials_options_test
+  build: test
+  language: c++
+  src:
+  - test/core/security/grpc_s2a_credentials_options_test.cc
+  deps:
+  - grpc
+  - gpr
 - name: grpc_spiffe_security_connector_test
   gtest: true
   build: test

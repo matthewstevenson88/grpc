@@ -716,6 +716,7 @@ add_dependencies(buildtests_cxx grpc_alts_credentials_options_test)
 add_dependencies(buildtests_cxx grpc_cli)
 add_dependencies(buildtests_cxx grpc_fetch_oauth2)
 add_dependencies(buildtests_cxx grpc_linux_system_roots_test)
+add_dependencies(buildtests_cxx grpc_s2a_credentials_options_test)
 add_dependencies(buildtests_cxx grpc_spiffe_security_connector_test)
 add_dependencies(buildtests_cxx grpc_tool_test)
 add_dependencies(buildtests_cxx grpclb_api_test)
@@ -1394,6 +1395,7 @@ add_library(grpc
   src/core/tsi/ssl/session_cache/ssl_session_openssl.cc
   src/core/tsi/ssl_transport_security.cc
   src/core/tsi/transport_security_grpc.cc
+  src/core/lib/security/credentials/s2a/grpc_s2a_credentials_options.cc
   src/core/ext/transport/chttp2/server/chttp2_server.cc
   src/core/ext/transport/chttp2/client/secure/secure_channel_create.cc
   src/core/ext/transport/chttp2/server/insecure/server_chttp2.cc
@@ -1879,6 +1881,7 @@ add_library(grpc_cronet
   src/core/tsi/ssl/session_cache/ssl_session_openssl.cc
   src/core/tsi/ssl_transport_security.cc
   src/core/tsi/transport_security_grpc.cc
+  src/core/lib/security/credentials/s2a/grpc_s2a_credentials_options.cc
 )
 
 set_target_properties(grpc_cronet PROPERTIES
@@ -13634,6 +13637,44 @@ if (gRPC_INSTALL)
 endif()
 
 endif (gRPC_BUILD_CODEGEN)
+if (gRPC_BUILD_TESTS)
+
+add_executable(grpc_s2a_credentials_options_test
+  test/core/security/grpc_s2a_credentials_options_test.cc
+  third_party/googletest/googletest/src/gtest-all.cc
+  third_party/googletest/googlemock/src/gmock-all.cc
+)
+
+target_include_directories(grpc_s2a_credentials_options_test
+  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
+  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include
+  PRIVATE ${_gRPC_ADDRESS_SORTING_INCLUDE_DIR}
+  PRIVATE ${_gRPC_BENCHMARK_INCLUDE_DIR}
+  PRIVATE ${_gRPC_CARES_INCLUDE_DIR}
+  PRIVATE ${_gRPC_GFLAGS_INCLUDE_DIR}
+  PRIVATE ${_gRPC_PROTOBUF_INCLUDE_DIR}
+  PRIVATE ${_gRPC_SSL_INCLUDE_DIR}
+  PRIVATE ${_gRPC_UPB_GENERATED_DIR}
+  PRIVATE ${_gRPC_UPB_GRPC_GENERATED_DIR}
+  PRIVATE ${_gRPC_UPB_INCLUDE_DIR}
+  PRIVATE ${_gRPC_ZLIB_INCLUDE_DIR}
+  PRIVATE third_party/googletest/googletest/include
+  PRIVATE third_party/googletest/googletest
+  PRIVATE third_party/googletest/googlemock/include
+  PRIVATE third_party/googletest/googlemock
+  PRIVATE ${_gRPC_PROTO_GENS_DIR}
+)
+
+target_link_libraries(grpc_s2a_credentials_options_test
+  ${_gRPC_PROTOBUF_LIBRARIES}
+  ${_gRPC_ALLTARGETS_LIBRARIES}
+  grpc
+  gpr
+  ${_gRPC_GFLAGS_LIBRARIES}
+)
+
+
+endif (gRPC_BUILD_TESTS)
 if (gRPC_BUILD_TESTS)
 
 add_executable(grpc_spiffe_security_connector_test

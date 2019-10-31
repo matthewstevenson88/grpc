@@ -1487,6 +1487,8 @@ src/core/lib/security/credentials/oauth2/oauth2_credentials.cc \
 src/core/lib/security/credentials/oauth2/oauth2_credentials.h \
 src/core/lib/security/credentials/plugin/plugin_credentials.cc \
 src/core/lib/security/credentials/plugin/plugin_credentials.h \
+src/core/lib/security/credentials/s2a/grpc_s2a_credentials_options.cc \
+src/core/lib/security/credentials/s2a/grpc_s2a_credentials_options.h \
 src/core/lib/security/credentials/s2a/s2a_credentials.cc \
 src/core/lib/security/credentials/s2a/s2a_credentials.h \
 src/core/lib/security/credentials/ssl/ssl_credentials.cc \

@@ -244,6 +244,17 @@ grpc_cc_test(
 )
 
 grpc_cc_test(
+    name = "grpc_s2a_credentials_options_test",
+    srcs = ["grpc_s2a_credentials_options_test.cc"],
+    language = "C++",
+    deps = [
+        "//:s2a_util",
+        "//:gpr",
+        "//:grpc",
+    ],
+)
+
+grpc_cc_test(
     name = "alts_security_connector_test",
     srcs = ["alts_security_connector_test.cc"],
     language = "C++",
