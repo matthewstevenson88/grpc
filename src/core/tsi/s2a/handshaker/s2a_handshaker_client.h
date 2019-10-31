@@ -53,12 +53,11 @@ typedef grpc_call_error (*s2a_grpc_caller)(grpc_call* call, const grpc_op* ops,
 tsi_result s2a_handshaker_client_start_client(
     const s2a_handshaker_client* client);
 
-/** This method schedules a client_start handshaker request with the S2A's
+/** This method schedules a server_start handshaker request with the S2A's
  *  handshaker service.
  *  - client: an s2a_handshaker_client instance.
- *  - bytes_received: the bytes from the out_bytes field of the SessionResp
- *    message that the client peer received from its S2A after initiating the
- *    handshake.
+ *  - bytes_received: the bytes from the out_bytes field of the message received
+ *    from the peer.
  *  It returns TSI_OK on success and an error code on failure. **/
 tsi_result s2a_handshaker_client_start_server(
     const s2a_handshaker_client* client, grpc_slice* bytes_received);
