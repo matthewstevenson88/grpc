@@ -405,6 +405,8 @@ if test "$PHP_GRPC" != "no"; then
     src/core/tsi/ssl/session_cache/ssl_session_openssl.cc \
     src/core/tsi/ssl_transport_security.cc \
     src/core/tsi/transport_security_grpc.cc \
+    src/core/tsi/s2a/handshaker/s2a_handshaker_client.cc \
+    src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.cc \
     src/core/lib/security/credentials/s2a/grpc_s2a_credentials_options.cc \
     src/core/ext/transport/chttp2/server/chttp2_server.cc \
     src/core/ext/transport/chttp2/client/secure/secure_channel_create.cc \
@@ -837,6 +839,7 @@ if test "$PHP_GRPC" != "no"; then
   PHP_ADD_BUILD_DIR($ext_builddir/src/core/tsi/alts/frame_protector)
   PHP_ADD_BUILD_DIR($ext_builddir/src/core/tsi/alts/handshaker)
   PHP_ADD_BUILD_DIR($ext_builddir/src/core/tsi/alts/zero_copy_frame_protector)
+  PHP_ADD_BUILD_DIR($ext_builddir/src/core/tsi/s2a/handshaker)
   PHP_ADD_BUILD_DIR($ext_builddir/src/core/tsi/ssl/session_cache)
   PHP_ADD_BUILD_DIR($ext_builddir/third_party/address_sorting)
   PHP_ADD_BUILD_DIR($ext_builddir/third_party/boringssl/crypto)

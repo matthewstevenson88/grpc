@@ -1395,6 +1395,8 @@ add_library(grpc
   src/core/tsi/ssl/session_cache/ssl_session_openssl.cc
   src/core/tsi/ssl_transport_security.cc
   src/core/tsi/transport_security_grpc.cc
+  src/core/tsi/s2a/handshaker/s2a_handshaker_client.cc
+  src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.cc
   src/core/lib/security/credentials/s2a/grpc_s2a_credentials_options.cc
   src/core/ext/transport/chttp2/server/chttp2_server.cc
   src/core/ext/transport/chttp2/client/secure/secure_channel_create.cc
@@ -1882,6 +1884,8 @@ add_library(grpc_cronet
   src/core/tsi/ssl/session_cache/ssl_session_openssl.cc
   src/core/tsi/ssl_transport_security.cc
   src/core/tsi/transport_security_grpc.cc
+  src/core/tsi/s2a/handshaker/s2a_handshaker_client.cc
+  src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.cc
   src/core/lib/security/credentials/s2a/grpc_s2a_credentials_options.cc
 )
 
