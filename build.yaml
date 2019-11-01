@@ -37,6 +37,7 @@ filegroups:
   - src/core/tsi/alts/zero_copy_frame_protector/alts_zero_copy_grpc_protector.h
   src:
   - src/core/tsi/alts/crypt/aes_gcm.cc
+  - src/core/tsi/alts/crypt/chacha_poly.cc
   - src/core/tsi/alts/crypt/gsec.cc
   - src/core/tsi/alts/frame_protector/alts_counter.cc
   - src/core/tsi/alts/frame_protector/alts_crypter.cc
@@ -1753,12 +1754,14 @@ libs:
   headers:
   - test/core/end2end/data/ssl_test_data.h
   - test/core/security/oauth2_utils.h
+  - test/core/tsi/s2a/record_protocol/s2a_test_util.h
   src:
   - test/core/end2end/data/client_certs.cc
   - test/core/end2end/data/server1_cert.cc
   - test/core/end2end/data/server1_key.cc
   - test/core/end2end/data/test_root_cert.cc
   - test/core/security/oauth2_utils.cc
+  - test/core/tsi/s2a/record_protocol/s2a_test_util.cc
   deps:
   - gpr
   - grpc
@@ -5658,6 +5661,14 @@ targets:
   - grpc
   - gpr
   uses_polling: false
+- name: s2a_record_protocol_test
+  build: test
+  language: c++
+  src:
+  - test/core/tsi/s2a/record_protocol/s2a_record_protocol_test.cc
+  deps:
+  - grpc_test_util
+  - grpc
 - name: secure_auth_context_test
   gtest: true
   build: test
