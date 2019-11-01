@@ -746,6 +746,7 @@ Gem::Specification.new do |s|
   s.files += %w( src/core/lib/security/util/json_util.cc )
   s.files += %w( src/core/lib/surface/init_secure.cc )
   s.files += %w( src/core/tsi/alts/crypt/aes_gcm.cc )
+  s.files += %w( src/core/tsi/alts/crypt/chacha_poly.cc )
   s.files += %w( src/core/tsi/alts/crypt/gsec.cc )
   s.files += %w( src/core/tsi/alts/frame_protector/alts_counter.cc )
   s.files += %w( src/core/tsi/alts/frame_protector/alts_crypter.cc )

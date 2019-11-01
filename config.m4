@@ -315,6 +315,7 @@ if test "$PHP_GRPC" != "no"; then
     src/core/lib/security/util/json_util.cc \
     src/core/lib/surface/init_secure.cc \
     src/core/tsi/alts/crypt/aes_gcm.cc \
+    src/core/tsi/alts/crypt/chacha_poly.cc \
     src/core/tsi/alts/crypt/gsec.cc \
     src/core/tsi/alts/frame_protector/alts_counter.cc \
     src/core/tsi/alts/frame_protector/alts_crypter.cc \

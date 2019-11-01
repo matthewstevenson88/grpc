@@ -1266,6 +1266,7 @@ reconnect_interop_server: $(BINDIR)/$(CONFIG)/reconnect_interop_server
 ref_counted_ptr_test: $(BINDIR)/$(CONFIG)/ref_counted_ptr_test
 ref_counted_test: $(BINDIR)/$(CONFIG)/ref_counted_test
 retry_throttle_test: $(BINDIR)/$(CONFIG)/retry_throttle_test
+s2a_record_protocol_test: $(BINDIR)/$(CONFIG)/s2a_record_protocol_test
 secure_auth_context_test: $(BINDIR)/$(CONFIG)/secure_auth_context_test
 secure_sync_unary_ping_pong_test: $(BINDIR)/$(CONFIG)/secure_sync_unary_ping_pong_test
 server_builder_plugin_test: $(BINDIR)/$(CONFIG)/server_builder_plugin_test
@@ -1738,6 +1739,7 @@ buildtests_cxx: privatelibs_cxx \
   $(BINDIR)/$(CONFIG)/ref_counted_ptr_test \
   $(BINDIR)/$(CONFIG)/ref_counted_test \
   $(BINDIR)/$(CONFIG)/retry_throttle_test \
+  $(BINDIR)/$(CONFIG)/s2a_record_protocol_test \
   $(BINDIR)/$(CONFIG)/secure_auth_context_test \
   $(BINDIR)/$(CONFIG)/secure_sync_unary_ping_pong_test \
   $(BINDIR)/$(CONFIG)/server_builder_plugin_test \
@@ -1909,6 +1911,7 @@ buildtests_cxx: privatelibs_cxx \
   $(BINDIR)/$(CONFIG)/ref_counted_ptr_test \
   $(BINDIR)/$(CONFIG)/ref_counted_test \
   $(BINDIR)/$(CONFIG)/retry_throttle_test \
+  $(BINDIR)/$(CONFIG)/s2a_record_protocol_test \
   $(BINDIR)/$(CONFIG)/secure_auth_context_test \
   $(BINDIR)/$(CONFIG)/secure_sync_unary_ping_pong_test \
   $(BINDIR)/$(CONFIG)/server_builder_plugin_test \
@@ -2430,6 +2433,8 @@ test_cxx: buildtests_cxx
 	$(Q) $(BINDIR)/$(CONFIG)/ref_counted_test || ( echo test ref_counted_test failed ; exit 1 )
 	$(E) "[RUN]     Testing retry_throttle_test"
 	$(Q) $(BINDIR)/$(CONFIG)/retry_throttle_test || ( echo test retry_throttle_test failed ; exit 1 )
+	$(E) "[RUN]     Testing s2a_record_protocol_test"
+	$(Q) $(BINDIR)/$(CONFIG)/s2a_record_protocol_test || ( echo test s2a_record_protocol_test failed ; exit 1 )
 	$(E) "[RUN]     Testing secure_auth_context_test"
 	$(Q) $(BINDIR)/$(CONFIG)/secure_auth_context_test || ( echo test secure_auth_context_test failed ; exit 1 )
 	$(E) "[RUN]     Testing secure_sync_unary_ping_pong_test"
@@ -3755,6 +3760,7 @@ LIBGRPC_SRC = \
     src/core/lib/security/util/json_util.cc \
     src/core/lib/surface/init_secure.cc \
     src/core/tsi/alts/crypt/aes_gcm.cc \
+    src/core/tsi/alts/crypt/chacha_poly.cc \
     src/core/tsi/alts/crypt/gsec.cc \
     src/core/tsi/alts/frame_protector/alts_counter.cc \
     src/core/tsi/alts/frame_protector/alts_crypter.cc \
@@ -4276,6 +4282,7 @@ LIBGRPC_CRONET_SRC = \
     src/core/lib/security/util/json_util.cc \
     src/core/lib/surface/init_secure.cc \
     src/core/tsi/alts/crypt/aes_gcm.cc \
+    src/core/tsi/alts/crypt/chacha_poly.cc \
     src/core/tsi/alts/crypt/gsec.cc \
     src/core/tsi/alts/frame_protector/alts_counter.cc \
     src/core/tsi/alts/frame_protector/alts_crypter.cc \
@@ -4402,6 +4409,7 @@ LIBGRPC_TEST_UTIL_SRC = \
     test/core/end2end/data/server1_key.cc \
     test/core/end2end/data/test_root_cert.cc \
     test/core/security/oauth2_utils.cc \
+    test/core/tsi/s2a/record_protocol/s2a_test_util.cc \
     src/core/ext/filters/client_channel/resolver/fake/fake_resolver.cc \
     test/core/end2end/cq_verifier.cc \
     test/core/end2end/fixtures/http_proxy_fixture.cc \
@@ -18699,6 +18707,49 @@ endif
 endif
 
 
+S2A_RECORD_PROTOCOL_TEST_SRC = \
+    test/core/tsi/s2a/record_protocol/s2a_record_protocol_test.cc \
+
+S2A_RECORD_PROTOCOL_TEST_OBJS = $(addprefix $(OBJDIR)/$(CONFIG)/, $(addsuffix .o, $(basename $(S2A_RECORD_PROTOCOL_TEST_SRC))))
+ifeq ($(NO_SECURE),true)
+
+# You can't build secure targets if you don't have OpenSSL.
+
+$(BINDIR)/$(CONFIG)/s2a_record_protocol_test: openssl_dep_error
+
+else
+
+
+
+
+ifeq ($(NO_PROTOBUF),true)
+
+# You can't build the protoc plugins or protobuf-enabled targets if you don't have protobuf 3.5.0+.
+
+$(BINDIR)/$(CONFIG)/s2a_record_protocol_test: protobuf_dep_error
+
+else
+
+$(BINDIR)/$(CONFIG)/s2a_record_protocol_test: $(PROTOBUF_DEP) $(S2A_RECORD_PROTOCOL_TEST_OBJS) $(LIBDIR)/$(CONFIG)/libgrpc_test_util.a $(LIBDIR)/$(CONFIG)/libgrpc.a
+	$(E) "[LD]      Linking $@"
+	$(Q) mkdir -p `dirname $@`
+	$(Q) $(LDXX) $(LDFLAGS) $(S2A_RECORD_PROTOCOL_TEST_OBJS) $(LIBDIR)/$(CONFIG)/libgrpc_test_util.a $(LIBDIR)/$(CONFIG)/libgrpc.a $(LDLIBSXX) $(LDLIBS_PROTOBUF) $(LDLIBS) $(LDLIBS_SECURE) $(GTEST_LIB) -o $(BINDIR)/$(CONFIG)/s2a_record_protocol_test
+
+endif
+
+endif
+
+$(OBJDIR)/$(CONFIG)/test/core/tsi/s2a/record_protocol/s2a_record_protocol_test.o:  $(LIBDIR)/$(CONFIG)/libgrpc_test_util.a $(LIBDIR)/$(CONFIG)/libgrpc.a
+
+deps_s2a_record_protocol_test: $(S2A_RECORD_PROTOCOL_TEST_OBJS:.o=.dep)
+
+ifneq ($(NO_SECURE),true)
+ifneq ($(NO_DEPS),true)
+-include $(S2A_RECORD_PROTOCOL_TEST_OBJS:.o=.dep)
+endif
+endif
+
+
 SECURE_AUTH_CONTEXT_TEST_SRC = \
     test/cpp/common/secure_auth_context_test.cc \
 
@@ -22761,6 +22812,7 @@ src/core/lib/security/util/json_util.cc: $(OPENSSL_DEP)
 src/core/lib/surface/init_secure.cc: $(OPENSSL_DEP)
 src/core/plugin_registry/grpc_plugin_registry.cc: $(OPENSSL_DEP)
 src/core/tsi/alts/crypt/aes_gcm.cc: $(OPENSSL_DEP)
+src/core/tsi/alts/crypt/chacha_poly.cc: $(OPENSSL_DEP)
 src/core/tsi/alts/crypt/gsec.cc: $(OPENSSL_DEP)
 src/core/tsi/alts/frame_protector/alts_counter.cc: $(OPENSSL_DEP)
 src/core/tsi/alts/frame_protector/alts_crypter.cc: $(OPENSSL_DEP)
@@ -22813,6 +22865,7 @@ test/core/end2end/tests/call_creds.cc: $(OPENSSL_DEP)
 test/core/security/oauth2_utils.cc: $(OPENSSL_DEP)
 test/core/tsi/alts/crypt/gsec_test_util.cc: $(OPENSSL_DEP)
 test/core/tsi/alts/handshaker/alts_handshaker_service_api_test_lib.cc: $(OPENSSL_DEP)
+test/core/tsi/s2a/record_protocol/s2a_test_util.cc: $(OPENSSL_DEP)
 test/core/util/reconnect_server.cc: $(OPENSSL_DEP)
 test/core/util/test_tcp_server.cc: $(OPENSSL_DEP)
 test/cpp/end2end/test_health_check_service_impl.cc: $(OPENSSL_DEP)

@@ -1886,6 +1886,7 @@ grpc_cc_library(
     name = "alts_frame_protector",
     srcs = [
         "src/core/tsi/alts/crypt/aes_gcm.cc",
+        "src/core/tsi/alts/crypt/chacha_poly.cc",
         "src/core/tsi/alts/crypt/gsec.cc",
         "src/core/tsi/alts/frame_protector/alts_counter.cc",
         "src/core/tsi/alts/frame_protector/alts_crypter.cc",
@@ -1924,6 +1925,25 @@ grpc_cc_library(
         "grpc_base",
         "grpc_shadow_boringssl",
         "tsi_interface",
+    ],
+)
+
+grpc_cc_library(
+    name = "s2a_record_protocol",
+    srcs = [
+      "src/core/tsi/s2a/record_protocol/s2a_crypter.cc",
+      "src/core/tsi/s2a/record_protocol/s2a_crypter_util.cc",
+    ],
+    hdrs = [
+      "src/core/tsi/s2a/record_protocol/s2a_crypter.h",
+      "src/core/tsi/s2a/record_protocol/s2a_crypter_util.h",
+    ],
+    language = "c++",
+    deps = [
+        "gpr",
+        "grpc_base",
+        "grpc_shadow_boringssl",
+        "s2a_upb",
     ],
 )
 
