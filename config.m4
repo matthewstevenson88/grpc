@@ -406,6 +406,9 @@ if test "$PHP_GRPC" != "no"; then
     src/core/tsi/transport_security_grpc.cc \
     src/core/tsi/s2a/handshaker/s2a_handshaker_client.cc \
     src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.cc \
+    src/core/tsi/s2a/record_protocol/s2a_crypter.cc \
+    src/core/tsi/s2a/record_protocol/s2a_crypter_util.cc \
+    src/core/ext/upb-generated/src/proto/grpc/gcp/s2a.upb.c \
     src/core/ext/transport/chttp2/server/chttp2_server.cc \
     src/core/ext/transport/chttp2/client/secure/secure_channel_create.cc \
     src/core/ext/transport/chttp2/server/insecure/server_chttp2.cc \
@@ -836,6 +839,7 @@ if test "$PHP_GRPC" != "no"; then
   PHP_ADD_BUILD_DIR($ext_builddir/src/core/tsi/alts/handshaker)
   PHP_ADD_BUILD_DIR($ext_builddir/src/core/tsi/alts/zero_copy_frame_protector)
   PHP_ADD_BUILD_DIR($ext_builddir/src/core/tsi/s2a/handshaker)
+  PHP_ADD_BUILD_DIR($ext_builddir/src/core/tsi/s2a/record_protocol)
   PHP_ADD_BUILD_DIR($ext_builddir/src/core/tsi/ssl/session_cache)
   PHP_ADD_BUILD_DIR($ext_builddir/third_party/address_sorting)
   PHP_ADD_BUILD_DIR($ext_builddir/third_party/boringssl/crypto)

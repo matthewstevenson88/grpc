@@ -16,7 +16,8 @@
  *
  */
 
-#include "test/core/tsi/s2a/record_protocol/s2a_test_util.h"
+#include "test/core/tsi/s2a/s2a_test_util.h"
+#include "src/core/tsi/s2a/s2a_constants.h"
 #include "src/core/tsi/s2a/record_protocol/s2a_crypter.h"
 #include "src/core/tsi/s2a/record_protocol/s2a_crypter_util.h"
 

@@ -3851,6 +3851,9 @@ LIBGRPC_SRC = \
     src/core/tsi/transport_security_grpc.cc \
     src/core/tsi/s2a/handshaker/s2a_handshaker_client.cc \
     src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.cc \
+    src/core/tsi/s2a/record_protocol/s2a_crypter.cc \
+    src/core/tsi/s2a/record_protocol/s2a_crypter_util.cc \
+    src/core/ext/upb-generated/src/proto/grpc/gcp/s2a.upb.c \
     src/core/ext/transport/chttp2/server/chttp2_server.cc \
     src/core/ext/transport/chttp2/client/secure/secure_channel_create.cc \
     src/core/ext/transport/chttp2/server/insecure/server_chttp2.cc \
@@ -4329,6 +4332,9 @@ LIBGRPC_CRONET_SRC = \
     src/core/tsi/transport_security_grpc.cc \
     src/core/tsi/s2a/handshaker/s2a_handshaker_client.cc \
     src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.cc \
+    src/core/tsi/s2a/record_protocol/s2a_crypter.cc \
+    src/core/tsi/s2a/record_protocol/s2a_crypter_util.cc \
+    src/core/ext/upb-generated/src/proto/grpc/gcp/s2a.upb.c \
 
 PUBLIC_HEADERS_C += \
     include/grpc/impl/codegen/byte_buffer.h \
@@ -4415,7 +4421,7 @@ LIBGRPC_TEST_UTIL_SRC = \
     test/core/end2end/data/server1_key.cc \
     test/core/end2end/data/test_root_cert.cc \
     test/core/security/oauth2_utils.cc \
-    test/core/tsi/s2a/record_protocol/s2a_test_util.cc \
+    test/core/tsi/s2a/s2a_test_util.cc \
     src/core/ext/filters/client_channel/resolver/fake/fake_resolver.cc \
     test/core/end2end/cq_verifier.cc \
     test/core/end2end/fixtures/http_proxy_fixture.cc \
@@ -18716,7 +18722,7 @@ endif
 
 
 S2A_RECORD_PROTOCOL_TEST_SRC = \
-    test/core/tsi/s2a/record_protocol/s2a_record_protocol_test.cc \
+    test/core/tsi/s2a/s2a_record_protocol_test.cc \
 
 S2A_RECORD_PROTOCOL_TEST_OBJS = $(addprefix $(OBJDIR)/$(CONFIG)/, $(addsuffix .o, $(basename $(S2A_RECORD_PROTOCOL_TEST_SRC))))
 ifeq ($(NO_SECURE),true)
@@ -18747,7 +18753,7 @@ endif
 
 endif
 
-$(OBJDIR)/$(CONFIG)/test/core/tsi/s2a/record_protocol/s2a_record_protocol_test.o:  $(LIBDIR)/$(CONFIG)/libgrpc_test_util.a $(LIBDIR)/$(CONFIG)/libgrpc.a
+$(OBJDIR)/$(CONFIG)/test/core/tsi/s2a/s2a_record_protocol_test.o:  $(LIBDIR)/$(CONFIG)/libgrpc_test_util.a $(LIBDIR)/$(CONFIG)/libgrpc.a
 
 deps_s2a_record_protocol_test: $(S2A_RECORD_PROTOCOL_TEST_OBJS:.o=.dep)
 
@@ -22773,6 +22779,7 @@ src/core/ext/transport/cronet/transport/cronet_api_dummy.cc: $(OPENSSL_DEP)
 src/core/ext/transport/cronet/transport/cronet_transport.cc: $(OPENSSL_DEP)
 src/core/ext/upb-generated/src/proto/grpc/gcp/altscontext.upb.c: $(OPENSSL_DEP)
 src/core/ext/upb-generated/src/proto/grpc/gcp/handshaker.upb.c: $(OPENSSL_DEP)
+src/core/ext/upb-generated/src/proto/grpc/gcp/s2a.upb.c: $(OPENSSL_DEP)
 src/core/ext/upb-generated/src/proto/grpc/gcp/transport_security_common.upb.c: $(OPENSSL_DEP)
 src/core/lib/http/httpcli_security_connector.cc: $(OPENSSL_DEP)
 src/core/lib/security/context/security_context.cc: $(OPENSSL_DEP)
@@ -22843,6 +22850,8 @@ src/core/tsi/fake_transport_security.cc: $(OPENSSL_DEP)
 src/core/tsi/local_transport_security.cc: $(OPENSSL_DEP)
 src/core/tsi/s2a/handshaker/s2a_handshaker_client.cc: $(OPENSSL_DEP)
 src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.cc: $(OPENSSL_DEP)
+src/core/tsi/s2a/record_protocol/s2a_crypter.cc: $(OPENSSL_DEP)
+src/core/tsi/s2a/record_protocol/s2a_crypter_util.cc: $(OPENSSL_DEP)
 src/core/tsi/ssl/session_cache/ssl_session_boringssl.cc: $(OPENSSL_DEP)
 src/core/tsi/ssl/session_cache/ssl_session_cache.cc: $(OPENSSL_DEP)
 src/core/tsi/ssl/session_cache/ssl_session_openssl.cc: $(OPENSSL_DEP)
@@ -22875,7 +22884,7 @@ test/core/end2end/tests/call_creds.cc: $(OPENSSL_DEP)
 test/core/security/oauth2_utils.cc: $(OPENSSL_DEP)
 test/core/tsi/alts/crypt/gsec_test_util.cc: $(OPENSSL_DEP)
 test/core/tsi/alts/handshaker/alts_handshaker_service_api_test_lib.cc: $(OPENSSL_DEP)
-test/core/tsi/s2a/record_protocol/s2a_test_util.cc: $(OPENSSL_DEP)
+test/core/tsi/s2a/s2a_test_util.cc: $(OPENSSL_DEP)
 test/core/util/reconnect_server.cc: $(OPENSSL_DEP)
 test/core/util/test_tcp_server.cc: $(OPENSSL_DEP)
 test/cpp/end2end/test_health_check_service_impl.cc: $(OPENSSL_DEP)

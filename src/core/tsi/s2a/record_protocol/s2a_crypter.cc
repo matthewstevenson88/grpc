@@ -16,6 +16,7 @@
  *
  */
 
+#include "src/core/tsi/s2a/s2a_constants.h"
 #include "src/core/tsi/s2a/record_protocol/s2a_crypter.h"
 #include "src/core/tsi/s2a/record_protocol/s2a_crypter_util.h"
 
@@ -24,31 +25,6 @@
 #include <openssl/sha.h>
 #include <openssl/ssl.h>
 #include <openssl/ssl3.h>
-
-/** The following constants are defined in BoringSSL but not OpenSSL.
- *  See the aead.h file in BoringSSL for more documentation. **/
-#ifndef EVP_AEAD_AES_GCM_TAG_LEN
-#define EVP_AEAD_AES_GCM_TAG_LEN 16
-#endif
-
-#ifndef POLY1305_TAG_LEN
-#define POLY1305_TAG_LEN 16
-#endif
-
-#ifndef EVP_AEAD_MAX_NONCE_LENGTH
-#define EVP_AEAD_MAX_NONCE_LENGTH 24
-#endif
-
-/** The following constants represent the key and nonce sizes of the supported
- *  ciphersuites. **/
-// TODO(mattstev): add all constants to a constants header file.
-#define TLS_AES_128_GCM_SHA256_KEY_SIZE 16
-#define TLS_AES_256_GCM_SHA384_KEY_SIZE 32
-#define TLS_CHACHA20_POLY1305_SHA256_KEY_SIZE 32
-
-#define TLS_AES_128_GCM_SHA256_NONCE_SIZE 12
-#define TLS_AES_256_GCM_SHA384_NONCE_SIZE 12
-#define TLS_CHACHA20_POLY1305_SHA256_NONCE_SIZE 12
 
 /** The struct that represents the state of an S2A connection in a single
  *  direction. **/
