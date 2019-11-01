@@ -41,6 +41,7 @@
 
 /** The following constants represent the key and nonce sizes of the supported
  *  ciphersuites. **/
+// TODO(mattstev): add all constants to a constants header file.
 #define TLS_AES_128_GCM_SHA256_KEY_SIZE 16
 #define TLS_AES_256_GCM_SHA384_KEY_SIZE 32
 #define TLS_CHACHA20_POLY1305_SHA256_KEY_SIZE 32
