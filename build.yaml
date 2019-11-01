@@ -1595,18 +1595,6 @@ filegroups:
   - src/core/ext/upb-generated/validate/validate.upb.c
   uses:
   - google_api_upb
-- name: s2a_tsi
-  headers:
-  - src/core/tsi/s2a/record_protocol/s2a_crypter.h
-  - src/core/tsi/s2a/record_protocol/s2a_crypter_util.h
-  src:
-  - src/core/tsi/s2a/record_protocol/s2a_crypter.cc
-  - src/core/tsi/s2a/record_protocol/s2a_crypter_util.cc
-  uses:
-  - grpc_base
-  - s2a_upb
-  - alts_tsi
-  - upb
 - name: s2a_upb
   headers:
   - src/core/ext/upb-generated/src/proto/grpc/gcp/s2a.upb.h
