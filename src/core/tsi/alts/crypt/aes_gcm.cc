@@ -182,36 +182,88 @@ static void aes_gcm_mask_nonce(uint8_t* dst, const uint8_t* nonce,
   memcpy(dst + sizeof(nonce1), &nonce2, sizeof(nonce2));
 }
 
-static grpc_status_code aes_gcm_derive_aead_key(uint8_t* dst,
-                                                const uint8_t* kdf_key,
-                                                const uint8_t* kdf_counter) {
-  unsigned char buf[EVP_MAX_MD_SIZE];
-  unsigned char ctr = 1;
+grpc_status_code aes_gcm_derive_data(uint8_t* out_key, size_t out_size,
+                                     bool is_sha256,
+                                     const uint8_t* prk, size_t prk_size,
+                                     const uint8_t* info, size_t info_size) {
+  const EVP_MD* digest = is_sha256 ? EVP_sha256() : EVP_sha384();
+  const size_t digest_size = EVP_MD_size(digest);
+  uint8_t buf[EVP_MAX_MD_SIZE];
+  size_t n, done = 0;
+  unsigned i;
+  n = (out_size + digest_size - 1) / digest_size;
+  if (out_size + digest_size < out_size || n > 255) {
+    return GRPC_STATUS_INTERNAL;
+  }
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
   HMAC_CTX hmac;
   HMAC_CTX_init(&hmac);
-  if (!HMAC_Init_ex(&hmac, kdf_key, kKdfKeyLen, EVP_sha256(), nullptr) ||
-      !HMAC_Update(&hmac, kdf_counter, kKdfCounterLen) ||
-      !HMAC_Update(&hmac, &ctr, 1) || !HMAC_Final(&hmac, buf, nullptr)) {
+  if (!HMAC_Init_ex(&hmac, prk, prk_size, digest, nullptr)) {
     HMAC_CTX_cleanup(&hmac);
     return GRPC_STATUS_INTERNAL;
   }
-  HMAC_CTX_cleanup(&hmac);
+  for (i = 0; i < n; i++) {
+    uint8_t ctr = i+1;
+    size_t todo;
+    if (i != 0 && (!HMAC_Init_ex(&hmac, nullptr, 0, nullptr, nullptr) ||
+                   !HMAC_Update(&hmac, buf, digest_size))) {
+      HMAC_CTX_cleanup(&hmac);
+      return GRPC_STATUS_INTERNAL;
+    }
+    if (!HMAC_Update(&hmac, info, info_size) ||
+        !HMAC_Update(&hmac, &ctr, 1) ||
+        !HMAC_Final(&hmac, buf, nullptr)) {
+      HMAC_CTX_cleanup(&hmac);
+      return GRPC_STATUS_INTERNAL;
+    }
+    todo = digest_size;
+    if (done + todo > out_size) {
+      todo = out_size - done;
+    }
+    memcpy(out_key + done, buf, todo);
+    done += todo;
+  }
 #else
   HMAC_CTX* hmac = HMAC_CTX_new();
   if (hmac == nullptr) {
     return GRPC_STATUS_INTERNAL;
   }
-  if (!HMAC_Init_ex(hmac, kdf_key, kKdfKeyLen, EVP_sha256(), nullptr) ||
-      !HMAC_Update(hmac, kdf_counter, kKdfCounterLen) ||
-      !HMAC_Update(hmac, &ctr, 1) || !HMAC_Final(hmac, buf, nullptr)) {
+  if (!HMAC_Init_ex(hmac, prk, prk_size, digest, nullptr)) {
     HMAC_CTX_free(hmac);
     return GRPC_STATUS_INTERNAL;
   }
+  for (i = 0; i < n; i++) {
+    uint8_t ctr = i+1;
+    size_t todo;
+    if (i != 0 && (!HMAC_Init_ex(hmac, nullptr, 0, nullptr, nullptr) ||
+                   !HMAC_Update(hmac, buf, digest_size))) {
+      HMAC_CTX_free(hmac);
+      return GRPC_STATUS_INTERNAL;
+    }
+    if (!HMAC_Update(hmac, info, info_size) ||
+        !HMAC_Update(hmac, &ctr, 1) ||
+        !HMAC_Final(hmac, buf, nullptr)) {
+      HMAC_CTX_free(hmac);
+      return GRPC_STATUS_INTERNAL;
+    }
+    todo = digest_size;
+    if (done + todo > out_size) {
+      todo = out_size - done;
+    }
+    memcpy(out_key + done, buf, todo);
+    done += todo;
+  }
   HMAC_CTX_free(hmac);
 #endif
-  memcpy(dst, buf, kRekeyAeadKeyLen);
   return GRPC_STATUS_OK;
+}
+
+static grpc_status_code aes_gcm_derive_aead_key(uint8_t* dst,
+                                                const uint8_t* kdf_key,
+                                                const uint8_t* kdf_counter) {
+  return aes_gcm_derive_data(dst, kRekeyAeadKeyLen, /** is_sha256 **/ true,
+                             kdf_key, kKdfKeyLen,
+                             kdf_counter, kKdfCounterLen);
 }
 
 static grpc_status_code aes_gcm_rekey_if_required(
