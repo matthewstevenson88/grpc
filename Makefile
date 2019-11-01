@@ -461,8 +461,8 @@ Q = @
 endif
 
 CORE_VERSION = 8.0.0
-CPP_VERSION = 1.25.0-dev
-CSHARP_VERSION = 2.25.0-dev
+CPP_VERSION = 1.26.0-dev
+CSHARP_VERSION = 2.26.0-dev
 
 CPPFLAGS_NO_ARCH += $(addprefix -I, $(INCLUDES)) $(addprefix -D, $(DEFINES))
 CPPFLAGS += $(CPPFLAGS_NO_ARCH) $(ARCH_FLAGS)
@@ -3849,6 +3849,8 @@ LIBGRPC_SRC = \
     src/core/tsi/ssl/session_cache/ssl_session_openssl.cc \
     src/core/tsi/ssl_transport_security.cc \
     src/core/tsi/transport_security_grpc.cc \
+    src/core/tsi/s2a/handshaker/s2a_handshaker_client.cc \
+    src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.cc \
     src/core/ext/transport/chttp2/server/chttp2_server.cc \
     src/core/ext/transport/chttp2/client/secure/secure_channel_create.cc \
     src/core/ext/transport/chttp2/server/insecure/server_chttp2.cc \
@@ -3862,7 +3864,7 @@ LIBGRPC_SRC = \
     src/core/ext/filters/client_channel/lb_policy/grpclb/load_balancer_api.cc \
     src/core/ext/upb-generated/src/proto/grpc/lb/v1/load_balancer.upb.c \
     src/core/ext/filters/client_channel/resolver/fake/fake_resolver.cc \
-    src/core/ext/filters/client_channel/lb_policy/xds/xds.cc \
+    src/core/ext/filters/client_channel/lb_policy/xds/cds.cc \
     src/core/ext/filters/client_channel/xds/xds_api.cc \
     src/core/ext/filters/client_channel/xds/xds_bootstrap.cc \
     src/core/ext/filters/client_channel/xds/xds_channel_secure.cc \
@@ -3886,8 +3888,10 @@ LIBGRPC_SRC = \
     src/core/ext/upb-generated/envoy/api/v2/core/health_check.upb.c \
     src/core/ext/upb-generated/envoy/api/v2/core/http_uri.upb.c \
     src/core/ext/upb-generated/envoy/api/v2/core/protocol.upb.c \
+    src/core/ext/upb-generated/envoy/type/http.upb.c \
     src/core/ext/upb-generated/envoy/type/percent.upb.c \
     src/core/ext/upb-generated/envoy/type/range.upb.c \
+    src/core/ext/filters/client_channel/lb_policy/xds/xds.cc \
     src/core/ext/filters/client_channel/lb_policy/pick_first/pick_first.cc \
     src/core/ext/filters/client_channel/lb_policy/round_robin/round_robin.cc \
     src/core/ext/filters/client_channel/resolver/dns/c_ares/dns_resolver_ares.cc \
@@ -4323,6 +4327,8 @@ LIBGRPC_CRONET_SRC = \
     src/core/tsi/ssl/session_cache/ssl_session_openssl.cc \
     src/core/tsi/ssl_transport_security.cc \
     src/core/tsi/transport_security_grpc.cc \
+    src/core/tsi/s2a/handshaker/s2a_handshaker_client.cc \
+    src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.cc \
 
 PUBLIC_HEADERS_C += \
     include/grpc/impl/codegen/byte_buffer.h \
@@ -5351,6 +5357,7 @@ LIBGRPC_UNSECURE_SRC = \
     src/core/ext/upb-generated/envoy/api/v2/core/health_check.upb.c \
     src/core/ext/upb-generated/envoy/api/v2/core/http_uri.upb.c \
     src/core/ext/upb-generated/envoy/api/v2/core/protocol.upb.c \
+    src/core/ext/upb-generated/envoy/type/http.upb.c \
     src/core/ext/upb-generated/envoy/type/percent.upb.c \
     src/core/ext/upb-generated/envoy/type/range.upb.c \
     src/core/ext/filters/client_channel/lb_policy/grpclb/client_load_reporting_filter.cc \
@@ -5359,6 +5366,7 @@ LIBGRPC_UNSECURE_SRC = \
     src/core/ext/filters/client_channel/lb_policy/grpclb/grpclb_client_stats.cc \
     src/core/ext/filters/client_channel/lb_policy/grpclb/load_balancer_api.cc \
     src/core/ext/upb-generated/src/proto/grpc/lb/v1/load_balancer.upb.c \
+    src/core/ext/filters/client_channel/lb_policy/xds/cds.cc \
     src/core/ext/filters/client_channel/lb_policy/xds/xds.cc \
     src/core/ext/filters/client_channel/lb_policy/pick_first/pick_first.cc \
     src/core/ext/filters/client_channel/lb_policy/round_robin/round_robin.cc \
@@ -19768,16 +19776,16 @@ $(BINDIR)/$(CONFIG)/thread_manager_test: protobuf_dep_error
 
 else
 
-$(BINDIR)/$(CONFIG)/thread_manager_test: $(PROTOBUF_DEP) $(THREAD_MANAGER_TEST_OBJS) $(LIBDIR)/$(CONFIG)/libgrpc++_unsecure.a $(LIBDIR)/$(CONFIG)/libgrpc_unsecure.a $(LIBDIR)/$(CONFIG)/libgpr.a $(LIBDIR)/$(CONFIG)/libgrpc++_test_config.a
+$(BINDIR)/$(CONFIG)/thread_manager_test: $(PROTOBUF_DEP) $(THREAD_MANAGER_TEST_OBJS) $(LIBDIR)/$(CONFIG)/libgrpc++_unsecure.a $(LIBDIR)/$(CONFIG)/libgrpc_unsecure.a $(LIBDIR)/$(CONFIG)/libgpr.a $(LIBDIR)/$(CONFIG)/libgrpc++_test_util.a $(LIBDIR)/$(CONFIG)/libgrpc_test_util.a $(LIBDIR)/$(CONFIG)/libgrpc++_test_config.a
 	$(E) "[LD]      Linking $@"
 	$(Q) mkdir -p `dirname $@`
-	$(Q) $(LDXX) $(LDFLAGS) $(THREAD_MANAGER_TEST_OBJS) $(LIBDIR)/$(CONFIG)/libgrpc++_unsecure.a $(LIBDIR)/$(CONFIG)/libgrpc_unsecure.a $(LIBDIR)/$(CONFIG)/libgpr.a $(LIBDIR)/$(CONFIG)/libgrpc++_test_config.a $(LDLIBSXX) $(LDLIBS_PROTOBUF) $(LDLIBS) $(LDLIBS_SECURE) $(GTEST_LIB) -o $(BINDIR)/$(CONFIG)/thread_manager_test
+	$(Q) $(LDXX) $(LDFLAGS) $(THREAD_MANAGER_TEST_OBJS) $(LIBDIR)/$(CONFIG)/libgrpc++_unsecure.a $(LIBDIR)/$(CONFIG)/libgrpc_unsecure.a $(LIBDIR)/$(CONFIG)/libgpr.a $(LIBDIR)/$(CONFIG)/libgrpc++_test_util.a $(LIBDIR)/$(CONFIG)/libgrpc_test_util.a $(LIBDIR)/$(CONFIG)/libgrpc++_test_config.a $(LDLIBSXX) $(LDLIBS_PROTOBUF) $(LDLIBS) $(LDLIBS_SECURE) $(GTEST_LIB) -o $(BINDIR)/$(CONFIG)/thread_manager_test
 
 endif
 
 endif
 
-$(OBJDIR)/$(CONFIG)/test/cpp/thread_manager/thread_manager_test.o:  $(LIBDIR)/$(CONFIG)/libgrpc++_unsecure.a $(LIBDIR)/$(CONFIG)/libgrpc_unsecure.a $(LIBDIR)/$(CONFIG)/libgpr.a $(LIBDIR)/$(CONFIG)/libgrpc++_test_config.a
+$(OBJDIR)/$(CONFIG)/test/cpp/thread_manager/thread_manager_test.o:  $(LIBDIR)/$(CONFIG)/libgrpc++_unsecure.a $(LIBDIR)/$(CONFIG)/libgrpc_unsecure.a $(LIBDIR)/$(CONFIG)/libgpr.a $(LIBDIR)/$(CONFIG)/libgrpc++_test_util.a $(LIBDIR)/$(CONFIG)/libgrpc_test_util.a $(LIBDIR)/$(CONFIG)/libgrpc++_test_config.a
 
 deps_thread_manager_test: $(THREAD_MANAGER_TEST_OBJS:.o=.dep)
 
@@ -22833,6 +22841,8 @@ src/core/tsi/alts/zero_copy_frame_protector/alts_iovec_record_protocol.cc: $(OPE
 src/core/tsi/alts/zero_copy_frame_protector/alts_zero_copy_grpc_protector.cc: $(OPENSSL_DEP)
 src/core/tsi/fake_transport_security.cc: $(OPENSSL_DEP)
 src/core/tsi/local_transport_security.cc: $(OPENSSL_DEP)
+src/core/tsi/s2a/handshaker/s2a_handshaker_client.cc: $(OPENSSL_DEP)
+src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.cc: $(OPENSSL_DEP)
 src/core/tsi/ssl/session_cache/ssl_session_boringssl.cc: $(OPENSSL_DEP)
 src/core/tsi/ssl/session_cache/ssl_session_cache.cc: $(OPENSSL_DEP)
 src/core/tsi/ssl/session_cache/ssl_session_openssl.cc: $(OPENSSL_DEP)

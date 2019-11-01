@@ -22,7 +22,7 @@
 
 Pod::Spec.new do |s|
   s.name     = 'gRPC-Core'
-  version = '1.25.0-dev'
+  version = '1.26.0-dev'
   s.version  = version
   s.summary  = 'Core cross-platform gRPC library, written in C'
   s.homepage = 'https://grpc.io'
@@ -226,6 +226,7 @@ Pod::Spec.new do |s|
                       'src/core/ext/filters/client_channel/lb_policy/pick_first/pick_first.cc',
                       'src/core/ext/filters/client_channel/lb_policy/round_robin/round_robin.cc',
                       'src/core/ext/filters/client_channel/lb_policy/subchannel_list.h',
+                      'src/core/ext/filters/client_channel/lb_policy/xds/cds.cc',
                       'src/core/ext/filters/client_channel/lb_policy/xds/xds.cc',
                       'src/core/ext/filters/client_channel/lb_policy/xds/xds.h',
                       'src/core/ext/filters/client_channel/lb_policy_factory.h',
@@ -406,6 +407,8 @@ Pod::Spec.new do |s|
                       'src/core/ext/upb-generated/envoy/service/discovery/v2/ads.upb.h',
                       'src/core/ext/upb-generated/envoy/service/load_stats/v2/lrs.upb.c',
                       'src/core/ext/upb-generated/envoy/service/load_stats/v2/lrs.upb.h',
+                      'src/core/ext/upb-generated/envoy/type/http.upb.c',
+                      'src/core/ext/upb-generated/envoy/type/http.upb.h',
                       'src/core/ext/upb-generated/envoy/type/percent.upb.c',
                       'src/core/ext/upb-generated/envoy/type/percent.upb.h',
                       'src/core/ext/upb-generated/envoy/type/range.upb.c',
@@ -941,6 +944,10 @@ Pod::Spec.new do |s|
                       'src/core/tsi/grpc_shadow_boringssl.h',
                       'src/core/tsi/local_transport_security.cc',
                       'src/core/tsi/local_transport_security.h',
+                      'src/core/tsi/s2a/handshaker/s2a_handshaker_client.cc',
+                      'src/core/tsi/s2a/handshaker/s2a_handshaker_client.h',
+                      'src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.cc',
+                      'src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.h',
                       'src/core/tsi/ssl/session_cache/ssl_session.h',
                       'src/core/tsi/ssl/session_cache/ssl_session_boringssl.cc',
                       'src/core/tsi/ssl/session_cache/ssl_session_cache.cc',
@@ -1067,6 +1074,7 @@ Pod::Spec.new do |s|
                               'src/core/ext/upb-generated/envoy/api/v2/endpoint/load_report.upb.h',
                               'src/core/ext/upb-generated/envoy/service/discovery/v2/ads.upb.h',
                               'src/core/ext/upb-generated/envoy/service/load_stats/v2/lrs.upb.h',
+                              'src/core/ext/upb-generated/envoy/type/http.upb.h',
                               'src/core/ext/upb-generated/envoy/type/percent.upb.h',
                               'src/core/ext/upb-generated/envoy/type/range.upb.h',
                               'src/core/ext/upb-generated/gogoproto/gogo.upb.h',
@@ -1316,6 +1324,8 @@ Pod::Spec.new do |s|
                               'src/core/tsi/fake_transport_security.h',
                               'src/core/tsi/grpc_shadow_boringssl.h',
                               'src/core/tsi/local_transport_security.h',
+                              'src/core/tsi/s2a/handshaker/s2a_handshaker_client.h',
+                              'src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.h',
                               'src/core/tsi/ssl/session_cache/ssl_session.h',
                               'src/core/tsi/ssl/session_cache/ssl_session_cache.h',
                               'src/core/tsi/ssl_transport_security.h',

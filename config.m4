@@ -404,6 +404,8 @@ if test "$PHP_GRPC" != "no"; then
     src/core/tsi/ssl/session_cache/ssl_session_openssl.cc \
     src/core/tsi/ssl_transport_security.cc \
     src/core/tsi/transport_security_grpc.cc \
+    src/core/tsi/s2a/handshaker/s2a_handshaker_client.cc \
+    src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.cc \
     src/core/ext/transport/chttp2/server/chttp2_server.cc \
     src/core/ext/transport/chttp2/client/secure/secure_channel_create.cc \
     src/core/ext/transport/chttp2/server/insecure/server_chttp2.cc \
@@ -417,7 +419,7 @@ if test "$PHP_GRPC" != "no"; then
     src/core/ext/filters/client_channel/lb_policy/grpclb/load_balancer_api.cc \
     src/core/ext/upb-generated/src/proto/grpc/lb/v1/load_balancer.upb.c \
     src/core/ext/filters/client_channel/resolver/fake/fake_resolver.cc \
-    src/core/ext/filters/client_channel/lb_policy/xds/xds.cc \
+    src/core/ext/filters/client_channel/lb_policy/xds/cds.cc \
     src/core/ext/filters/client_channel/xds/xds_api.cc \
     src/core/ext/filters/client_channel/xds/xds_bootstrap.cc \
     src/core/ext/filters/client_channel/xds/xds_channel_secure.cc \
@@ -441,8 +443,10 @@ if test "$PHP_GRPC" != "no"; then
     src/core/ext/upb-generated/envoy/api/v2/core/health_check.upb.c \
     src/core/ext/upb-generated/envoy/api/v2/core/http_uri.upb.c \
     src/core/ext/upb-generated/envoy/api/v2/core/protocol.upb.c \
+    src/core/ext/upb-generated/envoy/type/http.upb.c \
     src/core/ext/upb-generated/envoy/type/percent.upb.c \
     src/core/ext/upb-generated/envoy/type/range.upb.c \
+    src/core/ext/filters/client_channel/lb_policy/xds/xds.cc \
     src/core/ext/filters/client_channel/lb_policy/pick_first/pick_first.cc \
     src/core/ext/filters/client_channel/lb_policy/round_robin/round_robin.cc \
     src/core/ext/filters/client_channel/resolver/dns/c_ares/dns_resolver_ares.cc \
@@ -831,6 +835,7 @@ if test "$PHP_GRPC" != "no"; then
   PHP_ADD_BUILD_DIR($ext_builddir/src/core/tsi/alts/frame_protector)
   PHP_ADD_BUILD_DIR($ext_builddir/src/core/tsi/alts/handshaker)
   PHP_ADD_BUILD_DIR($ext_builddir/src/core/tsi/alts/zero_copy_frame_protector)
+  PHP_ADD_BUILD_DIR($ext_builddir/src/core/tsi/s2a/handshaker)
   PHP_ADD_BUILD_DIR($ext_builddir/src/core/tsi/ssl/session_cache)
   PHP_ADD_BUILD_DIR($ext_builddir/third_party/address_sorting)
   PHP_ADD_BUILD_DIR($ext_builddir/third_party/boringssl/crypto)

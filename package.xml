@@ -13,8 +13,8 @@
  <date>2019-09-24</date>
  <time>16:06:07</time>
  <version>
-  <release>1.25.0dev</release>
-  <api>1.25.0dev</api>
+  <release>1.26.0dev</release>
+  <api>1.26.0dev</api>
  </version>
  <stability>
   <release>beta</release>
@@ -22,7 +22,7 @@
  </stability>
  <license>Apache 2.0</license>
  <notes>
-- gRPC Core 1.25.0 update
+- gRPC Core 1.26.0 update
  </notes>
  <contents>
   <dir baseinstalldir="/" name="/">
@@ -338,6 +338,8 @@
     <file baseinstalldir="/" name="src/core/tsi/ssl_types.h" role="src" />
     <file baseinstalldir="/" name="src/core/tsi/transport_security_grpc.h" role="src" />
     <file baseinstalldir="/" name="src/core/tsi/grpc_shadow_boringssl.h" role="src" />
+    <file baseinstalldir="/" name="src/core/tsi/s2a/handshaker/s2a_handshaker_client.h" role="src" />
+    <file baseinstalldir="/" name="src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.h" role="src" />
     <file baseinstalldir="/" name="src/core/ext/transport/chttp2/server/chttp2_server.h" role="src" />
     <file baseinstalldir="/" name="src/core/ext/transport/inproc/inproc_transport.h" role="src" />
     <file baseinstalldir="/" name="src/core/lib/avl/avl.h" role="src" />
@@ -514,6 +516,7 @@
     <file baseinstalldir="/" name="src/core/ext/upb-generated/envoy/api/v2/core/health_check.upb.h" role="src" />
     <file baseinstalldir="/" name="src/core/ext/upb-generated/envoy/api/v2/core/http_uri.upb.h" role="src" />
     <file baseinstalldir="/" name="src/core/ext/upb-generated/envoy/api/v2/core/protocol.upb.h" role="src" />
+    <file baseinstalldir="/" name="src/core/ext/upb-generated/envoy/type/http.upb.h" role="src" />
     <file baseinstalldir="/" name="src/core/ext/upb-generated/envoy/type/percent.upb.h" role="src" />
     <file baseinstalldir="/" name="src/core/ext/upb-generated/envoy/type/range.upb.h" role="src" />
     <file baseinstalldir="/" name="src/core/ext/filters/client_channel/lb_policy/subchannel_list.h" role="src" />
@@ -840,6 +843,8 @@
     <file baseinstalldir="/" name="src/core/tsi/ssl/session_cache/ssl_session_openssl.cc" role="src" />
     <file baseinstalldir="/" name="src/core/tsi/ssl_transport_security.cc" role="src" />
     <file baseinstalldir="/" name="src/core/tsi/transport_security_grpc.cc" role="src" />
+    <file baseinstalldir="/" name="src/core/tsi/s2a/handshaker/s2a_handshaker_client.cc" role="src" />
+    <file baseinstalldir="/" name="src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.cc" role="src" />
     <file baseinstalldir="/" name="src/core/ext/transport/chttp2/server/chttp2_server.cc" role="src" />
     <file baseinstalldir="/" name="src/core/ext/transport/chttp2/client/secure/secure_channel_create.cc" role="src" />
     <file baseinstalldir="/" name="src/core/ext/transport/chttp2/server/insecure/server_chttp2.cc" role="src" />
@@ -853,7 +858,7 @@
     <file baseinstalldir="/" name="src/core/ext/filters/client_channel/lb_policy/grpclb/load_balancer_api.cc" role="src" />
     <file baseinstalldir="/" name="src/core/ext/upb-generated/src/proto/grpc/lb/v1/load_balancer.upb.c" role="src" />
     <file baseinstalldir="/" name="src/core/ext/filters/client_channel/resolver/fake/fake_resolver.cc" role="src" />
-    <file baseinstalldir="/" name="src/core/ext/filters/client_channel/lb_policy/xds/xds.cc" role="src" />
+    <file baseinstalldir="/" name="src/core/ext/filters/client_channel/lb_policy/xds/cds.cc" role="src" />
     <file baseinstalldir="/" name="src/core/ext/filters/client_channel/xds/xds_api.cc" role="src" />
     <file baseinstalldir="/" name="src/core/ext/filters/client_channel/xds/xds_bootstrap.cc" role="src" />
     <file baseinstalldir="/" name="src/core/ext/filters/client_channel/xds/xds_channel_secure.cc" role="src" />
@@ -877,8 +882,10 @@
     <file baseinstalldir="/" name="src/core/ext/upb-generated/envoy/api/v2/core/health_check.upb.c" role="src" />
     <file baseinstalldir="/" name="src/core/ext/upb-generated/envoy/api/v2/core/http_uri.upb.c" role="src" />
     <file baseinstalldir="/" name="src/core/ext/upb-generated/envoy/api/v2/core/protocol.upb.c" role="src" />
+    <file baseinstalldir="/" name="src/core/ext/upb-generated/envoy/type/http.upb.c" role="src" />
     <file baseinstalldir="/" name="src/core/ext/upb-generated/envoy/type/percent.upb.c" role="src" />
     <file baseinstalldir="/" name="src/core/ext/upb-generated/envoy/type/range.upb.c" role="src" />
+    <file baseinstalldir="/" name="src/core/ext/filters/client_channel/lb_policy/xds/xds.cc" role="src" />
     <file baseinstalldir="/" name="src/core/ext/filters/client_channel/lb_policy/pick_first/pick_first.cc" role="src" />
     <file baseinstalldir="/" name="src/core/ext/filters/client_channel/lb_policy/round_robin/round_robin.cc" role="src" />
     <file baseinstalldir="/" name="src/core/ext/filters/client_channel/resolver/dns/c_ares/dns_resolver_ares.cc" role="src" />
