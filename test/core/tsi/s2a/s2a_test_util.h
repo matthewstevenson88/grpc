@@ -38,4 +38,9 @@ grpc_byte_buffer* create_example_session_state(bool admissible_tls_version,
 
 size_t expected_message_size(size_t plaintext_size);
 
+bool check_encrypt_record(TLSCiphersuite ciphersuite, uint8_t* record_one,
+                          size_t record_one_size, uint8_t* record_two,
+                          size_t record_two_size, uint8_t* record_three,
+                          size_t record_three_size, char** error_details);
+
 #endif  //  GRPC_TEST_CORE_TSI_S2A_RECORD_PROTOCOL_S2A_TEST_UTIL_H

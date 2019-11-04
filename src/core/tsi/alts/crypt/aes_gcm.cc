@@ -183,9 +183,9 @@ static void aes_gcm_mask_nonce(uint8_t* dst, const uint8_t* nonce,
 }
 
 grpc_status_code aes_gcm_derive_data(uint8_t* out_key, size_t out_size,
-                                     bool is_sha256,
-                                     const uint8_t* prk, size_t prk_size,
-                                     const uint8_t* info, size_t info_size) {
+                                     bool is_sha256, const uint8_t* prk,
+                                     size_t prk_size, const uint8_t* info,
+                                     size_t info_size) {
   const EVP_MD* digest = is_sha256 ? EVP_sha256() : EVP_sha384();
   const size_t digest_size = EVP_MD_size(digest);
   uint8_t buf[EVP_MAX_MD_SIZE];
@@ -203,15 +203,14 @@ grpc_status_code aes_gcm_derive_data(uint8_t* out_key, size_t out_size,
     return GRPC_STATUS_INTERNAL;
   }
   for (i = 0; i < n; i++) {
-    uint8_t ctr = i+1;
+    uint8_t ctr = i + 1;
     size_t todo;
     if (i != 0 && (!HMAC_Init_ex(&hmac, nullptr, 0, nullptr, nullptr) ||
                    !HMAC_Update(&hmac, buf, digest_size))) {
       HMAC_CTX_cleanup(&hmac);
       return GRPC_STATUS_INTERNAL;
     }
-    if (!HMAC_Update(&hmac, info, info_size) ||
-        !HMAC_Update(&hmac, &ctr, 1) ||
+    if (!HMAC_Update(&hmac, info, info_size) || !HMAC_Update(&hmac, &ctr, 1) ||
         !HMAC_Final(&hmac, buf, nullptr)) {
       HMAC_CTX_cleanup(&hmac);
       return GRPC_STATUS_INTERNAL;
@@ -233,15 +232,14 @@ grpc_status_code aes_gcm_derive_data(uint8_t* out_key, size_t out_size,
     return GRPC_STATUS_INTERNAL;
   }
   for (i = 0; i < n; i++) {
-    uint8_t ctr = i+1;
+    uint8_t ctr = i + 1;
     size_t todo;
     if (i != 0 && (!HMAC_Init_ex(hmac, nullptr, 0, nullptr, nullptr) ||
                    !HMAC_Update(hmac, buf, digest_size))) {
       HMAC_CTX_free(hmac);
       return GRPC_STATUS_INTERNAL;
     }
-    if (!HMAC_Update(hmac, info, info_size) ||
-        !HMAC_Update(hmac, &ctr, 1) ||
+    if (!HMAC_Update(hmac, info, info_size) || !HMAC_Update(hmac, &ctr, 1) ||
         !HMAC_Final(hmac, buf, nullptr)) {
       HMAC_CTX_free(hmac);
       return GRPC_STATUS_INTERNAL;
@@ -262,8 +260,7 @@ static grpc_status_code aes_gcm_derive_aead_key(uint8_t* dst,
                                                 const uint8_t* kdf_key,
                                                 const uint8_t* kdf_counter) {
   return aes_gcm_derive_data(dst, kRekeyAeadKeyLen, /** is_sha256 **/ true,
-                             kdf_key, kKdfKeyLen,
-                             kdf_counter, kKdfCounterLen);
+                             kdf_key, kKdfKeyLen, kdf_counter, kKdfCounterLen);
 }
 
 static grpc_status_code aes_gcm_rekey_if_required(

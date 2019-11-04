@@ -113,8 +113,7 @@ static grpc_status_code increment_counter(alts_counter* counter,
   return GRPC_STATUS_OK;
 }
 
-/* Given an array of iovec, computes the total length of buffer.  */
-static size_t get_total_length(const iovec_t* vec, size_t vec_length) {
+size_t get_total_length(const iovec_t* vec, size_t vec_length) {
   size_t total_length = 0;
   for (size_t i = 0; i < vec_length; ++i) {
     total_length += vec[i].iov_len;
