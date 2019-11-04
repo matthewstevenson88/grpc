@@ -16,9 +16,9 @@
  *
  */
 
-#include "src/core/tsi/s2a/s2a_constants.h"
 #include "src/core/tsi/s2a/record_protocol/s2a_crypter.h"
 #include "src/core/tsi/s2a/record_protocol/s2a_crypter_util.h"
+#include "src/core/tsi/s2a/s2a_constants.h"
 
 #include <grpc/support/log.h>
 #include <grpc/support/string_util.h>

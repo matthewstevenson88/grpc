@@ -470,9 +470,9 @@ grpc_status_code gsec_aes_gcm_aead_crypter_create(const uint8_t* key,
  *  On success, the method returns GRPC_STATUS_OK; otherwise, it returns an
  *  appropriate error code. **/
 grpc_status_code aes_gcm_derive_data(uint8_t* out_key, size_t out_size,
-                                     bool is_sha256,
-                                     const uint8_t* prk, size_t prk_size,
-                                     const uint8_t* info, size_t info_size);
+                                     bool is_sha256, const uint8_t* prk,
+                                     size_t prk_size, const uint8_t* info,
+                                     size_t info_size);
 /**
  * This method creates an AEAD crypter instance of CHACHA-POLY encryption scheme
  * which supports 32 bytes long keys, 12 bytes long nonces, and
