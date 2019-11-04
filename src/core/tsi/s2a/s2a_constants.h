@@ -33,6 +33,11 @@
 #define EVP_AEAD_MAX_NONCE_LENGTH 24
 #endif
 
+/** The uint16_t's for the supported TLS 1.3 ciphersuites. **/
+#define TLS_AES_128_GCM_SHA256 0x009c
+#define TLS_AES_256_GCM_SHA384 0x1302
+#define TLS_CHACHA20_POLY1305_SHA256 0xcca8
+
 /** The following constants represent the key and nonce sizes of the supported
  *  ciphersuites. **/
 #define TLS_AES_128_GCM_SHA256_KEY_SIZE 16

@@ -390,7 +390,6 @@ grpc_status_code s2a_write_tls13_record(
         "record.");
     return GRPC_STATUS_FAILED_PRECONDITION;
   }
-  // TODO(mattstev): do I want to allow nullptr with zero length?
   if (protected_record.iov_base == nullptr || protected_record.iov_len == 0) {
     *error_details = gpr_strdup("There is no allocated TLS 1.3 record.");
     return GRPC_STATUS_INVALID_ARGUMENT;

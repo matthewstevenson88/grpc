@@ -19,21 +19,14 @@
 #ifndef GRPC_CORE_TSI_S2A_RECORD_PROTOCOL_S2A_CRYPTER_H
 #define GRPC_CORE_TSI_S2A_RECORD_PROTOCOL_S2A_CRYPTER_H
 
+#include <grpc/byte_buffer_reader.h>
 #include <grpc/grpc.h>
 #include <cstdint>
 #include "src/core/ext/upb-generated/src/proto/grpc/gcp/s2a.upb.h"
 #include "src/core/lib/gprpp/memory.h"
-#include "src/core/tsi/alts/crypt/gsec.h"
-#include "src/core/tsi/grpc_shadow_boringssl.h"
-
-#include <grpc/byte_buffer_reader.h>
-
 #include "src/core/lib/slice/slice_internal.h"
-
-/** The uint16_t's for the implemented TLS 1.3 ciphersuite. **/
-#define TLS_AES_128_GCM_SHA256 0x009c
-#define TLS_AES_256_GCM_SHA384 0x1302
-#define TLS_CHACHA20_POLY1305_SHA256 0xcca8
+#include "src/core/tsi/alts/crypt/gsec.h"
+#include "src/core/tsi/s2a/s2a_constants.h"
 
 /** The S2A record protocol interface. It provides encrypt and decrypt
  *  functionality. The interface is thread-compatible. **/
