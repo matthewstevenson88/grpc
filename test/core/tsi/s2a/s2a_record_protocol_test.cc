@@ -109,6 +109,7 @@ static void test_incorrect_key_size() {
   GPR_ASSERT(correct_error_message == 0);
 
   // Cleanup.
+  s2a_crypter_destroy(crypter);
   gpr_free(error_details);
   grpc_core::Delete<grpc_channel>(channel);
 }
@@ -496,9 +497,9 @@ int main(int argc, char** argv) {
   test_incorrect_key_size();
   test_deserialize_byte_buffer();
   size_t number_ciphersuites = 3;
-  TLSCiphersuite ciphersuite[number_ciphersuites] = {
-      TLS_AES_128_GCM_SHA256_ciphersuite, TLS_AES_256_GCM_SHA384_ciphersuite,
-      TLS_CHACHA20_POLY1305_SHA256_ciphersuite};
+  TLSCiphersuite ciphersuite[3] = {TLS_AES_128_GCM_SHA256_ciphersuite,
+                                   TLS_AES_256_GCM_SHA384_ciphersuite,
+                                   TLS_CHACHA20_POLY1305_SHA256_ciphersuite};
   for (size_t i = 0; i < number_ciphersuites; i++) {
     test_create_crypter_success(ciphersuite[i]);
     test_encrypt_record_bad_size(ciphersuite[i]);
