@@ -259,6 +259,13 @@ void check_half_connection(s2a_crypter* crypter, bool in_half_connection,
              expected_additional_data_size);
 }
 
+size_t s2a_max_plaintext_size(const s2a_crypter* crypter) {
+  if (crypter == nullptr) {
+    return 0;
+  }
+  return SSL3_RT_MAX_PLAIN_LENGTH;
+}
+
 /** This function returns the tag size of the ciphersuite supported by
  * |crypter|. If |crypter| is nullptr or was not properly initialized, then this
  * function returns zero.
@@ -378,7 +385,7 @@ grpc_status_code s2a_write_tls13_record(
       get_total_length(unprotected_vec, unprotected_vec_size);
   size_t payload_size = plaintext_size + s2a_tag_size(crypter) + 1;
 
-  if (plaintext_size > SSL3_RT_MAX_PLAIN_LENGTH) {
+  if (plaintext_size > s2a_max_plaintext_size(crypter)) {
     *error_details = gpr_strdup(
         "The plaintext size exceeds the maximum plaintext size for a single "
         "TLS 1.3 record.");
@@ -480,4 +487,42 @@ grpc_status_code s2a_encrypt(s2a_crypter* crypter, uint8_t* plaintext,
   return s2a_write_tls13_record(crypter, SSL3_RT_APPLICATION_DATA,
                                 &plaintext_vec, 1, record_vec, record_size,
                                 error_details);
+}
+
+grpc_status_code s2a_protect_record(s2a_crypter* crypter, uint8_t record_type,
+                                    grpc_slice_buffer* unprotected_slices,
+                                    grpc_slice_buffer* protected_slices,
+                                    char** error_details) {
+  if (crypter == nullptr || unprotected_slices == nullptr ||
+      protected_slices == nullptr) {
+    *error_details =
+        gpr_strdup("Invalid nullptr argument to s2a_protect_record.");
+    return GRPC_STATUS_INVALID_ARGUMENT;
+  }
+  size_t protected_record_size =
+      unprotected_slices->length + s2a_max_record_overhead(crypter);
+  grpc_slice protected_record_slice = GRPC_SLICE_MALLOC(protected_record_size);
+  iovec protected_record = {GRPC_SLICE_START_PTR(protected_record_slice),
+                            GRPC_SLICE_LENGTH(protected_record_slice)};
+
+  iovec buffer[unprotected_slices->count];
+  for (size_t i = 0; i < unprotected_slices->count; i++) {
+    buffer[i].iov_base = GRPC_SLICE_START_PTR(unprotected_slices->slices[i]);
+    buffer[i].iov_len = GRPC_SLICE_LENGTH(unprotected_slices->slices[i]);
+  }
+  size_t bytes_written = 0;
+  grpc_status_code status = s2a_write_tls13_record(
+      crypter, record_type, buffer, unprotected_slices->count, protected_record,
+      &bytes_written, error_details);
+  if (status != GRPC_STATUS_OK) {
+    return status;
+  }
+  if (bytes_written != protected_record_size) {
+    *error_details = gpr_strdup(
+        "An unexpected number of bytes were written to the TLS record.");
+    return GRPC_STATUS_INTERNAL;
+  }
+  grpc_slice_buffer_add(protected_slices, protected_record_slice);
+  grpc_slice_buffer_reset_and_unref_internal(unprotected_slices);
+  return GRPC_STATUS_OK;
 }

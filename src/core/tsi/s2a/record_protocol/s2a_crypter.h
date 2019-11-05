@@ -38,6 +38,12 @@ typedef struct s2a_crypter s2a_crypter;
  *  - crypter: an instance of s2a_crypter. **/
 size_t s2a_max_record_overhead(const s2a_crypter* crypter);
 
+/** This function returns the max number of bytes that may be occupied by the
+ *  plaintext that is to encrypted using |crypter|. If |crypter| is nullptr,
+ *  then this function returns zero.
+ *  - crypter: an instance of s2a_crypter. **/
+size_t s2a_max_plaintext_size(const s2a_crypter* crypter);
+
 /** Assume that the S2A record protocol is using one of the above ciphersuites.
  *  The structure of a TLS 1.3 record is described below:
  *    | 5 bytes of record header | + | TLS payload |.
@@ -141,13 +147,13 @@ grpc_status_code s2a_decrypt(s2a_crypter* crypter, unsigned char* record,
  *    (and expected) to have |error_details| point to a nullptr; otherwise,
  *    the argument should be freed with gpr_free.
  *
- *  When creation succeeds, the method return GRPC_STATUS_OK. Otherwise,
+ *  When creation succeeds, the method returns GRPC_STATUS_OK. Otherwise,
  *  it returns an error status code and details can be found in |error_details|.
  *  If |error_details| is not nullptr, it must be freed with gpr_free. **/
 grpc_status_code s2a_crypter_create(
     uint16_t tls_version, uint16_t tls_ciphersuite, uint8_t* derived_in_key,
     uint8_t* derived_out_key, size_t key_size, uint8_t* derived_in_nonce,
-    uint8_t* derived_out_nocne, size_t nonce_size, grpc_channel* channel,
+    uint8_t* derived_out_nonce, size_t nonce_size, grpc_channel* channel,
     s2a_crypter** crypter, char** error_details);
 
 /** This method destroys an s2a_crypter instance, deallocating all memory.
@@ -169,6 +175,7 @@ void check_half_connection(s2a_crypter* crypter, bool in_half_connection,
                            uint8_t* expected_fixed_nonce,
                            uint8_t expected_additional_data_size);
 
+// TODO: this function might not need to be exposed now?
 /** This function writes a TLS 1.3 record to |protected_record| of type
  *  |record_type|, and with a payload containing the ciphertext obtained by
  *  encrypting |unprotected_vec| using the outgoing_aead_crypter of |crypter|.
@@ -205,5 +212,11 @@ grpc_status_code s2a_write_tls13_record(
     s2a_crypter* crypter, uint8_t record_type, const iovec* unprotected_vec,
     size_t unprotected_vec_size, iovec protected_record, size_t* bytes_written,
     char** error_details);
+
+// TODO: add comments.
+grpc_status_code s2a_protect_record(s2a_crypter* crypter, uint8_t record_type,
+                                    grpc_slice_buffer* unprotected_slices,
+                                    grpc_slice_buffer* protected_slices,
+                                    char** error_details);
 
 #endif  //  GRPC_CORE_TSI_S2A_RECORD_PROTOCOL_S2A_CRYPTER_H
