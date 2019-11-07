@@ -280,6 +280,10 @@ static void s2a_zero_copy_grpc_protector_empty_protect_test(TLSCiphersuite ciphe
   uint8_t* record = GRPC_SLICE_START_PTR(record_buffer.slices[0]);
   size_t record_size = GRPC_SLICE_LENGTH(record_buffer.slices[0]);
   GPR_ASSERT(record_size == expected_message_size(/** plaintext_size **/ 0));
+  char* error_details = nullptr;
+  GPR_ASSERT(check_record_empty_plaintext(ciphersuite, record,
+                                          record_size, &error_details));
+  GPR_ASSERT(error_details == nullptr);
 
   grpc_slice_buffer_destroy_internal(&plaintext_buffer);
   grpc_slice_buffer_destroy_internal(&record_buffer);

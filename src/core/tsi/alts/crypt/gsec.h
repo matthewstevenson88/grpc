@@ -190,9 +190,9 @@ struct gsec_aead_crypter {
  * - plaintext_length: size of plaintext buffer, which should be zero if
  *   plaintext is nullptr.
  * - ciphertext_and_tag: buffer that will contain ciphertext and tags the method
- *   produced. The buffer should not overlap the plaintext buffer, and pointers
- *   to those buffers should not be equal. Also if the ciphertext+tag buffer is
- *   nullptr, the plaintext_length should be zero.
+ *   produced. If this buffer overlaps with the plaintext buffer, then the
+ *   overlap will be overwritten. Also if the ciphertext+tag buffer is nullptr,
+ *   the plaintext_length should be zero.
  * - ciphertext_and_tag_length: size of ciphertext+tag buffer, which should be
  *   at least as long as the one returned from method
  *   gsec_aead_crypter_max_ciphertext_and_tag_length.
