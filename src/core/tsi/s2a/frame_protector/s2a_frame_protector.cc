@@ -67,8 +67,9 @@ static tsi_result s2a_zero_copy_grpc_protector_protect(
       return alts_tsi_utils_convert_to_tsi_result(status);
     }
   }
-  grpc_status_code status = s2a_protect_record(protector->crypter, SSL3_RT_APPLICATION_DATA,
-                            unprotected_slices, protected_slices, &error_details);
+  grpc_status_code status =
+      s2a_protect_record(protector->crypter, SSL3_RT_APPLICATION_DATA,
+                         unprotected_slices, protected_slices, &error_details);
   if (status != GRPC_STATUS_OK) {
     gpr_log(GPR_ERROR, "Failed to protect record: %s", error_details);
     gpr_free(error_details);
@@ -119,11 +120,11 @@ tsi_result s2a_zero_copy_grpc_protector_create(
     size_t nonce_size, grpc_channel* channel,
     tsi_zero_copy_grpc_protector** protector) {
   if (grpc_core::ExecCtx::Get() == nullptr || in_key == nullptr ||
-      out_key == nullptr || in_nonce == nullptr || out_nonce == nullptr
-      || channel == nullptr || protector == nullptr) {
+      out_key == nullptr || in_nonce == nullptr || out_nonce == nullptr ||
+      channel == nullptr || protector == nullptr) {
     gpr_log(
         GPR_ERROR,
-        "Invalid nullptr arguments to s2a_zero_copy_grpc_protector create.");
+        "Invalid nullptr arguments to s2a_zero_copy_grpc_protector_create.");
     return TSI_INVALID_ARGUMENT;
   }
   s2a_zero_copy_grpc_protector* impl =
@@ -143,7 +144,7 @@ tsi_result s2a_zero_copy_grpc_protector_create(
     }
     s2a_crypter_destroy(crypter);
     gpr_free(impl);
-    return TSI_INTERNAL_ERROR;
+    return alts_tsi_utils_convert_to_tsi_result(crypter_status);
   }
   impl->crypter = crypter;
   impl->max_protected_frame_size =

@@ -349,7 +349,10 @@ static void test_encrypt_record_success(TLSCiphersuite ciphersuite) {
   GPR_ASSERT(record_size == expected_message_size(test_plaintext_size));
 
   bool correct_encrypted_record = check_encrypt_record(
-      ciphersuite, record, record_size, nullptr, 0, nullptr, 0, &error_details);
+      ciphersuite, record, record_size,
+      /** record_two **/ nullptr, /** record_two_size **/ 0,
+      /** record_three **/ nullptr, /** record_three_size **/ 0,
+      &error_details);
   GPR_ASSERT(correct_encrypted_record);
   GPR_ASSERT(error_details == nullptr);
 
