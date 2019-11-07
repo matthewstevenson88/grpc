@@ -485,6 +485,8 @@ static void test_encrypt_empty_plaintext(TLSCiphersuite ciphersuite) {
                   record_allocated_size, &record_size, &error_details);
   GPR_ASSERT(encrypt_status == GRPC_STATUS_OK);
   GPR_ASSERT(record_size == expected_message_size(test_plaintext_size));
+  GPR_ASSERT(check_record_empty_plaintext(ciphersuite, record,
+                                          record_size, &error_details));
 
   // Cleanup.
   s2a_crypter_destroy(crypter);

@@ -43,4 +43,7 @@ bool check_encrypt_record(TLSCiphersuite ciphersuite, uint8_t* record_one,
                           size_t record_two_size, uint8_t* record_three,
                           size_t record_three_size, char** error_details);
 
+bool check_record_empty_plaintext(TLSCiphersuite ciphersuite, uint8_t* record,
+                                  size_t record_size, char** error_details);
+
 #endif  //  GRPC_TEST_CORE_TSI_S2A_RECORD_PROTOCOL_S2A_TEST_UTIL_H
