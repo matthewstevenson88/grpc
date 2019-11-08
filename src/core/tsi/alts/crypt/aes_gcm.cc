@@ -182,11 +182,19 @@ static void aes_gcm_mask_nonce(uint8_t* dst, const uint8_t* nonce,
   memcpy(dst + sizeof(nonce1), &nonce2, sizeof(nonce2));
 }
 
-grpc_status_code aes_gcm_derive_data(uint8_t* out_key, size_t out_size,
-                                     bool is_sha256, const uint8_t* prk,
+grpc_status_code hkdf_derive_secret(uint8_t* out_key, size_t out_size,
+                                     GsecHashFunction hash_function, const uint8_t* prk,
                                      size_t prk_size, const uint8_t* info,
                                      size_t info_size) {
-  const EVP_MD* digest = is_sha256 ? EVP_sha256() : EVP_sha384();
+  const EVP_MD* digest;
+  switch (hash_function) {
+    case SHA256_hash_function:
+      digest = EVP_sha256();
+      break;
+    case SHA384_hash_function:
+      digest = EVP_sha384();
+      break;
+  }
   const size_t digest_size = EVP_MD_size(digest);
   uint8_t buf[EVP_MAX_MD_SIZE];
   size_t n, done = 0;
@@ -259,7 +267,7 @@ grpc_status_code aes_gcm_derive_data(uint8_t* out_key, size_t out_size,
 static grpc_status_code aes_gcm_derive_aead_key(uint8_t* dst,
                                                 const uint8_t* kdf_key,
                                                 const uint8_t* kdf_counter) {
-  return aes_gcm_derive_data(dst, kRekeyAeadKeyLen, /** is_sha256 **/ true,
+  return hkdf_derive_secret(dst, kRekeyAeadKeyLen, SHA256_hash_function,
                              kdf_key, kKdfKeyLen, kdf_counter, kKdfCounterLen);
 }
 
