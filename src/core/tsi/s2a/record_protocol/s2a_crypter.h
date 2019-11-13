@@ -32,6 +32,20 @@
  *  functionality. The interface is thread-compatible. **/
 typedef struct s2a_crypter s2a_crypter;
 
+/** This status code is used when decrypting TLS 1.3 records using the S2A
+ *  record protocol. **/
+typedef enum {
+  OK,
+  INCOMPLETE_RECORD,      // No complete record found.
+  INVALID_RECORD,         // The record does not meet the TLS 1.3 format.
+  RENEGOTIATION_ATTEMPT,  // The peer attempted to renegotiate the handshake.
+  ALERT_CLOSE_NOTIFY,     // The record was a close-notify alert record.
+  ALERT_OTHER,     // The record was an alert record other than close-notify.
+  INTERNAL_ERROR,  // An unexpected error occured during decryption.
+  FAILED_PRECONDITION,  // A requirement for calling a method was not met.
+  UNIMPLEMENTED,        // An unimplemented operation was called.
+} s2a_decrypt_status;
+
 /** This function returns the max number of bytes that |crypter| requires to
  *  create a TLS 1.3 record, beyond the size of the plaintext. If |crypter| is
  *  nullptr or was not properly initialized, then this function returns zero.
@@ -218,5 +232,10 @@ grpc_status_code s2a_protect_record(s2a_crypter* crypter, uint8_t record_type,
                                     grpc_slice_buffer* unprotected_slices,
                                     grpc_slice_buffer* protected_slices,
                                     char** error_details);
+
+s2a_decrypt_status s2a_decrypt_record(
+    s2a_crypter* crypter, iovec& record_header, const iovec* protected_vec,
+    size_t protected_vec_size, iovec& unprotected_vec, size_t* bytes_written,
+    char** error_details);
 
 #endif  //  GRPC_CORE_TSI_S2A_RECORD_PROTOCOL_S2A_CRYPTER_H
