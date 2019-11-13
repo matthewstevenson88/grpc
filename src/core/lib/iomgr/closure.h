@@ -27,6 +27,7 @@
 #include <grpc/support/alloc.h>
 #include <grpc/support/log.h>
 
+#include "src/core/lib/gprpp/debug_location.h"
 #include "src/core/lib/gprpp/manual_constructor.h"
 #include "src/core/lib/gprpp/mpscq.h"
 #include "src/core/lib/iomgr/error.h"
@@ -247,73 +248,33 @@ inline bool grpc_closure_list_empty(grpc_closure_list closure_list) {
   return closure_list.head == nullptr;
 }
 
-#ifndef NDEBUG
-inline void grpc_closure_run(const char* file, int line, grpc_closure* c,
-                             grpc_error* error) {
-#else
-inline void grpc_closure_run(grpc_closure* c, grpc_error* error) {
-#endif
-  GPR_TIMER_SCOPE("grpc_closure_run", 0);
-  if (c != nullptr) {
-#ifndef NDEBUG
-    c->file_initiated = file;
-    c->line_initiated = line;
-    c->run = true;
-    GPR_ASSERT(c->cb != nullptr);
-#endif
-    c->scheduler->vtable->run(c, error);
-  } else {
-    GRPC_ERROR_UNREF(error);
-  }
-}
-
-/** Run a closure directly. Caller ensures that no locks are being held above.
- *  Note that calling this at the end of a closure callback function itself is
- *  by definition safe. */
-#ifndef NDEBUG
-#define GRPC_CLOSURE_RUN(closure, error) \
-  grpc_closure_run(__FILE__, __LINE__, closure, error)
-#else
-#define GRPC_CLOSURE_RUN(closure, error) grpc_closure_run(closure, error)
-#endif
-
-#ifndef NDEBUG
-inline void grpc_closure_sched(const char* file, int line, grpc_closure* c,
-                               grpc_error* error) {
-#else
-inline void grpc_closure_sched(grpc_closure* c, grpc_error* error) {
-#endif
-  GPR_TIMER_SCOPE("grpc_closure_sched", 0);
-  if (c != nullptr) {
-#ifndef NDEBUG
-    if (c->scheduled) {
-      gpr_log(GPR_ERROR,
-              "Closure already scheduled. (closure: %p, created: [%s:%d], "
-              "previously scheduled at: [%s: %d], newly scheduled at [%s: %d], "
-              "run?: %s",
-              c, c->file_created, c->line_created, c->file_initiated,
-              c->line_initiated, file, line, c->run ? "true" : "false");
-      abort();
+namespace grpc_core {
+class Closure {
+ public:
+  static void Run(const DebugLocation& location, grpc_closure* closure,
+                  grpc_error* error) {
+    if (closure == nullptr) {
+      GRPC_ERROR_UNREF(error);
+      return;
     }
-    c->scheduled = true;
-    c->file_initiated = file;
-    c->line_initiated = line;
-    c->run = false;
-    GPR_ASSERT(c->cb != nullptr);
+#ifndef NDEBUG
+    if (grpc_trace_closure.enabled()) {
+      gpr_log(GPR_DEBUG, "running closure %p: created [%s:%d]: run [%s:%d]",
+              closure, closure->file_created, closure->line_created,
+              location.file(), location.line());
+    }
+    GPR_ASSERT(closure->cb != nullptr);
 #endif
-    c->scheduler->vtable->sched(c, error);
-  } else {
+    closure->cb(closure->cb_arg, error);
+#ifndef NDEBUG
+    if (grpc_trace_closure.enabled()) {
+      gpr_log(GPR_DEBUG, "closure %p finished", closure);
+    }
+#endif
     GRPC_ERROR_UNREF(error);
   }
-}
-
-/** Schedule a closure to be run. Does not need to be run from a safe point. */
-#ifndef NDEBUG
-#define GRPC_CLOSURE_SCHED(closure, error) \
-  grpc_closure_sched(__FILE__, __LINE__, closure, error)
-#else
-#define GRPC_CLOSURE_SCHED(closure, error) grpc_closure_sched(closure, error)
-#endif
+};
+}  // namespace grpc_core
 
 #ifndef NDEBUG
 inline void grpc_closure_list_sched(const char* file, int line,
