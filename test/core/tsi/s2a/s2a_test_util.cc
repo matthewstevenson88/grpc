@@ -17,8 +17,10 @@
  */
 
 #include "test/core/tsi/s2a/s2a_test_util.h"
+#include <stdlib.h>
 #include <grpc/support/log.h>
 #include <grpc/support/string_util.h>
+#include <openssl/ssl3.h>
 #include "src/core/tsi/s2a/record_protocol/s2a_crypter.h"
 #include "src/core/tsi/s2a/record_protocol/s2a_crypter_util.h"
 #include "src/core/tsi/s2a/s2a_constants.h"
@@ -299,4 +301,118 @@ bool check_record_empty_plaintext(TLSCiphersuite ciphersuite, uint8_t* record,
       break;
   }
   return true;
+}
+
+void random_array(uint8_t** bytes, size_t length) {
+  GPR_ASSERT(bytes != nullptr);
+  *bytes = (uint8_t*)gpr_malloc(length * sizeof(uint8_t));
+  for (size_t i = 0; i < length; i++) {
+    (*bytes)[i] = static_cast<uint8_t>(rand() % 255 + 1);
+  }
+}
+
+void send_random_message(size_t message_size, s2a_crypter* out_crypter,
+                         s2a_crypter* in_crypter) {
+  GPR_ASSERT(out_crypter != nullptr && in_crypter != nullptr);
+  GPR_ASSERT(out_crypter != in_crypter);
+  GPR_ASSERT(message_size <=
+             SSL3_RT_MAX_PLAIN_LENGTH + s2a_max_record_overhead(out_crypter));
+  uint8_t* message = nullptr;
+  random_array(&message, message_size);
+  if (message_size > 0) {
+    GPR_ASSERT(message != nullptr);
+  }
+
+  size_t record_allocated_size =
+      message_size + s2a_max_record_overhead(out_crypter);
+  uint8_t* record =
+      (uint8_t*)gpr_malloc(record_allocated_size * sizeof(uint8_t));
+  size_t record_size;
+
+  char* error_details = nullptr;
+  grpc_status_code encrypt_status =
+      s2a_encrypt(out_crypter, message, message_size, record,
+                  record_allocated_size, &record_size, &error_details);
+  GPR_ASSERT(encrypt_status == GRPC_STATUS_OK);
+  GPR_ASSERT(error_details == nullptr);
+  GPR_ASSERT(record_size == expected_message_size(message_size));
+
+  size_t plaintext_allocated_size =
+      s2a_max_plaintext_size(in_crypter, record_size);
+  uint8_t* plaintext =
+      (uint8_t*)gpr_malloc(plaintext_allocated_size * sizeof(uint8_t));
+  size_t plaintext_size;
+/**  s2a_decrypt_status decrypt_status =
+      s2a_decrypt(in_crypter, record, record_size, plaintext,
+                  plaintext_allocated_size, &plaintext_size, &error_details);
+  GPR_ASSERT(decrypt_status == OK);
+  GPR_ASSERT(error_details == nullptr);
+  GPR_ASSERT(plaintext_size == message_size);
+  GPR_ASSERT(memcmp(plaintext, message, plaintext_size) == 0);
+**/
+  // Cleanup.
+  gpr_free(message);
+  gpr_free(record);
+  gpr_free(plaintext);
+}
+
+grpc_status_code create_random_crypter_pair(TLSCiphersuite ciphersuite,
+                                s2a_crypter** crypter_one,
+                                s2a_crypter** crypter_two,
+                                grpc_channel* channel) {
+  if (ciphersuite == TLS_CHACHA20_POLY1305_SHA256_ciphersuite) {
+    return GRPC_STATUS_UNIMPLEMENTED;
+  }
+
+  size_t key_size;
+  size_t nonce_size;
+  uint16_t tls_ciphersuite;
+  switch (ciphersuite) {
+    case TLS_AES_128_GCM_SHA256_ciphersuite:
+      tls_ciphersuite = TLS_AES_128_GCM_SHA256;
+      key_size = TLS_AES_128_GCM_SHA256_KEY_SIZE;
+      nonce_size = TLS_AES_128_GCM_SHA256_NONCE_SIZE;
+      break;
+    case TLS_AES_256_GCM_SHA384_ciphersuite:
+      tls_ciphersuite = TLS_AES_256_GCM_SHA384;
+      key_size = TLS_AES_256_GCM_SHA384_KEY_SIZE;
+      nonce_size = TLS_AES_256_GCM_SHA384_NONCE_SIZE;
+      break;
+    case TLS_CHACHA20_POLY1305_SHA256_ciphersuite:
+      tls_ciphersuite = TLS_CHACHA20_POLY1305_SHA256;
+      key_size = TLS_CHACHA20_POLY1305_SHA256_KEY_SIZE;
+      nonce_size = TLS_CHACHA20_POLY1305_SHA256_NONCE_SIZE;
+      break;
+    default:
+      return GRPC_STATUS_INVALID_ARGUMENT;
+  }
+  uint8_t* key_one;
+  uint8_t* key_two;
+  uint8_t* nonce_one;
+  uint8_t* nonce_two;
+  random_array(&key_one, key_size);
+  random_array(&key_two, key_size);
+  random_array(&nonce_one, nonce_size);
+  random_array(&nonce_two, nonce_size);
+
+  char* error_details = nullptr;
+  grpc_status_code in_status = s2a_crypter_create(/** tls_version **/ 0,
+                                                  tls_ciphersuite,
+                                                  key_one, key_two, key_size,
+                                                  nonce_one, nonce_two, nonce_size,
+                                                  channel, crypter_one, &error_details);
+  GPR_ASSERT(in_status == GRPC_STATUS_OK);
+
+  grpc_status_code out_status = s2a_crypter_create(/** tls_version **/ 0,
+                                                   tls_ciphersuite,
+                                                   key_two, key_one, key_size,
+                                                   nonce_two, nonce_one, nonce_size,
+                                                   channel, crypter_two, &error_details);
+  GPR_ASSERT(out_status == GRPC_STATUS_OK);
+
+  gpr_free(key_one);
+  gpr_free(key_two);
+  gpr_free(nonce_one);
+  gpr_free(nonce_two);
+  return GRPC_STATUS_OK;
 }

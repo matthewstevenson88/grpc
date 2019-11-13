@@ -71,5 +71,13 @@
   "1.3 record."
 #define S2A_PLAINTEXT_NULLPTR \
   "If |plaintext| is nullptr, then |plaintext_size| must be set to zero."
+#define S2A_RECORD_EXCEED_MAX_SIZE \
+  "The TLS 1.3 payload exceeds the maximum size."
+#define S2A_RECORD_HEADER_INCORRECT_FORMAT \
+  "The TLS 1.3 record header does not have the correct format."
+#define S2A_RECORD_INVALID_FORMAT "The format of the TLS 1.3 record is invalid."
+#define S2A_RECORD_SMALL_ALERT "The TLS 1.3 alert record is too small."
+#define S2A_RECORD_NULLPTR \
+  "If |record| is nullptr, then |record_size| must be set to zero."
 
 #endif  // GRPC_CORE_TSI_S2A_S2A_CONSTANTS_H

@@ -32,11 +32,34 @@
  *  functionality. The interface is thread-compatible. **/
 typedef struct s2a_crypter s2a_crypter;
 
+/** This status code is used when decrypting TLS 1.3 records using the S2A
+ *  record protocol. **/
+typedef enum {
+  OK,
+  INCOMPLETE_RECORD,      // No complete record found.
+  INVALID_RECORD,         // The record does not meet the TLS 1.3 format.
+  RENEGOTIATION_ATTEMPT,  // The peer attempted to renegotiate the handshake.
+  ALERT_CLOSE_NOTIFY,     // The record was a close-notify alert record.
+  ALERT_OTHER,     // The record was an alert record other than close-notify.
+  INTERNAL_ERROR,  // An unexpected error occured during decryption.
+  FAILED_PRECONDITION,  // A requirement for calling a method was not met.
+  UNIMPLEMENTED,        // An unimplemented operation was called.
+} s2a_decrypt_status;
+
 /** This function returns the max number of bytes that |crypter| requires to
  *  create a TLS 1.3 record, beyond the size of the plaintext. If |crypter| is
  *  nullptr or was not properly initialized, then this function returns zero.
  *  - crypter: an instance of s2a_crypter. **/
 size_t s2a_max_record_overhead(const s2a_crypter* crypter);
+
+/** This method returns the maximum size (in bytes) of the plaintext obtained by
+ *  decrypting a TLS 1.3 record of size |record_size| using |crypter|. This
+ *  method assumes that the record in question contains a TLS payload of type
+ *  "application data".
+ *  - crypter: an instance of s2a_crypter, which must have been initialized
+ *    using the s2a_crypter_create method.
+ *  - record_size: the size of the TLS record. **/
+int s2a_max_plaintext_size(const s2a_crypter* crypter, size_t record_size);
 
 /** Assume that the S2A record protocol is using one of the above ciphersuites.
  *  The structure of a TLS 1.3 record is described below:
@@ -88,8 +111,8 @@ size_t s2a_max_record_overhead(const s2a_crypter* crypter);
  *
  *  On success, the function returns GRPC_STATUS_OK; otherwise, |error_details|
  *  is populated with an error message, and it must be freed with gpr_free. **/
-grpc_status_code s2a_encrypt(s2a_crypter* crypter, unsigned char* plaintext,
-                             size_t plaintext_size, unsigned char* record,
+grpc_status_code s2a_encrypt(s2a_crypter* crypter, uint8_t* plaintext,
+                             size_t plaintext_size, uint8_t* record,
                              size_t record_allocated_size, size_t* record_size,
                              char** error_details);
 
@@ -104,6 +127,9 @@ grpc_status_code s2a_encrypt(s2a_crypter* crypter, unsigned char* plaintext,
  *  - plaintext: the start of the plaintext obtained from the TLS record; this
  *    points to a part of memory that is a part of |record| and, in particular,
  *    it is owned by the caller.
+ *  - plaintext_allocated_size: the size of the |plaintext| buffer; the caller
+ *    must ensure that it is at least
+ *      s2a_max_plaintext_size(crypter, record_size).
  *  - plaintext_size: the size (in btes) of the memory occupied by the
  *    plaintext after the function executes successfully; the caller must not
  *    pass in nullptr for this argument.
@@ -113,9 +139,10 @@ grpc_status_code s2a_encrypt(s2a_crypter* crypter, unsigned char* plaintext,
  *
  *  On success, the function returns GRPC_STATUS_OK; otherwise, |error_details|
  *  is populated with an error message, and it must be freed with gpr_free. **/
-grpc_status_code s2a_decrypt(s2a_crypter* crypter, unsigned char* record,
-                             size_t record_size, unsigned char* plaintext,
-                             size_t* plaintext_size, char** error_details);
+s2a_decrypt_status s2a_decrypt(s2a_crypter* crypter, uint8_t* record,
+                               size_t record_size, uint8_t* plaintext,
+                               size_t plaintext_allocated_size,
+                               size_t* plaintext_size, char** error_details);
 
 /** This method populates an s2a_crypter instance.
  *  - tls_version: the TLS version; the s2a_crypter only supports TLS 1.3.
@@ -205,6 +232,50 @@ void check_half_connection(s2a_crypter* crypter, bool in_half_connection,
 grpc_status_code s2a_write_tls13_record(
     s2a_crypter* crypter, uint8_t record_type, const iovec* unprotected_vec,
     size_t unprotected_vec_size, iovec protected_record, size_t* bytes_written,
+    char** error_details);
+
+/** This method returns the maximum size (in bytes) of the plaintext obtained by
+ *  decrypting |protected_vec| using |crypter|. This method assumes that
+ *  |protected_vec| contains a TLS payload of type "application data".
+ *  - crypter: an instance of s2a_crypter, which must have been initialized
+ *    using the s2a_crypter_create method.
+ *  - protected_vec: a pointer to a buffer of iovec's that contain the payload
+ *    of a TLS 1.3 record.
+ *  - protected_vec_size: the size of the |protected_vec| buffer. **/
+int s2a_max_plaintext_size(const s2a_crypter* crypter,
+                           const iovec* protected_vec,
+                           size_t protected_vec_size);
+
+/** This function decrypts and verifies the TLS 1.3 payload in |protected_vec|
+ *  using the incoming_aead_crypter of |crypter|, writes the resulting plaintext
+ *  to the buffer in |unprotected_vec|, and sets |bytes_written| to the size of
+ * the plaintext. The arguments of the decrypt function are detailed below:
+ *  - crypter: an instance of s2a_crypter, which must have been initialized
+ *    using the s2a_crypter_create method.
+ *  - record_header: an iovec that points to a buffer containing the record
+ * header and specifies the size of the buffer.
+ *  - protected_vec: a pointer to a buffer of iovec's that contain the payload
+ *    of the record.
+ *  - protected_vec_size: the size of the |protected_vec| buffer.
+ *  - unprotected_vec: an iovec that points to a buffer for the decrypted
+ *    plaintext and specifies the size allocated to that buffer; the caller must
+ *    ensure that this size is at least
+ *      s2a_max_plaintext_size(crypter, protected_vec, protected_vec_size).
+ *  - bytes_written: the size (in bytes) of the plaintext written to
+ *    |unprotected_vec| after the method executes successfully; the caller must
+ * not pass in nullptr for this argument.
+ *  - error_details: the error details generated when the execution of the
+ *    function fails; it is legal (and expected) for the caller to set
+ *    |error_details| to point to a nullptr.
+ *
+ *  On success, the function returns OK; otherwise, |error_details|
+ *  is populated with an error message, and it must be freed with gpr_free. If
+ *  |protected_vec| contained a key update request and this request is handled
+ *  successfully, then |unprotected_vec| is set to nullptr and |bytes_written|
+ * to zero. **/
+s2a_decrypt_status s2a_decrypt_record(
+    s2a_crypter* crypter, iovec& record_header, const iovec* protected_vec,
+    size_t protected_vec_size, iovec& unprotected_vec, size_t* bytes_written,
     char** error_details);
 
 #endif  //  GRPC_CORE_TSI_S2A_RECORD_PROTOCOL_S2A_CRYPTER_H

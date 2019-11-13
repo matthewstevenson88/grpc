@@ -60,9 +60,20 @@ bool check_encrypt_record(TLSCiphersuite ciphersuite, uint8_t* record_one,
 
 /** This method returns true if |record| and |record_size| match the TLS 1.3
  *  record obtained from an empty plaintext and using a crypter configured by
- * the output of the |create_example_session_state| method. Otherwise, this
- * method returns false. **/
+ *  the output of the |create_example_session_state| method. Otherwise, this
+ *  method returns false. **/
 bool check_record_empty_plaintext(TLSCiphersuite ciphersuite, uint8_t* record,
                                   size_t record_size, char** error_details);
+
+void send_random_message(size_t message_size, s2a_crypter* out_crypter,
+                         s2a_crypter* in_crypter);
+
+/** This method populates |crypter_one| and |crypter_two| with compatible, random
+ *  keys and nonces specified by |ciphersuite|. On success, it returns
+ *  GRPC_STATUS_OK. **/
+grpc_status_code create_random_crypter_pair(TLSCiphersuite ciphersuite,
+                                s2a_crypter** crypter_one,
+                                s2a_crypter** crypter_two,
+                                grpc_channel* channel);
 
 #endif  //  GRPC_TEST_CORE_TSI_S2A_RECORD_PROTOCOL_S2A_TEST_UTIL_H

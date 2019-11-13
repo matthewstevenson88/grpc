@@ -417,7 +417,8 @@ grpc_status_code s2a_write_tls13_record(
   uint8_t* additional_data =
       s2a_additional_data(sequence, /** sequence size **/ 8, record_header,
                           SSL3_RT_HEADER_LENGTH, payload_size);
-  iovec aad_vec = {(void*)(additional_data + 8), SSL3_RT_HEADER_LENGTH};
+  iovec aad_vec = {(void*)(additional_data + /** sequence size **/ 8),
+                   SSL3_RT_HEADER_LENGTH};
 
   /** The following constructs the nonce for the TLS payload in local
    *  storage. It is built by taking the fixed nonce from |crypter|'s
@@ -440,11 +441,12 @@ grpc_status_code s2a_write_tls13_record(
   iovec ciphertext = {(void*)ciphertext_buffer, payload_size};
 
   grpc_status_code encrypt_status = gsec_aead_crypter_encrypt_iovec(
-      crypter->out_aead_crypter, nonce, nonce_size, &aad_vec, 1,
-      data_for_processing_vec, unprotected_vec_size + 1, ciphertext,
-      &ciphertext_and_tag_size, error_details);
+      crypter->out_aead_crypter, nonce, nonce_size, &aad_vec,
+      /** aad_vec length **/ 1, data_for_processing_vec,
+      unprotected_vec_size + 1, ciphertext, &ciphertext_and_tag_size,
+      error_details);
 
-  // Cleanup.
+  // Cleanup of auxiliary data.
   gpr_free(additional_data);
   gpr_free(nonce);
 
@@ -470,6 +472,173 @@ grpc_status_code s2a_encrypt(s2a_crypter* crypter, uint8_t* plaintext,
   iovec plaintext_vec = {(void*)plaintext, plaintext_size};
   iovec record_vec = {(void*)record, record_allocated_size};
   return s2a_write_tls13_record(crypter, SSL3_RT_APPLICATION_DATA,
-                                &plaintext_vec, 1, record_vec, record_size,
-                                error_details);
+                                &plaintext_vec, /** plaintext_vec length **/ 1,
+                                record_vec, record_size, error_details);
+}
+
+int s2a_max_plaintext_size(const s2a_crypter* crypter, size_t record_size) {
+  GPR_ASSERT(crypter != nullptr);
+  /** Note that we require this method returns 1 more than the size of the
+   *  plaintext that is returned by decrypting a TLS 1.3 record of size
+   *  |record_size|; this is because |crypter| requires 1 byte of extra space
+   *  after the plaintext to decrypt the record type. **/
+  return record_size - SSL3_RT_HEADER_LENGTH - s2a_tag_size(crypter);
+}
+
+int s2a_max_plaintext_size(const s2a_crypter* crypter,
+                           const iovec* protected_vec,
+                           size_t protected_vec_size) {
+  GPR_ASSERT(crypter != nullptr);
+  /** Note that we require this method returns 1 more than the size of the
+   *  plaintext that is returned by decrypting the TLS 1.3 payload stored in
+   *  |protected_vec|; this is because |crypter| requires 1 byte of extra space
+   *  after the plaintext to decrypt the record type. **/
+  return get_total_length(protected_vec, protected_vec_size) -
+         s2a_tag_size(crypter);
+}
+
+s2a_decrypt_status s2a_decrypt_payload(
+    s2a_crypter* crypter, iovec& record_header, const iovec* protected_vec,
+    size_t protected_vec_size, iovec& unprotected_vec, size_t* bytes_written,
+    char** error_details) {
+  GPR_ASSERT(crypter != nullptr);
+  GPR_ASSERT(bytes_written != nullptr);
+  size_t payload_size = get_total_length(protected_vec, protected_vec_size);
+  if (payload_size > SSL3_RT_MAX_PLAIN_LENGTH + s2a_tag_size(crypter) +
+                         /** record type **/ 1) {
+    *error_details = gpr_strdup(S2A_RECORD_EXCEED_MAX_SIZE);
+    return INVALID_RECORD;
+  }
+  size_t expected_plaintext_and_record_byte_size =
+      payload_size - s2a_tag_size(crypter);
+
+  uint8_t sequence[8];
+  sequence_to_bytes(crypter->in_connection, sequence);
+  size_t nonce_size;
+  uint8_t* nonce =
+      s2a_nonce(crypter, sequence, /** sequence size **/ 8, &nonce_size);
+  uint8_t* additional_data = s2a_additional_data(
+      sequence, /** sequence size **/ 8, (uint8_t*)record_header.iov_base,
+      record_header.iov_len, payload_size);
+  iovec aad_vec = {(void*)(additional_data + /** sequence size **/ 8),
+                   record_header.iov_len};
+
+  grpc_status_code decrypt_status = gsec_aead_crypter_decrypt_iovec(
+      crypter->in_aead_crypter, nonce, nonce_size, &aad_vec,
+      /** aad_vec length **/ 1, protected_vec, protected_vec_size,
+      unprotected_vec, bytes_written, error_details);
+
+  // Cleanup of auxiliary data.
+  gpr_free(additional_data);
+  gpr_free(nonce);
+
+  if (decrypt_status != GRPC_STATUS_OK) {
+    return INTERNAL_ERROR;
+  }
+  GPR_ASSERT(bytes_written != nullptr);
+  GPR_ASSERT(expected_plaintext_and_record_byte_size == *bytes_written);
+  return OK;
+}
+
+s2a_decrypt_status s2a_decrypt_record(
+    s2a_crypter* crypter, iovec& record_header, const iovec* protected_vec,
+    size_t protected_vec_size, iovec& unprotected_vec, size_t* bytes_written,
+    char** error_details) {
+  GPR_ASSERT(crypter != nullptr);
+  GPR_ASSERT(bytes_written != nullptr);
+  GPR_ASSERT(
+      (int)unprotected_vec.iov_len >=
+      s2a_max_plaintext_size(crypter, protected_vec, protected_vec_size));
+  uint8_t* header = reinterpret_cast<uint8_t*>(record_header.iov_base);
+  const uint16_t wire_version = static_cast<uint16_t>(TLS1_2_VERSION);
+  size_t payload_size = get_total_length(protected_vec, protected_vec_size);
+  size_t expected_payload_size = (header[3] >> 8) + header[4];
+  if (record_header.iov_len != SSL3_RT_HEADER_LENGTH ||
+      header[0] != SSL3_RT_APPLICATION_DATA ||
+      header[1] != (wire_version >> 8) || header[2] != (wire_version & 0xff) ||
+      payload_size != expected_payload_size) {
+    *error_details = gpr_strdup(S2A_RECORD_HEADER_INCORRECT_FORMAT);
+    return INVALID_RECORD;
+  }
+
+  s2a_decrypt_status decrypt_status = s2a_decrypt_payload(
+      crypter, record_header, protected_vec, protected_vec_size,
+      unprotected_vec, bytes_written, error_details);
+  if (decrypt_status != OK) {
+    return decrypt_status;
+  }
+
+  uint8_t* plaintext = reinterpret_cast<uint8_t*>(unprotected_vec.iov_base);
+  /** Search for the nonzero trailing byte, which encodes the record type and is
+   *  appended to the plaintext. **/
+  size_t i;
+  for (i = *bytes_written - 1; i < *bytes_written; i--) {
+    if (plaintext[i] != 0) {
+      break;
+    }
+  }
+  if (i >= *bytes_written) {
+    *error_details = gpr_strdup(S2A_RECORD_INVALID_FORMAT);
+    return INVALID_RECORD;
+  }
+  uint8_t record_type = plaintext[i];
+  *bytes_written -= 1;
+
+  grpc_status_code increment_status =
+      increment_sequence(crypter->in_connection);
+  if (increment_status != GRPC_STATUS_OK) {
+    return INTERNAL_ERROR;
+  }
+
+  switch (record_type) {
+    case SSL3_RT_ALERT:
+      if (*bytes_written < 2) {
+        *error_details = gpr_strdup(S2A_RECORD_SMALL_ALERT);
+        return INVALID_RECORD;
+      }
+      if (plaintext[1] == SSL3_AD_CLOSE_NOTIFY) {
+        return ALERT_CLOSE_NOTIFY;
+      } else {
+        // TODO(mattstev): add finer parsing of other alert types.
+        return ALERT_OTHER;
+      }
+    case SSL3_RT_HANDSHAKE:
+      /** Check whether the plaintext is a key update message. **/
+      if (*bytes_written == 5 &&
+          memcmp(plaintext, "\x18\x00\x00\x01", 4) == 0 && plaintext[4] < 2) {
+        // TODO(mattstev): update keys. This can only be added once the traffic
+        // secret is stored. To do so, we require that the HKDF_expand function
+        // be added.
+        return UNIMPLEMENTED;
+      }
+      *error_details = gpr_strdup(S2A_RECORD_INVALID_FORMAT);
+      return INVALID_RECORD;
+    case SSL3_RT_APPLICATION_DATA:
+      /** There is nothing more to be done for an application data record. **/
+      break;
+    default:
+      *error_details = gpr_strdup(S2A_RECORD_INVALID_FORMAT);
+      return INVALID_RECORD;
+  }
+  return OK;
+}
+
+s2a_decrypt_status s2a_decrypt(s2a_crypter* crypter, uint8_t* record,
+                               size_t record_size, uint8_t* plaintext,
+                               size_t plaintext_allocated_size,
+                               size_t* plaintext_size, char** error_details) {
+  GPR_ASSERT((int)plaintext_allocated_size >=
+             s2a_max_plaintext_size(crypter, record_size));
+  if (record == nullptr && record_size > 0) {
+    *error_details = gpr_strdup(S2A_RECORD_NULLPTR);
+    return FAILED_PRECONDITION;
+  }
+  iovec plaintext_vec = {(void*)plaintext, plaintext_allocated_size};
+  iovec record_header = {(void*)record, SSL3_RT_HEADER_LENGTH};
+  GPR_ASSERT(record_size >= SSL3_RT_HEADER_LENGTH);
+  iovec payload_vec = {(void*)(record + SSL3_RT_HEADER_LENGTH),
+                       record_size - SSL3_RT_HEADER_LENGTH};
+  return s2a_decrypt_record(crypter, record_header, &payload_vec,
+                            /** payload_vec length **/ 1, plaintext_vec,
+                            plaintext_size, error_details);
 }
