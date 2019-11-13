@@ -71,5 +71,7 @@
   "1.3 record."
 #define S2A_PLAINTEXT_NULLPTR \
   "If |plaintext| is nullptr, then |plaintext_size| must be set to zero."
+#define S2A_INVALID_UNPROTECTED_VEC \
+  "Ensure |unprotected_vec| is nullptr iff |unprotected_vec_size| = 0."
 
 #endif  // GRPC_CORE_TSI_S2A_S2A_CONSTANTS_H

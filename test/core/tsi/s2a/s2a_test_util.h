@@ -60,8 +60,8 @@ bool check_encrypt_record(TLSCiphersuite ciphersuite, uint8_t* record_one,
 
 /** This method returns true if |record| and |record_size| match the TLS 1.3
  *  record obtained from an empty plaintext and using a crypter configured by
- * the output of the |create_example_session_state| method. Otherwise, this
- * method returns false. **/
+ *  the output of the |create_example_session_state| method. Otherwise, this
+ *  method returns false. **/
 bool check_record_empty_plaintext(TLSCiphersuite ciphersuite, uint8_t* record,
                                   size_t record_size, char** error_details);
 

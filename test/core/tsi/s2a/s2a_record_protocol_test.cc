@@ -351,6 +351,18 @@ static void test_encrypt_record_success(TLSCiphersuite ciphersuite) {
   gpr_free(record);
 }
 
+static void encrypt_and_verify(s2a_crypter* crypter, uint8_t* plaintext,
+                               size_t plaintext_size, uint8_t* record,
+                               size_t record_allocated_size,
+                               size_t* record_size, char** error_details) {
+  grpc_status_code status =
+      s2a_encrypt(crypter, plaintext, plaintext_size, record,
+                  record_allocated_size, record_size, error_details);
+  GPR_ASSERT(status == GRPC_STATUS_OK);
+  GPR_ASSERT(*record_size == expected_message_size(plaintext_size));
+  GPR_ASSERT(*error_details == nullptr);
+}
+
 static void test_encrypt_three_records(TLSCiphersuite ciphersuite) {
   s2a_crypter* crypter = nullptr;
   grpc_channel* channel = grpc_core::New<grpc_channel>();
@@ -379,12 +391,9 @@ static void test_encrypt_three_records(TLSCiphersuite ciphersuite) {
   uint8_t* record_one =
       (uint8_t*)gpr_malloc(record_one_allocated_size * sizeof(uint8_t));
   size_t record_one_size;
-  grpc_status_code encrypt_one_status = s2a_encrypt(
-      crypter, test_plaintext_one, test_plaintext_one_size - 1, record_one,
-      record_one_allocated_size, &record_one_size, &error_details);
-  GPR_ASSERT(encrypt_one_status == GRPC_STATUS_OK);
-  GPR_ASSERT(record_one_size ==
-             expected_message_size(test_plaintext_one_size - 1));
+  encrypt_and_verify(crypter, test_plaintext_one, test_plaintext_one_size - 1,
+                     record_one, record_one_allocated_size, &record_one_size,
+                     &error_details);
 
   const size_t test_plaintext_two_size = 10;
   uint8_t test_plaintext_two[test_plaintext_two_size] = "789123456";
@@ -393,12 +402,9 @@ static void test_encrypt_three_records(TLSCiphersuite ciphersuite) {
   uint8_t* record_two =
       (uint8_t*)gpr_malloc(record_two_allocated_size * sizeof(uint8_t));
   size_t record_two_size;
-  grpc_status_code encrypt_two_status = s2a_encrypt(
-      crypter, test_plaintext_two, test_plaintext_two_size - 1, record_two,
-      record_two_allocated_size, &record_two_size, &error_details);
-  GPR_ASSERT(encrypt_two_status == GRPC_STATUS_OK);
-  GPR_ASSERT(record_two_size ==
-             expected_message_size(test_plaintext_two_size - 1));
+  encrypt_and_verify(crypter, test_plaintext_two, test_plaintext_two_size - 1,
+                     record_two, record_two_allocated_size, &record_two_size,
+                     &error_details);
 
   const size_t test_plaintext_three_size = 5;
   uint8_t test_plaintext_three[test_plaintext_three_size] = "7891";
@@ -407,13 +413,11 @@ static void test_encrypt_three_records(TLSCiphersuite ciphersuite) {
   uint8_t* record_three =
       (uint8_t*)gpr_malloc(record_three_allocated_size * sizeof(uint8_t));
   size_t record_three_size;
-  grpc_status_code encrypt_three_status =
-      s2a_encrypt(crypter, test_plaintext_three, test_plaintext_three_size - 1,
-                  record_three, record_three_allocated_size, &record_three_size,
-                  &error_details);
-  GPR_ASSERT(encrypt_three_status == GRPC_STATUS_OK);
-  GPR_ASSERT(record_three_size ==
-             expected_message_size(test_plaintext_three_size - 1));
+  encrypt_and_verify(crypter, test_plaintext_three,
+                     test_plaintext_three_size - 1, record_three,
+                     record_three_allocated_size, &record_three_size,
+                     &error_details);
+
   bool correct_encrypted_record = check_encrypt_record(
       ciphersuite, record_one, record_one_size, record_two, record_two_size,
       record_three, record_three_size, &error_details);

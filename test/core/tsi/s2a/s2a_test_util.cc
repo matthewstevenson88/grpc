@@ -23,6 +23,9 @@
 #include "src/core/tsi/s2a/record_protocol/s2a_crypter_util.h"
 #include "src/core/tsi/s2a/s2a_constants.h"
 
+/** The following buffers were generated using a different TLS 1.3
+ *  implementation. The keys and nonces are derived from the traffic secret
+ *  "kkkk...k", with the length determined by the ciphersuite. **/
 uint8_t aes_128_gcm_key_bytes[17] = {0xc3, 0xae, 0x75, 0x09, 0xcf, 0xce,
                                      0xd2, 0xb8, 0x03, 0xa6, 0x18, 0x69,
                                      0x56, 0xcd, 0xa7, 0x9f, 0x00};
@@ -41,6 +44,8 @@ uint8_t aes_256_gcm_nonce_bytes[13] = {0x4d, 0xb1, 0x52, 0xd2, 0x7d, 0x18, 0x0b,
 uint8_t chacha_poly_nonce_bytes[13] = {0xb5, 0x80, 0x3d, 0x82, 0xad, 0x88, 0x54,
                                        0xd2, 0xe5, 0x98, 0x18, 0x7f, 0x00};
 
+/** The record_one buffers are obtained by encrypting the plaintext "123456"
+ *  using the above keys and sequence number 0. **/
 const size_t correct_record_one_size = 28;
 uint8_t aes_128_gcm_record_one_bytes[correct_record_one_size] = {
     0x17, 0x03, 0x03, 0x00, 0x17, 0xf2, 0xe4, 0xe4, 0x11, 0xac,
@@ -55,6 +60,8 @@ uint8_t chacha_poly_record_one_bytes[correct_record_one_size] = {
     0x30, 0x43, 0x70, 0x33, 0x8b, 0xb0, 0x7c, 0xe4, 0x68, 0xe6,
     0xb8, 0xa0, 0x94, 0x4a, 0x33, 0x8b, 0xa4, 0x02};
 
+/** The record_two buffers are obtained by encrypting the plaintext "789123456"
+ *  using the above keys and sequence number 1. **/
 const size_t correct_record_two_size = 31;
 uint8_t aes_128_gcm_record_two_bytes[correct_record_two_size] = {
     0x17, 0x03, 0x03, 0x00, 0x1a, 0xd7, 0x85, 0x3a, 0xfd, 0x6d, 0x7c,
@@ -69,6 +76,8 @@ uint8_t chacha_poly_record_two_bytes[correct_record_two_size] = {
     0xc1, 0x10, 0xc1, 0x72, 0x26, 0x25, 0x42, 0xc6, 0x79, 0x16, 0xb7,
     0x8f, 0xa0, 0xd1, 0xc1, 0x26, 0x17, 0x09, 0xcd, 0x00};
 
+/** The record_three buffers are obtained by encrypting the plaintext "7891"
+ *  using the above keys and the sequence number 2. **/
 const size_t correct_record_three_size = 26;
 uint8_t aes_128_gcm_record_three_bytes[correct_record_three_size] = {
     0x17, 0x03, 0x03, 0x00, 0x15, 0xaf, 0x77, 0x8b, 0xe,
@@ -83,6 +92,8 @@ uint8_t chacha_poly_record_three_bytes[correct_record_three_size] = {
     0xcf, 0x1d, 0xc6, 0x95, 0x09, 0x49, 0x41, 0xab, 0xa1,
     0x6c, 0x6c, 0x24, 0x30, 0x5c, 0xc8, 0x40, 0x8a};
 
+/** The empty_record buffers are obtained by encrypting an empty plaintext using
+ *  the above keys and the sequence number 0. **/
 const size_t empty_record_size = 22;
 uint8_t aes_128_gcm_empty_record_bytes[empty_record_size] = {
     0x17, 0x03, 0x03, 0x00, 0x11, 0xd4, 0x7c, 0xb2, 0xec, 0x04, 0x0f,
