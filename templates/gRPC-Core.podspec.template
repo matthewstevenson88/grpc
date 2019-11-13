@@ -30,16 +30,18 @@
           out += lib.get(group, [])
     return sorted(out)
 
+  grpc_libs = ("grpc", "gpr", "upb")
+
   def grpc_private_files(libs):
-    out = grpc_lib_files(libs, ("grpc", "gpr"), ("headers", "src"))
+    out = grpc_lib_files(libs, grpc_libs, ("headers", "src"))
     return out
 
   def grpc_public_headers(libs):
-    out = grpc_lib_files(libs, ("grpc", "gpr"), ("public_headers",))
+    out = grpc_lib_files(libs, grpc_libs, ("public_headers",))
     return out
 
   def grpc_private_headers(libs):
-    out = grpc_lib_files(libs, ("grpc", "gpr"), ("headers",))
+    out = grpc_lib_files(libs, grpc_libs, ("headers",))
     return out
 
   def grpc_cronet_files(libs):
@@ -172,7 +174,7 @@
       ss.header_mappings_dir = '.'
       ss.libraries = 'z'
       ss.dependency "#{s.name}/Interface", version
-      ss.dependency 'BoringSSL-GRPC', '0.0.4'
+      ss.dependency 'BoringSSL-GRPC', '0.0.5'
       ss.compiler_flags = '-DGRPC_SHADOW_BORINGSSL_SYMBOLS'
 
       ss.source_files = ${ruby_multiline_list(grpc_private_files(libs), 22)}

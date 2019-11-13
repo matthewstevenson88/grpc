@@ -11,10 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Desired cancellation status for canceling an ongoing RPC calls."""
 
-cimport cpython
 
-cdef struct CallbackContext:
-    grpc_experimental_completion_queue_functor functor
-    cpython.PyObject *waiter
+cdef class AioCancelStatus:
+    cdef readonly:
+        object _code
+        str _details
 
+    cpdef object code(self)
+    cpdef str details(self)
