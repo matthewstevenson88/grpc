@@ -24,6 +24,8 @@
 #include "src/core/lib/iomgr/exec_ctx.h"
 #include "src/core/lib/slice/slice_internal.h"
 #include "src/core/tsi/alts/handshaker/alts_tsi_utils.h"
+// TODO: is constants include necessary?
+#include "src/core/tsi/s2a/s2a_constants.h"
 #include "src/core/tsi/s2a/frame_protector/s2a_frame_protector.h"
 #include "src/core/tsi/s2a/record_protocol/s2a_crypter.h"
 
@@ -32,8 +34,11 @@ typedef struct s2a_zero_copy_grpc_protector {
   s2a_crypter* crypter;
   size_t max_protected_frame_size;
   size_t max_unprotected_data_size;
+  // TODO: comment on what these are!
+  grpc_slice_buffer protected_sb;
   grpc_slice_buffer protected_staging_sb;
   grpc_slice_buffer unprotected_staging_sb;
+  uint64_t current_frame_size;
 } s2a_zero_copy_grpc_protector;
 
 /** --- tsi_zero_copy_grpc_protector methods implementation. --- **/
@@ -45,15 +50,13 @@ static tsi_result s2a_zero_copy_grpc_protector_protect(
       protected_slices == nullptr) {
     gpr_log(
         GPR_ERROR,
-        "Invalid nullptr arguments to s2a_zero_copy_grpc_protector_protect.");
+        "Invalid nullptr arguments to |s2a_zero_copy_grpc_protector_protect|.");
     return TSI_INVALID_ARGUMENT;
   }
   s2a_zero_copy_grpc_protector* protector =
       reinterpret_cast<s2a_zero_copy_grpc_protector*>(self);
   char* error_details = nullptr;
 
-  // TODO: make sure it's ok that protected_slices will consist of a bunch of
-  // complete TLS records appended to one another.
   while (unprotected_slices->length > protector->max_unprotected_data_size) {
     grpc_slice_buffer_move_first(unprotected_slices,
                                  protector->max_unprotected_data_size,
@@ -80,8 +83,25 @@ static tsi_result s2a_zero_copy_grpc_protector_protect(
 static tsi_result s2a_zero_copy_grpc_protector_unprotect(
     tsi_zero_copy_grpc_protector* self, grpc_slice_buffer* protected_slices,
     grpc_slice_buffer* unprotected_slices) {
-  // TODO(mattstev): implement.
-  return TSI_UNIMPLEMENTED;
+  if (self == nullptr || protected_slices == nullptr || unprotected_slices == nullptr) {
+    gpr_log(GPR_ERROR, "Invalid nullptr arguments to |s2a_zero_copy_grpc_protector_unprotect|.");
+    return TSI_INVALID_ARGUMENT;
+  }
+  s2a_zero_copy_grpc_protector* protector =
+      reinterpret_cast<s2a_zero_copy_grpc_protector*>(self);
+  char* error_details = nullptr;
+
+  while (protector->protected_sb.length >= ...) {
+    if (protector->current_frame_size == 0) {
+
+    }
+    if (protector->protected_sb.length < protector->current_frame_size) {
+      break;
+    }
+    tsi_result status;
+
+  }
+  return TSI_OK;
 }
 
 static void s2a_zero_copy_grpc_protector_destroy(
@@ -124,7 +144,7 @@ tsi_result s2a_zero_copy_grpc_protector_create(
       channel == nullptr || protector == nullptr) {
     gpr_log(
         GPR_ERROR,
-        "Invalid nullptr arguments to s2a_zero_copy_grpc_protector_create.");
+        "Invalid nullptr arguments to |s2a_zero_copy_grpc_protector_create|.");
     return TSI_INVALID_ARGUMENT;
   }
   s2a_zero_copy_grpc_protector* impl =
@@ -150,8 +170,10 @@ tsi_result s2a_zero_copy_grpc_protector_create(
   impl->max_protected_frame_size =
       s2a_max_plaintext_size(crypter) + s2a_max_record_overhead(crypter);
   impl->max_unprotected_data_size = s2a_max_plaintext_size(crypter);
+  grpc_slice_buffer_init(&(impl->protected_sb));
   grpc_slice_buffer_init(&(impl->protected_staging_sb));
   grpc_slice_buffer_init(&(impl->unprotected_staging_sb));
+  impl->current_frame_size = 0;
   impl->base.vtable = &s2a_zero_copy_grpc_protector_vtable;
   *protector = &(impl->base);
   return TSI_OK;

@@ -234,9 +234,16 @@ grpc_status_code s2a_protect_record(s2a_crypter* crypter, uint8_t record_type,
                                     grpc_slice_buffer* protected_slices,
                                     char** error_details);
 
+// TODO: this no longer needs to be exposed now?
 s2a_decrypt_status s2a_decrypt_record(
     s2a_crypter* crypter, iovec& record_header, const iovec* protected_vec,
     size_t protected_vec_size, iovec& unprotected_vec, size_t* bytes_written,
     char** error_details);
+
+// TODO: add comments.
+s2a_decrypt_status s2a_unprotect_record(s2a_crypter* crypter,
+                                      grpc_slice_buffer* protected_slices,
+                                      grpc_slice_buffer* unprotected_slices,
+                                      char** error_details);
 
 #endif  //  GRPC_CORE_TSI_S2A_RECORD_PROTOCOL_S2A_CRYPTER_H

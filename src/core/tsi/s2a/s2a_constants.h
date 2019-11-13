@@ -73,5 +73,6 @@
   "If |plaintext| is nullptr, then |plaintext_size| must be set to zero."
 #define S2A_INVALID_UNPROTECTED_VEC \
   "Ensure |unprotected_vec| is nullptr iff |unprotected_vec_size| = 0."
+#define S2A_RECORD_INCOMPLETE "The TLS record is incomplete."
 
 #endif  // GRPC_CORE_TSI_S2A_S2A_CONSTANTS_H
