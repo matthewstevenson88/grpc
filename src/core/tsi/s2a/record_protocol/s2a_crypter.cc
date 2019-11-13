@@ -79,9 +79,7 @@ static grpc_status_code assign_crypter(bool in, uint8_t* derived_key,
           error_details);
       break;
     default:
-      *error_details = gpr_strdup(
-          "The crypter's ciphersuite is not supported; cannot initialize AEAD "
-          "crypter.");
+      *error_details = gpr_strdup(S2A_UNSUPPORTED_CIPHERSUITE);
       return GRPC_STATUS_FAILED_PRECONDITION;
   }
   if (aead_crypter_status != GRPC_STATUS_OK) {
@@ -504,13 +502,9 @@ s2a_decrypt_status s2a_decrypt_payload(
   GPR_ASSERT(crypter != nullptr);
   GPR_ASSERT(bytes_written != nullptr);
   size_t payload_size = get_total_length(protected_vec, protected_vec_size);
-  if (payload_size > SSL3_RT_MAX_PLAIN_LENGTH + s2a_tag_size(crypter) +
-                         /** record type **/ 1) {
-    *error_details = gpr_strdup(S2A_RECORD_EXCEED_MAX_SIZE);
-    return INVALID_RECORD;
-  }
   size_t expected_plaintext_and_record_byte_size =
       payload_size - s2a_tag_size(crypter);
+  GPR_ASSERT(expected_plaintext_and_record_byte_size <= SSL3_RT_MAX_PLAIN_LENGTH + /** record byte **/ 1);
 
   uint8_t sequence[8];
   sequence_to_bytes(crypter->in_connection, sequence);
@@ -552,7 +546,16 @@ s2a_decrypt_status s2a_decrypt_record(
   uint8_t* header = reinterpret_cast<uint8_t*>(record_header.iov_base);
   const uint16_t wire_version = static_cast<uint16_t>(TLS1_2_VERSION);
   size_t payload_size = get_total_length(protected_vec, protected_vec_size);
-  size_t expected_payload_size = (header[3] >> 8) + header[4];
+  if (payload_size > SSL3_RT_MAX_PLAIN_LENGTH + s2a_tag_size(crypter) +
+                         /** record type **/ 1) {
+    /** If the plaintext size exceeds the max allowed, the TLS 1.3 RFC demands
+     *  that the record protocol returns a "record overflow" alert and that the
+     *  connection be terminated; for more details, see
+     *  https://tools.ietf.org/html/rfc8446#section-5.2 . **/
+    *error_details = gpr_strdup(S2A_RECORD_EXCEED_MAX_SIZE);
+    return ALERT_RECORD_OVERFLOW;
+  }
+  size_t expected_payload_size = (header[3] << 8) + header[4];
   if (record_header.iov_len != SSL3_RT_HEADER_LENGTH ||
       header[0] != SSL3_RT_APPLICATION_DATA ||
       header[1] != (wire_version >> 8) || header[2] != (wire_version & 0xff) ||

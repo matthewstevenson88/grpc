@@ -40,6 +40,7 @@ typedef enum {
   INVALID_RECORD,         // The record does not meet the TLS 1.3 format.
   RENEGOTIATION_ATTEMPT,  // The peer attempted to renegotiate the handshake.
   ALERT_CLOSE_NOTIFY,     // The record was a close-notify alert record.
+  ALERT_RECORD_OVERFLOW,  // The record size is too large.
   ALERT_OTHER,     // The record was an alert record other than close-notify.
   INTERNAL_ERROR,  // An unexpected error occured during decryption.
   FAILED_PRECONDITION,  // A requirement for calling a method was not met.
@@ -249,11 +250,11 @@ int s2a_max_plaintext_size(const s2a_crypter* crypter,
 /** This function decrypts and verifies the TLS 1.3 payload in |protected_vec|
  *  using the incoming_aead_crypter of |crypter|, writes the resulting plaintext
  *  to the buffer in |unprotected_vec|, and sets |bytes_written| to the size of
- * the plaintext. The arguments of the decrypt function are detailed below:
+ *  the plaintext. The arguments of the decrypt function are detailed below:
  *  - crypter: an instance of s2a_crypter, which must have been initialized
  *    using the s2a_crypter_create method.
  *  - record_header: an iovec that points to a buffer containing the record
- * header and specifies the size of the buffer.
+ *  header and specifies the size of the buffer.
  *  - protected_vec: a pointer to a buffer of iovec's that contain the payload
  *    of the record.
  *  - protected_vec_size: the size of the |protected_vec| buffer.
@@ -263,7 +264,7 @@ int s2a_max_plaintext_size(const s2a_crypter* crypter,
  *      s2a_max_plaintext_size(crypter, protected_vec, protected_vec_size).
  *  - bytes_written: the size (in bytes) of the plaintext written to
  *    |unprotected_vec| after the method executes successfully; the caller must
- * not pass in nullptr for this argument.
+ *  not pass in nullptr for this argument.
  *  - error_details: the error details generated when the execution of the
  *    function fails; it is legal (and expected) for the caller to set
  *    |error_details| to point to a nullptr.
@@ -272,7 +273,7 @@ int s2a_max_plaintext_size(const s2a_crypter* crypter,
  *  is populated with an error message, and it must be freed with gpr_free. If
  *  |protected_vec| contained a key update request and this request is handled
  *  successfully, then |unprotected_vec| is set to nullptr and |bytes_written|
- * to zero. **/
+ *  to zero. **/
 s2a_decrypt_status s2a_decrypt_record(
     s2a_crypter* crypter, iovec& record_header, const iovec* protected_vec,
     size_t protected_vec_size, iovec& unprotected_vec, size_t* bytes_written,
