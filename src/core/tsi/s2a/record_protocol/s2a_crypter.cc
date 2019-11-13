@@ -342,6 +342,14 @@ static grpc_status_code s2a_write_tls13_record_header(uint8_t record_type,
   return GRPC_STATUS_OK;
 }
 
+/** This method returns a buffer of additional data bytes used for
+ *  authenticating a TLS 1.3 record; the caller must free the buffer using
+ *  gpr_free.
+ *  - sequence: a buffer containing the sequence number of a half connection.
+ *  - sequence_size: the size (in bytes) of the |sequence| buffer.
+ *  - record_header: a buffer containing the header of a TLS 1.3 record.
+ *  - header_size: the size (in bytes) of the |record_header| buffer.
+ *  - payload_size: the size (in bytes) of the payload of a TLS 1.3 record. **/
 static uint8_t* s2a_additional_data(uint8_t* sequence, size_t sequence_size,
                                     uint8_t* record_header, size_t header_size,
                                     size_t payload_size) {
@@ -356,6 +364,14 @@ static uint8_t* s2a_additional_data(uint8_t* sequence, size_t sequence_size,
   return additional_data;
 }
 
+/** This method returns a buffer populated with the nonce used for
+ *  encrypting and decrypting a TLS 1.3 record; the caller must free
+ *  the buffer using gpr_free.
+ *  - crypter: an instance of s2a_crypter.
+ *  - sequence: a buffer containing the sequence number of a half connection.
+ *  - sequence_size: the size (in bytes) of the |sequence| buffer.
+ *  - nonce_size: the number of bytes written to the nonce buffer that is
+ *    returned by the method. **/
 static uint8_t* s2a_nonce(s2a_crypter* crypter, uint8_t* sequence,
                           size_t sequence_size, size_t* nonce_size) {
   GPR_ASSERT(crypter != nullptr);
@@ -384,6 +400,11 @@ grpc_status_code s2a_write_tls13_record(
   GPR_ASSERT(bytes_written != nullptr);
   if (unprotected_vec == nullptr || unprotected_vec_size == 0) {
     GPR_ASSERT(unprotected_vec == nullptr && unprotected_vec_size == 0);
+  }
+  if ((unprotected_vec == nullptr && unprotected_vec_size > 0) ||
+      (unprotected_vec != nullptr && unprotected_vec_size == 0)) {
+    *error_details = gpr_strdup(S2A_INVALID_UNPROTECTED_VEC);
+    return GRPC_STATUS_FAILED_PRECONDITION;
   }
   size_t plaintext_size =
       get_total_length(unprotected_vec, unprotected_vec_size);
