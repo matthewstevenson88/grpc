@@ -400,9 +400,6 @@ grpc_status_code s2a_write_tls13_record(
   GPR_ASSERT(crypter->out_connection->initialized);
   GPR_ASSERT(protected_record.iov_base != nullptr);
   GPR_ASSERT(bytes_written != nullptr);
-  if (unprotected_vec == nullptr || unprotected_vec_size == 0) {
-    GPR_ASSERT(unprotected_vec == nullptr && unprotected_vec_size == 0);
-  }
   if ((unprotected_vec == nullptr && unprotected_vec_size > 0) ||
       (unprotected_vec != nullptr && unprotected_vec_size == 0)) {
     *error_details = gpr_strdup(S2A_INVALID_UNPROTECTED_VEC);
