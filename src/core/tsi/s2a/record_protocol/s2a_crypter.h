@@ -196,7 +196,8 @@ void check_half_connection(s2a_crypter* crypter, bool in_half_connection,
  *    for the TLS record and the size of the memory allocated to this record;
  *    the caller must ensure that the size allocated to the record is at least
  *        |plaintext_size| + s2a_max_record_overhead(crypter),
- *    otherwise the method returns GRPC_STATUS_FAILED_PRECONDITION.
+ *    otherwise the method returns GRPC_STATUS_FAILED_PRECONDITION. Further, the
+ *    caller must ensure that the base of |protected_record| is not nullptr.
  *  - bytes_written: the number of bytes written to |protected_record| after the
  *    function executes successfully; the caller must not pass in
  *    nullptr for this argument.

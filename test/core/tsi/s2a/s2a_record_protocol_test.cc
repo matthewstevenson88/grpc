@@ -81,7 +81,7 @@ static void test_incorrect_tls_version() {
       TLS_AES_128_GCM_SHA256_NONCE_SIZE, channel, &crypter, &error_details);
   GPR_ASSERT(status == GRPC_STATUS_FAILED_PRECONDITION);
   int correct_error_message =
-      strcmp(error_details, "S2A does not support the desired TLS version.");
+      strcmp(error_details, S2A_UNSUPPORTED_TLS_VERSION);
   GPR_ASSERT(correct_error_message == 0);
 
   // Cleanup.
@@ -103,9 +103,7 @@ static void test_incorrect_key_size() {
       derived_out_nonce, TLS_AES_128_GCM_SHA256_NONCE_SIZE, channel, &crypter,
       &error_details);
   GPR_ASSERT(status == GRPC_STATUS_FAILED_PRECONDITION);
-  int correct_error_message = strcmp(error_details,
-                                     "The size of the provisioned keys does "
-                                     "not match the ciphersuite key size.");
+  int correct_error_message = strcmp(error_details, S2A_KEY_SIZE_MISMATCH);
   GPR_ASSERT(correct_error_message == 0);
 
   // Cleanup.
@@ -164,8 +162,8 @@ static void test_create_crypter_success(TLSCiphersuite ciphersuite) {
       setup_crypter(ciphersuite, channel, &crypter, &error_details);
   if (ciphersuite == TLS_CHACHA20_POLY1305_SHA256_ciphersuite) {
     GPR_ASSERT(status == GRPC_STATUS_UNIMPLEMENTED);
-    int correct_error_message = strcmp(
-        error_details, "The CHACHA-POLY AEAD crypter is not yet implemented.");
+    int correct_error_message =
+        strcmp(error_details, S2A_CHACHA_POLY_UNIMPLEMENTED);
     GPR_ASSERT(correct_error_message == 0);
 
     // Cleanup.
@@ -254,8 +252,8 @@ static void test_encrypt_record_bad_size(TLSCiphersuite ciphersuite) {
       setup_crypter(ciphersuite, channel, &crypter, &error_details);
   if (ciphersuite == TLS_CHACHA20_POLY1305_SHA256_ciphersuite) {
     GPR_ASSERT(status == GRPC_STATUS_UNIMPLEMENTED);
-    int correct_error_message = strcmp(
-        error_details, "The CHACHA-POLY AEAD crypter is not yet implemented.");
+    int correct_error_message =
+        strcmp(error_details, S2A_CHACHA_POLY_UNIMPLEMENTED);
     GPR_ASSERT(correct_error_message == 0);
 
     // Cleanup.
@@ -268,21 +266,19 @@ static void test_encrypt_record_bad_size(TLSCiphersuite ciphersuite) {
   GPR_ASSERT(error_details == nullptr);
 
   /** Test the case when the memory allocated for the record is insufficient.**/
-  size_t test_plaintext_size = 7;
-  uint8_t test_plaintext[7] = "123456";
-  uint8_t* test_plaintext_pointer = test_plaintext;
+  const size_t test_plaintext_size = 7;
+  uint8_t test_plaintext[test_plaintext_size] = "123456";
   size_t record_allocated_size =
       test_plaintext_size - 2 + s2a_max_record_overhead(crypter);
   uint8_t* record =
       (uint8_t*)gpr_malloc(record_allocated_size * sizeof(uint8_t));
   size_t record_size;
   grpc_status_code insufficient_memory_status =
-      s2a_encrypt(crypter, test_plaintext_pointer, test_plaintext_size, record,
+      s2a_encrypt(crypter, test_plaintext, test_plaintext_size - 1, record,
                   record_allocated_size, &record_size, &error_details);
   GPR_ASSERT(insufficient_memory_status == GRPC_STATUS_FAILED_PRECONDITION);
-  int correct_error_message = strcmp(error_details,
-                                     "The plaintext size is too large to fit "
-                                     "in the allocated TLS 1.3 record.");
+  int correct_error_message =
+      strcmp(error_details, S2A_PLAINTEXT_INSUFFICIENT_RECORD_SIZE);
   GPR_ASSERT(correct_error_message == 0);
   gpr_free(error_details);
   error_details = nullptr;
@@ -293,17 +289,14 @@ static void test_encrypt_record_bad_size(TLSCiphersuite ciphersuite) {
    *  RFC allows; see https://tools.ietf.org/html/rfc8446#section-5.1 . **/
   size_t oversized_plaintext_size = SSL3_RT_MAX_PLAIN_LENGTH + 1;
   uint8_t oversized_plaintext[oversized_plaintext_size];
-  uint8_t* oversized_plaintext_pointer = oversized_plaintext;
   record_allocated_size =
       oversized_plaintext_size + s2a_max_record_overhead(crypter);
   record = (uint8_t*)gpr_malloc(record_allocated_size * sizeof(uint8_t));
-  grpc_status_code oversized_plaintext_status = s2a_encrypt(
-      crypter, oversized_plaintext_pointer, oversized_plaintext_size, record,
-      record_allocated_size, &record_size, &error_details);
+  grpc_status_code oversized_plaintext_status =
+      s2a_encrypt(crypter, oversized_plaintext, oversized_plaintext_size,
+                  record, record_allocated_size, &record_size, &error_details);
   GPR_ASSERT(oversized_plaintext_status == GRPC_STATUS_FAILED_PRECONDITION);
-  correct_error_message = strcmp(error_details,
-                                 "The plaintext size exceeds the maximum "
-                                 "plaintext size for a single TLS 1.3 record.");
+  correct_error_message = strcmp(error_details, S2A_PLAINTEXT_EXCEED_MAX_SIZE);
   GPR_ASSERT(correct_error_message == 0);
 
   // Cleanup.
@@ -321,8 +314,8 @@ static void test_encrypt_record_success(TLSCiphersuite ciphersuite) {
       setup_crypter(ciphersuite, channel, &crypter, &error_details);
   if (ciphersuite == TLS_CHACHA20_POLY1305_SHA256_ciphersuite) {
     GPR_ASSERT(status == GRPC_STATUS_UNIMPLEMENTED);
-    int correct_error_message = strcmp(
-        error_details, "The CHACHA-POLY AEAD crypter is not yet implemented.");
+    int correct_error_message =
+        strcmp(error_details, S2A_CHACHA_POLY_UNIMPLEMENTED);
     GPR_ASSERT(correct_error_message == 0);
 
     // Cleanup.
@@ -334,19 +327,18 @@ static void test_encrypt_record_success(TLSCiphersuite ciphersuite) {
   GPR_ASSERT(status == GRPC_STATUS_OK);
   GPR_ASSERT(error_details == nullptr);
 
-  size_t test_plaintext_size = 7 - 1;
-  uint8_t test_plaintext[7] = "123456";
-  uint8_t* test_plaintext_pointer = test_plaintext;
+  const size_t test_plaintext_size = 7;
+  uint8_t test_plaintext[test_plaintext_size] = "123456";
   size_t record_allocated_size =
       test_plaintext_size + s2a_max_record_overhead(crypter);
   uint8_t* record =
       (uint8_t*)gpr_malloc(record_allocated_size * sizeof(uint8_t));
   size_t record_size;
   grpc_status_code encrypt_status =
-      s2a_encrypt(crypter, test_plaintext_pointer, test_plaintext_size, record,
+      s2a_encrypt(crypter, test_plaintext, test_plaintext_size - 1, record,
                   record_allocated_size, &record_size, &error_details);
   GPR_ASSERT(encrypt_status == GRPC_STATUS_OK);
-  GPR_ASSERT(record_size == expected_message_size(test_plaintext_size));
+  GPR_ASSERT(record_size == expected_message_size(test_plaintext_size - 1));
 
   bool correct_encrypted_record = check_encrypt_record(
       ciphersuite, record, record_size,
@@ -362,6 +354,18 @@ static void test_encrypt_record_success(TLSCiphersuite ciphersuite) {
   gpr_free(record);
 }
 
+static void encrypt_and_verify(s2a_crypter* crypter, uint8_t* plaintext,
+                               size_t plaintext_size, uint8_t* record,
+                               size_t record_allocated_size,
+                               size_t* record_size, char** error_details) {
+  grpc_status_code status =
+      s2a_encrypt(crypter, plaintext, plaintext_size, record,
+                  record_allocated_size, record_size, error_details);
+  GPR_ASSERT(status == GRPC_STATUS_OK);
+  GPR_ASSERT(*record_size == expected_message_size(plaintext_size));
+  GPR_ASSERT(*error_details == nullptr);
+}
+
 static void test_encrypt_three_records(TLSCiphersuite ciphersuite) {
   s2a_crypter* crypter = nullptr;
   grpc_channel* channel = grpc_core::New<grpc_channel>();
@@ -370,8 +374,8 @@ static void test_encrypt_three_records(TLSCiphersuite ciphersuite) {
       setup_crypter(ciphersuite, channel, &crypter, &error_details);
   if (ciphersuite == TLS_CHACHA20_POLY1305_SHA256_ciphersuite) {
     GPR_ASSERT(status == GRPC_STATUS_UNIMPLEMENTED);
-    int correct_error_message = strcmp(
-        error_details, "The CHACHA-POLY AEAD crypter is not yet implemented.");
+    int correct_error_message =
+        strcmp(error_details, S2A_CHACHA_POLY_UNIMPLEMENTED);
     GPR_ASSERT(correct_error_message == 0);
 
     // Cleanup.
@@ -383,49 +387,40 @@ static void test_encrypt_three_records(TLSCiphersuite ciphersuite) {
   GPR_ASSERT(status == GRPC_STATUS_OK);
   GPR_ASSERT(error_details == nullptr);
 
-  size_t test_plaintext_one_size = 7 - 1;
-  uint8_t test_plaintext_one[7] = "123456";
-  uint8_t* test_plaintext_one_pointer = test_plaintext_one;
+  const size_t test_plaintext_one_size = 7;
+  uint8_t test_plaintext_one[test_plaintext_one_size] = "123456";
   size_t record_one_allocated_size =
       test_plaintext_one_size + s2a_max_record_overhead(crypter);
   uint8_t* record_one =
       (uint8_t*)gpr_malloc(record_one_allocated_size * sizeof(uint8_t));
   size_t record_one_size;
-  grpc_status_code encrypt_one_status = s2a_encrypt(
-      crypter, test_plaintext_one_pointer, test_plaintext_one_size, record_one,
-      record_one_allocated_size, &record_one_size, &error_details);
-  GPR_ASSERT(encrypt_one_status == GRPC_STATUS_OK);
-  GPR_ASSERT(record_one_size == expected_message_size(test_plaintext_one_size));
+  encrypt_and_verify(crypter, test_plaintext_one, test_plaintext_one_size - 1,
+                     record_one, record_one_allocated_size, &record_one_size,
+                     &error_details);
 
-  size_t test_plaintext_two_size = 10 - 1;
-  uint8_t test_plaintext_two[10] = "789123456";
-  uint8_t* test_plaintext_two_pointer = test_plaintext_two;
+  const size_t test_plaintext_two_size = 10;
+  uint8_t test_plaintext_two[test_plaintext_two_size] = "789123456";
   size_t record_two_allocated_size =
       test_plaintext_two_size + s2a_max_record_overhead(crypter);
   uint8_t* record_two =
       (uint8_t*)gpr_malloc(record_two_allocated_size * sizeof(uint8_t));
   size_t record_two_size;
-  grpc_status_code encrypt_two_status = s2a_encrypt(
-      crypter, test_plaintext_two_pointer, test_plaintext_two_size, record_two,
-      record_two_allocated_size, &record_two_size, &error_details);
-  GPR_ASSERT(encrypt_two_status == GRPC_STATUS_OK);
-  GPR_ASSERT(record_two_size == expected_message_size(test_plaintext_two_size));
+  encrypt_and_verify(crypter, test_plaintext_two, test_plaintext_two_size - 1,
+                     record_two, record_two_allocated_size, &record_two_size,
+                     &error_details);
 
-  size_t test_plaintext_three_size = 5 - 1;
-  uint8_t test_plaintext_three[5] = "7891";
-  uint8_t* test_plaintext_three_pointer = test_plaintext_three;
+  const size_t test_plaintext_three_size = 5;
+  uint8_t test_plaintext_three[test_plaintext_three_size] = "7891";
   size_t record_three_allocated_size =
       test_plaintext_three_size + s2a_max_record_overhead(crypter);
   uint8_t* record_three =
       (uint8_t*)gpr_malloc(record_three_allocated_size * sizeof(uint8_t));
   size_t record_three_size;
-  grpc_status_code encrypt_three_status = s2a_encrypt(
-      crypter, test_plaintext_three_pointer, test_plaintext_three_size,
-      record_three, record_three_allocated_size, &record_three_size,
-      &error_details);
-  GPR_ASSERT(encrypt_three_status == GRPC_STATUS_OK);
-  GPR_ASSERT(record_three_size ==
-             expected_message_size(test_plaintext_three_size));
+  encrypt_and_verify(crypter, test_plaintext_three,
+                     test_plaintext_three_size - 1, record_three,
+                     record_three_allocated_size, &record_three_size,
+                     &error_details);
+
   bool correct_encrypted_record = check_encrypt_record(
       ciphersuite, record_one, record_one_size, record_two, record_two_size,
       record_three, record_three_size, &error_details);
@@ -448,8 +443,8 @@ static void test_encrypt_empty_plaintext(TLSCiphersuite ciphersuite) {
       setup_crypter(ciphersuite, channel, &crypter, &error_details);
   if (ciphersuite == TLS_CHACHA20_POLY1305_SHA256_ciphersuite) {
     GPR_ASSERT(status == GRPC_STATUS_UNIMPLEMENTED);
-    int correct_error_message = strcmp(
-        error_details, "The CHACHA-POLY AEAD crypter is not yet implemented.");
+    int correct_error_message =
+        strcmp(error_details, S2A_CHACHA_POLY_UNIMPLEMENTED);
     GPR_ASSERT(correct_error_message == 0);
 
     // Cleanup.
@@ -463,7 +458,7 @@ static void test_encrypt_empty_plaintext(TLSCiphersuite ciphersuite) {
 
   size_t test_plaintext_size = 0;
   size_t incorrect_plaintext_size = 1;
-  uint8_t* test_plaintext_pointer = nullptr;
+  uint8_t* test_plaintext = nullptr;
   size_t record_allocated_size =
       test_plaintext_size + s2a_max_record_overhead(crypter);
   uint8_t* record =
@@ -472,24 +467,22 @@ static void test_encrypt_empty_plaintext(TLSCiphersuite ciphersuite) {
 
   /** Encrypt empty plaintext with incorrect plaintext size. **/
   grpc_status_code bad_encrypt_status =
-      s2a_encrypt(crypter, test_plaintext_pointer, incorrect_plaintext_size,
-                  record, record_allocated_size, &record_size, &error_details);
+      s2a_encrypt(crypter, test_plaintext, incorrect_plaintext_size, record,
+                  record_allocated_size, &record_size, &error_details);
   GPR_ASSERT(bad_encrypt_status == GRPC_STATUS_INVALID_ARGUMENT);
-  int correct_error_message = strcmp(
-      error_details,
-      "If |plaintext| is nullptr, then |plaintext_size| must be set to zero.");
+  int correct_error_message = strcmp(error_details, S2A_PLAINTEXT_NULLPTR);
   GPR_ASSERT(correct_error_message == 0);
   gpr_free(error_details);
   error_details = nullptr;
 
   /** Encrypt empty plaintext with correct plaintext size. **/
   grpc_status_code encrypt_status =
-      s2a_encrypt(crypter, test_plaintext_pointer, test_plaintext_size, record,
+      s2a_encrypt(crypter, test_plaintext, test_plaintext_size, record,
                   record_allocated_size, &record_size, &error_details);
   GPR_ASSERT(encrypt_status == GRPC_STATUS_OK);
   GPR_ASSERT(record_size == expected_message_size(test_plaintext_size));
-  GPR_ASSERT(check_record_empty_plaintext(ciphersuite, record,
-                                          record_size, &error_details));
+  GPR_ASSERT(check_record_empty_plaintext(ciphersuite, record, record_size,
+                                          &error_details));
 
   // Cleanup.
   s2a_crypter_destroy(crypter);
