@@ -17,10 +17,9 @@
  */
 
 #include "src/core/tsi/s2a/record_protocol/s2a_crypter.h"
+#include "src/core/tsi/alts/zero_copy_frame_protector/alts_iovec_record_protocol.h"
 #include "src/core/tsi/s2a/record_protocol/s2a_crypter_util.h"
 #include "src/core/tsi/s2a/s2a_constants.h"
-
-#include "src/core/tsi/alts/zero_copy_frame_protector/alts_iovec_record_protocol.h"
 
 #include <grpc/support/log.h>
 #include <grpc/support/string_util.h>
@@ -123,8 +122,7 @@ grpc_status_code s2a_crypter_create(
     return GRPC_STATUS_FAILED_PRECONDITION;
   }
   if (tls_version != 0) {
-    *error_details =
-        gpr_strdup("S2A does not support the desired TLS version.");
+    *error_details = gpr_strdup(S2A_UNSUPPORTED_TLS_VERSION);
     return GRPC_STATUS_FAILED_PRECONDITION;
   }
   if (derived_in_key == nullptr || derived_out_key == nullptr ||
@@ -165,21 +163,15 @@ grpc_status_code s2a_crypter_create(
       expected_nonce_size = TLS_CHACHA20_POLY1305_SHA256_NONCE_SIZE;
       break;
     default:
-      *error_details = gpr_strdup(
-          "The crypter's ciphersuite is not supported; cannot set expected "
-          "key/nonce size.");
+      *error_details = gpr_strdup(S2A_UNSUPPORTED_CIPHERSUITE);
       return GRPC_STATUS_FAILED_PRECONDITION;
   }
   if (expected_key_size != key_size) {
-    *error_details = gpr_strdup(
-        "The size of the provisioned keys does not match the ciphersuite key "
-        "size.");
+    *error_details = gpr_strdup(S2A_KEY_SIZE_MISMATCH);
     return GRPC_STATUS_FAILED_PRECONDITION;
   }
   if (expected_nonce_size != nonce_size) {
-    *error_details = gpr_strdup(
-        "The size of the provisioned nonces does not match the ciphersuite "
-        "nonce size.");
+    *error_details = gpr_strdup(S2A_NONCE_SIZE_MISMATCH);
     return GRPC_STATUS_FAILED_PRECONDITION;
   }
 
@@ -267,13 +259,10 @@ size_t s2a_max_plaintext_size(const s2a_crypter* crypter) {
 }
 
 /** This function returns the tag size of the ciphersuite supported by
- * |crypter|. If |crypter| is nullptr or was not properly initialized, then this
- * function returns zero.
+ *  |crypter|. The caller must not pass in nullptr for |crypter|.
  *  - crypter: an instance of s2a_crypter. **/
 static size_t s2a_tag_size(const s2a_crypter* crypter) {
-  if (crypter == nullptr) {
-    return 0;
-  }
+  GPR_ASSERT(crypter != nullptr);
   switch (crypter->ciphersuite) {
     case TLS_AES_128_GCM_SHA256:
     case TLS_AES_256_GCM_SHA384:
@@ -281,18 +270,19 @@ static size_t s2a_tag_size(const s2a_crypter* crypter) {
     case TLS_CHACHA20_POLY1305_SHA256:
       return POLY1305_TAG_LEN;
     default:
-      return 0;
+      gpr_log(GPR_ERROR, S2A_UNSUPPORTED_CIPHERSUITE);
+      abort();
   }
 }
 
 /** This function returns the max number of bytes occupied by the nonce of a
- *  TLS 1.3 record that is handled by |crypter|. If |crypter| is nullptr, then
- *  this function returns zero.
+ *  TLS 1.3 record that is handled by |crypter|. The caller must not pass in
+ *  nullptr for |crypter|.
  *  - crypter: an instance of s2a_crypter. **/
 static size_t s2a_max_aead_nonce_size(const s2a_crypter* crypter) {
-  if (crypter == nullptr) {
-    return 0;
-  }
+  GPR_ASSERT(crypter != nullptr);
+  /** If additional supported ciphersuites are added, then there may be
+   *  additional options for the return value. **/
   return EVP_AEAD_MAX_NONCE_LENGTH;
 }
 
@@ -303,54 +293,50 @@ static size_t s2a_max_aead_nonce_size(const s2a_crypter* crypter) {
  *  GRPC_STATUS_INTERNAL. Otherwise, the function returns GRPC_STATUS_OK.
  *  - half_connection: an instance of s2a_half_connection. **/
 grpc_status_code increment_sequence(s2a_half_connection* half_connection) {
-  if (half_connection != nullptr) {
-    half_connection->sequence += 1;
-    /** Check whether the sequence number has overflowed. **/
-    if (half_connection->sequence == 0) {
-      return GRPC_STATUS_OUT_OF_RANGE;
-    } else {
-      return GRPC_STATUS_OK;
-    }
+  if (half_connection == nullptr) {
+    return GRPC_STATUS_INTERNAL;
   }
-  return GRPC_STATUS_INTERNAL;
+
+  half_connection->sequence += 1;
+  /** Check whether the sequence number has overflowed. **/
+  if (half_connection->sequence == 0) {
+    return GRPC_STATUS_OUT_OF_RANGE;
+  }
+  return GRPC_STATUS_OK;
 }
 
 /** This function populates the 8 bytes that follow |out_bytes| with the
- *  sequence number of |half_connection| converted into bytes. If
- *  |half_connection| or |out_bytes| is nullptr, then the function does nothing.
+ *  sequence number of |half_connection| converted into bytes. The caller
+ *  must not pass in nullptr for |half_connection| or |out_bytes|.
  *  - half_connection: an instance of s2a_half_connection.
  *  - out_bytes: a pointer to a length 8 array of bytes. **/
 static void sequence_to_bytes(const s2a_half_connection* half_connection,
                               uint8_t* out_bytes) {
-  if (half_connection != nullptr && out_bytes != nullptr) {
-    out_bytes[0] = half_connection->sequence >> 56;
-    out_bytes[1] = half_connection->sequence >> 48;
-    out_bytes[2] = half_connection->sequence >> 40;
-    out_bytes[3] = half_connection->sequence >> 32;
-    out_bytes[4] = half_connection->sequence >> 24;
-    out_bytes[5] = half_connection->sequence >> 16;
-    out_bytes[6] = half_connection->sequence >> 8;
-    out_bytes[7] = half_connection->sequence;
-  }
+  GPR_ASSERT(half_connection != nullptr);
+  GPR_ASSERT(out_bytes != nullptr);
+  out_bytes[0] = half_connection->sequence >> 56;
+  out_bytes[1] = half_connection->sequence >> 48;
+  out_bytes[2] = half_connection->sequence >> 40;
+  out_bytes[3] = half_connection->sequence >> 32;
+  out_bytes[4] = half_connection->sequence >> 24;
+  out_bytes[5] = half_connection->sequence >> 16;
+  out_bytes[6] = half_connection->sequence >> 8;
+  out_bytes[7] = half_connection->sequence;
 }
 
 size_t s2a_max_record_overhead(const s2a_crypter* crypter) {
-  if (crypter == nullptr || crypter->out_connection == nullptr ||
-      !crypter->out_connection->initialized) {
-    return 0;
-  }
-  return SSL3_RT_HEADER_LENGTH + s2a_tag_size(crypter) + 1;
+  GPR_ASSERT(crypter != nullptr);
+  GPR_ASSERT(crypter->out_connection != nullptr);
+  GPR_ASSERT(crypter->out_connection->initialized);
+  return SSL3_RT_HEADER_LENGTH + s2a_tag_size(crypter) + /** record type **/ 1;
 }
 
 static grpc_status_code s2a_write_tls13_record_header(uint8_t record_type,
-                                                      uint8_t* record_header,
                                                       size_t header_size,
                                                       size_t payload_size,
+                                                      uint8_t* record_header,
                                                       char** error_details) {
-  if (record_header == nullptr) {
-    *error_details = gpr_strdup("The record header is nullptr.");
-    return GRPC_STATUS_FAILED_PRECONDITION;
-  }
+  GPR_ASSERT(record_header != nullptr);
   if (header_size != SSL3_RT_HEADER_LENGTH) {
     *error_details = gpr_strdup(
         "The header size does not match the size of a TLS 1.3 record header.");
@@ -365,20 +351,68 @@ static grpc_status_code s2a_write_tls13_record_header(uint8_t record_type,
   return GRPC_STATUS_OK;
 }
 
+/** This method returns a buffer of additional data bytes used for
+ *  authenticating a TLS 1.3 record; the caller must free the buffer using
+ *  gpr_free.
+ *  - sequence: a buffer containing the sequence number of a half connection.
+ *  - sequence_size: the size (in bytes) of the |sequence| buffer.
+ *  - record_header: a buffer containing the header of a TLS 1.3 record.
+ *  - header_size: the size (in bytes) of the |record_header| buffer.
+ *  - payload_size: the size (in bytes) of the payload of a TLS 1.3 record. **/
+static uint8_t* s2a_additional_data(uint8_t* sequence, size_t sequence_size,
+                                    uint8_t* record_header, size_t header_size,
+                                    size_t payload_size) {
+  size_t additional_data_size = sequence_size + header_size;
+  GPR_ASSERT(additional_data_size == TLS_ADDITIONAL_DATA_BYTES_SIZE);
+  uint8_t* additional_data =
+      (uint8_t*)gpr_malloc(additional_data_size * sizeof(uint8_t));
+  memcpy(additional_data, sequence, sequence_size);
+  memcpy(additional_data + sequence_size, record_header, header_size);
+  additional_data[11] = payload_size >> 8;
+  additional_data[12] = payload_size & 0xff;
+  return additional_data;
+}
+
+/** This method returns a buffer populated with the nonce used for
+ *  encrypting and decrypting a TLS 1.3 record; the caller must free
+ *  the buffer using gpr_free.
+ *  - crypter: an instance of s2a_crypter.
+ *  - sequence: a buffer containing the sequence number of a half connection.
+ *  - sequence_size: the size (in bytes) of the |sequence| buffer.
+ *  - nonce_size: the number of bytes written to the nonce buffer that is
+ *    returned by the method. **/
+static uint8_t* s2a_nonce(s2a_crypter* crypter, uint8_t* sequence,
+                          size_t sequence_size, size_t* nonce_size) {
+  GPR_ASSERT(crypter != nullptr);
+  size_t max_nonce_size = s2a_max_aead_nonce_size(crypter);
+  GPR_ASSERT(max_nonce_size > sequence_size);
+  GPR_ASSERT(sequence != nullptr);
+  GPR_ASSERT(nonce_size != nullptr);
+  uint8_t* nonce = (uint8_t*)gpr_malloc(max_nonce_size * sizeof(uint8_t));
+  *nonce_size = crypter->out_connection->fixed_nonce_size;
+  memset(nonce, 0, max_nonce_size);
+  memcpy(nonce, crypter->out_connection->fixed_nonce, *nonce_size);
+  for (size_t i = 0; i < sequence_size; i++) {
+    nonce[*nonce_size - sequence_size + i] ^= sequence[i];
+  }
+  return nonce;
+}
+
 grpc_status_code s2a_write_tls13_record(
     s2a_crypter* crypter, uint8_t record_type, const iovec* unprotected_vec,
     size_t unprotected_vec_size, iovec protected_record, size_t* bytes_written,
     char** error_details) {
-  if (crypter == nullptr || crypter->out_connection == nullptr ||
-      !crypter->out_connection->initialized) {
-    *error_details =
-        gpr_strdup("The input |crypter| was not properly initialized.");
-    return GRPC_STATUS_FAILED_PRECONDITION;
+  GPR_ASSERT(crypter != nullptr);
+  GPR_ASSERT(crypter->out_connection != nullptr);
+  GPR_ASSERT(crypter->out_connection->initialized);
+  GPR_ASSERT(protected_record.iov_base != nullptr);
+  GPR_ASSERT(bytes_written != nullptr);
+  if (unprotected_vec == nullptr || unprotected_vec_size == 0) {
+    GPR_ASSERT(unprotected_vec == nullptr && unprotected_vec_size == 0);
   }
-  if ((unprotected_vec == nullptr && unprotected_vec_size != 0) ||
+  if ((unprotected_vec == nullptr && unprotected_vec_size > 0) ||
       (unprotected_vec != nullptr && unprotected_vec_size == 0)) {
-    *error_details = gpr_strdup(
-        "|unprotected_vec| must be nullptr iff |unprotected_vec_size| = 0.");
+    *error_details = gpr_strdup(S2A_INVALID_UNPROTECTED_VEC);
     return GRPC_STATUS_FAILED_PRECONDITION;
   }
   size_t plaintext_size =
@@ -386,27 +420,19 @@ grpc_status_code s2a_write_tls13_record(
   size_t payload_size = plaintext_size + s2a_tag_size(crypter) + 1;
 
   if (plaintext_size > s2a_max_plaintext_size(crypter)) {
-    *error_details = gpr_strdup(
-        "The plaintext size exceeds the maximum plaintext size for a single "
-        "TLS 1.3 record.");
+    *error_details = gpr_strdup(S2A_PLAINTEXT_EXCEED_MAX_SIZE);
     return GRPC_STATUS_FAILED_PRECONDITION;
   }
   if (payload_size + SSL3_RT_HEADER_LENGTH > protected_record.iov_len) {
-    *error_details = gpr_strdup(
-        "The plaintext size is too large to fit in the allocated TLS 1.3 "
-        "record.");
+    *error_details = gpr_strdup(S2A_PLAINTEXT_INSUFFICIENT_RECORD_SIZE);
     return GRPC_STATUS_FAILED_PRECONDITION;
-  }
-  if (protected_record.iov_base == nullptr || protected_record.iov_len == 0) {
-    *error_details = gpr_strdup("There is no allocated TLS 1.3 record.");
-    return GRPC_STATUS_INVALID_ARGUMENT;
   }
 
   /** Write the record header at the start of |protected_record|. **/
   uint8_t* record_header = static_cast<uint8_t*>(protected_record.iov_base);
-  grpc_status_code header_status = s2a_write_tls13_record_header(
-      record_type, record_header, SSL3_RT_HEADER_LENGTH, payload_size,
-      error_details);
+  grpc_status_code header_status =
+      s2a_write_tls13_record_header(record_type, SSL3_RT_HEADER_LENGTH,
+                                    payload_size, record_header, error_details);
   if (header_status != GRPC_STATUS_OK) {
     return header_status;
   }
@@ -416,33 +442,18 @@ grpc_status_code s2a_write_tls13_record(
 
   /** Set up the additional_data_bytes buffer, which is to be authenticated
    *  but not encrypted. **/
-  uint8_t additional_data_bytes[sizeof(sequence) + SSL3_RT_HEADER_LENGTH];
-  GPR_ASSERT(sizeof(additional_data_bytes) == 13);
-  memcpy(additional_data_bytes, sequence, sizeof(sequence));
-  memcpy(additional_data_bytes + sizeof(sequence), record_header,
-         SSL3_RT_HEADER_LENGTH);
-
-  const uint8_t* additional_data = additional_data_bytes;
-  additional_data_bytes[11] = payload_size >> 8;
-  additional_data_bytes[12] = payload_size & 0xff;
-  additional_data += sizeof(sequence);
-  iovec aad_vec = {(void*)additional_data, SSL3_RT_HEADER_LENGTH};
+  uint8_t* additional_data =
+      s2a_additional_data(sequence, /** sequence size **/ 8, record_header,
+                          SSL3_RT_HEADER_LENGTH, payload_size);
+  iovec aad_vec = {(void*)(additional_data + 8), SSL3_RT_HEADER_LENGTH};
 
   /** The following constructs the nonce for the TLS payload in local
    *  storage. It is built by taking the fixed nonce from |crypter|'s
    *  out_connection and applying XOR operations with the bytes of the
    *  current sequence number. **/
-  const size_t max_nonce_size = s2a_max_aead_nonce_size(crypter);
-  uint8_t nonce_storage[max_nonce_size];
-  GPR_ASSERT(max_nonce_size > sizeof(sequence));
-  uint8_t* nonce = nullptr;
-  size_t nonce_size = crypter->out_connection->fixed_nonce_size;
-  memset(nonce_storage, 0, sizeof(nonce_storage));
-  nonce = nonce_storage;
-  memcpy(nonce, crypter->out_connection->fixed_nonce, nonce_size);
-  for (size_t i = 0; i < sizeof(sequence); i++) {
-    nonce[nonce_size - sizeof(sequence) + i] ^= sequence[i];
-  }
+  size_t nonce_size;
+  uint8_t* nonce =
+      s2a_nonce(crypter, sequence, /** sequence_size **/ 8, &nonce_size);
 
   uint8_t record_type_base = record_type;
   iovec record_type_vec = {(void*)(&record_type_base), 1};
@@ -460,10 +471,14 @@ grpc_status_code s2a_write_tls13_record(
       crypter->out_aead_crypter, nonce, nonce_size, &aad_vec, 1,
       data_for_processing_vec, unprotected_vec_size + 1, ciphertext,
       &ciphertext_and_tag_size, error_details);
+
+  // Cleanup.
+  gpr_free(additional_data);
+  gpr_free(nonce);
+
   if (encrypt_status != GRPC_STATUS_OK) {
     return encrypt_status;
   }
-  GPR_ASSERT(bytes_written != nullptr);
   GPR_ASSERT(payload_size == ciphertext_and_tag_size);
   *bytes_written = ciphertext_and_tag_size + SSL3_RT_HEADER_LENGTH;
 
@@ -477,9 +492,7 @@ grpc_status_code s2a_encrypt(s2a_crypter* crypter, uint8_t* plaintext,
                              size_t record_allocated_size, size_t* record_size,
                              char** error_details) {
   if (plaintext == nullptr && plaintext_size > 0) {
-    *error_details = gpr_strdup(
-        "If |plaintext| is nullptr, then |plaintext_size| must be set to "
-        "zero.");
+    *error_details = gpr_strdup(S2A_PLAINTEXT_NULLPTR);
     return GRPC_STATUS_INVALID_ARGUMENT;
   }
   iovec plaintext_vec = {(void*)plaintext, plaintext_size};
