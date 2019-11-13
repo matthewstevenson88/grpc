@@ -317,7 +317,6 @@ bool check_record_empty_plaintext(TLSCiphersuite ciphersuite, uint8_t* record,
 void random_array(uint8_t** bytes, size_t length) {
   GPR_ASSERT(bytes != nullptr);
   *bytes = (uint8_t*)gpr_malloc(length * sizeof(uint8_t));
-  srand(time(nullptr));
   for (size_t i = 0; i < length; i++) {
     (*bytes)[i] = static_cast<uint8_t>(rand() % 256);
   }

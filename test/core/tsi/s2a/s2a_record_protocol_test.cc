@@ -781,19 +781,21 @@ static void s2a_test_roundtrip_success(TLSCiphersuite ciphersuite,
   GPR_ASSERT(error_details == nullptr);
 
   for (size_t i = 0; i < iterations; i += 1) {
-    if (i*S2A_GAPS > SSL3_RT_MAX_PLAIN_LENGTH) {
+    if (i * S2A_GAPS > SSL3_RT_MAX_PLAIN_LENGTH) {
       break;
     }
-    send_random_message(i*S2A_GAPS, out_crypter, in_crypter);
-    send_random_message(i*S2A_GAPS, in_crypter, out_crypter);
+    send_random_message(i * S2A_GAPS, out_crypter, in_crypter);
+    send_random_message(i * S2A_GAPS, in_crypter, out_crypter);
   }
   send_random_message(0, in_crypter, out_crypter);
   for (size_t j = 0; j < iterations; j += 1) {
-    if (j*S2A_GAPS > SSL3_RT_MAX_PLAIN_LENGTH) {
+    if (j * S2A_GAPS > SSL3_RT_MAX_PLAIN_LENGTH) {
       break;
     }
-    send_random_message(SSL3_RT_MAX_PLAIN_LENGTH - j*S2A_GAPS, out_crypter, in_crypter);
-    send_random_message(SSL3_RT_MAX_PLAIN_LENGTH - j*S2A_GAPS, in_crypter, out_crypter);
+    send_random_message(SSL3_RT_MAX_PLAIN_LENGTH - j * S2A_GAPS, out_crypter,
+                        in_crypter);
+    send_random_message(SSL3_RT_MAX_PLAIN_LENGTH - j * S2A_GAPS, in_crypter,
+                        out_crypter);
   }
   send_random_message(0, in_crypter, out_crypter);
 

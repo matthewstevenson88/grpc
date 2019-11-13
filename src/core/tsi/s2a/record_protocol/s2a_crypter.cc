@@ -525,7 +525,8 @@ s2a_decrypt_status s2a_decrypt_payload(
   size_t payload_size = get_total_length(protected_vec, protected_vec_size);
   size_t expected_plaintext_and_record_byte_size =
       payload_size - s2a_tag_size(crypter);
-  GPR_ASSERT(expected_plaintext_and_record_byte_size <= SSL3_RT_MAX_PLAIN_LENGTH + /** record byte **/ 1);
+  GPR_ASSERT(expected_plaintext_and_record_byte_size <=
+             SSL3_RT_MAX_PLAIN_LENGTH + /** record byte **/ 1);
 
   uint8_t sequence[8];
   sequence_to_bytes(crypter->in_connection, sequence);
