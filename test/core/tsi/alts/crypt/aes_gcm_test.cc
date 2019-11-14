@@ -2093,13 +2093,13 @@ static void gsec_test_do_vector_tests_ieee() {
   gsec_aead_free_test_vector(test_vector_20);
 }
 
-static void hkdf_check_out_key(bool is_sha256, uint8_t* info, size_t info_size,
+static void hkdf_check_out_key(GsecHashFunction hash_function, uint8_t* info, size_t info_size,
                                uint8_t* prk, size_t prk_size,
                                uint8_t* correct_out_key, size_t out_key_size) {
   uint8_t* out_key =
       static_cast<uint8_t*>(gpr_zalloc(out_key_size * sizeof(uint8_t)));
-  grpc_status_code derive_status = aes_gcm_derive_data(
-      out_key, out_key_size, is_sha256, prk, prk_size, info, info_size);
+  grpc_status_code derive_status = hkdf_derive_secret(
+      out_key, out_key_size, hash_function, prk, prk_size, info, info_size);
   GPR_ASSERT(derive_status == GRPC_STATUS_OK);
   for (size_t i = 0; i < out_key_size; i++) {
     GPR_ASSERT(out_key[i] == correct_out_key[i]);
@@ -2163,11 +2163,11 @@ static void gsec_test_derive_data() {
       0x87, 0x9e, 0xc3, 0x45, 0x4e, 0x5f, 0x3c, 0x73, 0x8d, 0x2d, 0x9d,
       0x20, 0x13, 0x95, 0xfa, 0xa4, 0xb6, 0x1a, 0x96, 0xc8};
 
-  hkdf_check_out_key(/** is_sha256 **/ true, info_one, info_size_one, prk_one,
+  hkdf_check_out_key(SHA256_hash_function, info_one, info_size_one, prk_one,
                      prk_size_one, correct_out_key_one, out_size_one);
-  hkdf_check_out_key(/** is_sha256 **/ true, info_two, info_size_two, prk_two,
+  hkdf_check_out_key(SHA256_hash_function, info_two, info_size_two, prk_two,
                      prk_size_two, correct_out_key_two, out_size_two);
-  hkdf_check_out_key(/** is_sha25 **/ true, info_three, info_size_three,
+  hkdf_check_out_key(SHA256_hash_function, info_three, info_size_three,
                      prk_three, prk_size_three, correct_out_key_three,
                      out_size_three);
 }

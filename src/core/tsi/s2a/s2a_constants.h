@@ -33,6 +33,14 @@
 #define EVP_AEAD_MAX_NONCE_LENGTH 24
 #endif
 
+#ifndef SHA256_DIGEST_LENGTH
+#define SHA256_DIGEST_LENGTH 32
+#endif
+
+#ifndef SHA384_DIGEST_LENGTH
+#define SHA384_DIGEST_LENGTH 48
+#endif
+
 /** The uint16_t's for the supported TLS 1.3 ciphersuites. **/
 #define TLS_AES_128_GCM_SHA256 0x009c
 #define TLS_AES_256_GCM_SHA384 0x1302
@@ -57,6 +65,8 @@
   "S2A does not support the desired TLS version."
 #define S2A_UNSUPPORTED_CIPHERSUITE \
   "S2A does not support the desired TLS ciphersuite."
+#define S2A_CREATE_NULLPTR "There is an unexpected nullptr argument to |s2a_crypter_create|."
+#define S2A_TRAFFIC_SECRET_SIZE_MISMATCH "The size of the provisioned traffic secret does not match the ciphersuite traffic secret size."
 #define S2A_KEY_SIZE_MISMATCH \
   "The size of the provisioned keys does not match the ciphersuite key size."
 #define S2A_NONCE_SIZE_MISMATCH                                              \

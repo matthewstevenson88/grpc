@@ -29,12 +29,20 @@ enum TLSCiphersuite {
   TLS_CHACHA20_POLY1305_SHA256_ciphersuite,
 };
 
+uint16_t s2a_numeric_ciphersuite(TLSCiphersuite ciphersuite);
+
+/**
 grpc_byte_buffer* create_example_session_state(bool admissible_tls_version,
                                                TLSCiphersuite ciphersuite,
                                                bool has_in_out_key,
                                                bool correct_key_size,
                                                bool has_in_out_sequence,
                                                bool has_in_out_fixed_nonce);
+**/
+
+void verify_half_connections(TLSCiphersuite ciphersuite, s2a_crypter* crypter,
+                             size_t expected_traffic_secret_size,
+                             uint8_t* expected_traffic_secret);
 
 size_t expected_message_size(size_t plaintext_size);
 

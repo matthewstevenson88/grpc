@@ -19,9 +19,12 @@
 #include "test/core/tsi/s2a/s2a_test_util.h"
 #include <grpc/support/log.h>
 #include <grpc/support/string_util.h>
+#include <openssl/ssl3.h>
 #include "src/core/tsi/s2a/record_protocol/s2a_crypter.h"
 #include "src/core/tsi/s2a/record_protocol/s2a_crypter_util.h"
 #include "src/core/tsi/s2a/s2a_constants.h"
+
+#include <iostream>
 
 /** The following buffers were generated using a different TLS 1.3
  *  implementation. The keys and nonces are derived from the traffic secret
@@ -106,7 +109,55 @@ uint8_t chacha_poly_empty_record_bytes[empty_record_size] = {
     0x17, 0x03, 0x03, 0x00, 0x11, 0xef, 0x8f, 0x7a, 0x42, 0x8d, 0xdc,
     0x84, 0xee, 0x59, 0x68, 0xcd, 0x63, 0x06, 0xbf, 0x1d, 0x2d, 0x1b};
 
-grpc_byte_buffer* create_example_session_state(bool admissible_tls_version,
+uint16_t s2a_numeric_ciphersuite(TLSCiphersuite ciphersuite) {
+  switch (ciphersuite) {
+    case TLS_AES_128_GCM_SHA256_ciphersuite:
+      return TLS_AES_128_GCM_SHA256;
+    case TLS_AES_256_GCM_SHA384_ciphersuite:
+      return TLS_AES_256_GCM_SHA384;
+    case TLS_CHACHA20_POLY1305_SHA256_ciphersuite:
+      return TLS_CHACHA20_POLY1305_SHA256;
+    default:
+      /** This will cause an S2A_UNSUPPORTED_CIPHERSUITE error wherever this
+       *  method is called. **/
+      return 0;
+  }
+}
+
+void verify_half_connections(TLSCiphersuite ciphersuite, s2a_crypter* crypter,
+                             size_t expected_traffic_secret_size,
+                             uint8_t* expected_traffic_secret) {
+  GPR_ASSERT(crypter != nullptr);
+  uint8_t* expected_nonce = nullptr;
+  switch (ciphersuite) {
+    case TLS_AES_128_GCM_SHA256_ciphersuite:
+      expected_nonce = aes_128_gcm_nonce_bytes;
+      break;
+    case TLS_AES_256_GCM_SHA384_ciphersuite:
+      expected_nonce = aes_256_gcm_nonce_bytes;
+      break;
+    case TLS_CHACHA20_POLY1305_SHA256_ciphersuite:
+      expected_nonce = chacha_poly_nonce_bytes;
+      break;
+    default:
+      gpr_log(GPR_ERROR, S2A_UNSUPPORTED_CIPHERSUITE);
+      abort();
+  }
+  check_half_connection(crypter, /** in_half_connection **/ true,
+                        /** expected_sequence **/ 0,
+                        expected_traffic_secret_size,
+                        expected_traffic_secret,
+                        /** expected nonce size **/ 12, expected_nonce,
+                        SSL3_RT_HEADER_LENGTH);
+  check_half_connection(crypter, /** in_half_connection **/ true,
+                        /** expected_sequence **/ 0,
+                        expected_traffic_secret_size,
+                        expected_traffic_secret,
+                        /** expected nonce size **/ 12, expected_nonce,
+                        SSL3_RT_HEADER_LENGTH);
+}
+
+static grpc_byte_buffer* create_example_session_state(bool admissible_tls_version,
                                                TLSCiphersuite ciphersuite,
                                                bool has_in_out_key,
                                                bool correct_key_size,

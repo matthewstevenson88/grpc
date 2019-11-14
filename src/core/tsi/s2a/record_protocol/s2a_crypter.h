@@ -120,18 +120,12 @@ grpc_status_code s2a_decrypt(s2a_crypter* crypter, unsigned char* record,
 /** This method populates an s2a_crypter instance.
  *  - tls_version: the TLS version; the s2a_crypter only supports TLS 1.3.
  *  - tls_ciphersuite: the ciphersuite used for encryption and decryption.
- *  - derived_in_key: the key used for decryption; this data is owned by the
- *    caller.
- *  - derived_out_key: the key used for encryption; this data is owned by the
- *    caller.
- *  - key_size: the size of the derived_in_key and derived_out_key; this must
- *    match the key size prescribed by |tls_ciphersuite|.
- *  - derived_in_nonce: the nonce used for decryption; this data is owned by the
- *    caller.
- *  - derived_out_nonce: the nonce used for encryption; this data is owned by
- *    the caller.
- *  - nonce_size: the size of the derived_in_nonce and derived_out_nonce; this
- *    must match the nonce size prescribed by |tls_ciphersuite|.
+ *  - in_traffic_secret: the traffic secret used to derive the in key and in
+ *    nonce; this data is owned by the caller.
+ *  - in_traffic_secret_size: the size of the |in_traffic_secret| buffer.
+ *  - out_traffic_secret: the traffic secret used to derive the out key and
+ *    out nonce; this data is owned by the caller.
+ *  - out_traffic_secret_size: the size of the |out_traffic_secret| buffer.
  *  - channel: an open channel to the S2A; the s2a_crypter does not take
  *    ownership of the channel.
  *  - crypter: a pointer to an s2a_crypter, which will be populated by the
@@ -143,11 +137,11 @@ grpc_status_code s2a_decrypt(s2a_crypter* crypter, unsigned char* record,
  *
  *  When creation succeeds, the method return GRPC_STATUS_OK. Otherwise,
  *  it returns an error status code and details can be found in |error_details|.
- *  If |error_details| is not nullptr, it must be freed with gpr_free. **/
+ *  **/
 grpc_status_code s2a_crypter_create(
-    uint16_t tls_version, uint16_t tls_ciphersuite, uint8_t* derived_in_key,
-    uint8_t* derived_out_key, size_t key_size, uint8_t* derived_in_nonce,
-    uint8_t* derived_out_nocne, size_t nonce_size, grpc_channel* channel,
+    uint16_t tls_version, uint16_t tls_ciphersuite, uint8_t* in_traffic_secret,
+    size_t in_traffic_secret_size, uint8_t* out_traffic_secret,
+    size_t out_traffic_secret_size, grpc_channel* channel,
     s2a_crypter** crypter, char** error_details);
 
 /** This method destroys an s2a_crypter instance, deallocating all memory.
@@ -165,7 +159,9 @@ gsec_aead_crypter* s2a_out_aead_crypter(s2a_crypter* crypter);
 
 void check_half_connection(s2a_crypter* crypter, bool in_half_connection,
                            uint64_t expected_sequence,
-                           uint8_t expected_fixed_nonce_size,
+                           size_t expected_traffic_secret_size,
+                           uint8_t* expected_traffic_secret,
+                           size_t expected_fixed_nonce_size,
                            uint8_t* expected_fixed_nonce,
                            uint8_t expected_additional_data_size);
 
