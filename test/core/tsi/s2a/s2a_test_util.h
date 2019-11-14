@@ -16,8 +16,8 @@
  *
  */
 
-#ifndef GRPC_TEST_CORE_TSI_S2A_RECORD_PROTOCOL_S2A_TEST_UTIL_H
-#define GRPC_TEST_CORE_TSI_S2A_RECORD_PROTOCOL_S2A_TEST_UTIL_H
+#ifndef GRPC_TEST_CORE_TSI_S2A_S2A_TEST_UTIL_H
+#define GRPC_TEST_CORE_TSI_S2A_S2A_TEST_UTIL_H
 
 #include <grpc/grpc.h>
 #include <grpc/support/sync.h>
@@ -38,4 +38,4 @@ grpc_byte_buffer* create_example_session_state(bool admissible_tls_version,
 
 size_t expected_message_size(size_t plaintext_size);
 
-#endif  //  GRPC_TEST_CORE_TSI_S2A_RECORD_PROTOCOL_S2A_TEST_UTIL_H
+#endif  //  GRPC_TEST_CORE_TSI_S2A_S2A_TEST_UTIL_H

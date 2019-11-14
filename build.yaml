@@ -1636,13 +1636,12 @@ filegroups:
   - s2a_upb
   - tsi_interface
   - tsi
-  - upb
 - name: s2a_upb
   headers:
   - src/core/ext/upb-generated/src/proto/grpc/gcp/s2a.upb.h
   src:
   - src/core/ext/upb-generated/src/proto/grpc/gcp/s2a.upb.c
-  uses:
+  deps:
   - upb
 - name: transport_security_test_lib
   headers:

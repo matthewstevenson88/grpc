@@ -22,7 +22,7 @@
 #include <grpc/byte_buffer.h>
 #include <grpc/byte_buffer_reader.h>
 #include <grpc/grpc.h>
-#include "src/core/ext/upb-generated/src/proto/grpc/gcp/s2a.upb.h"
+#include "src/proto/grpc/gcp/s2a.upb.h"
 #include "src/core/lib/slice/slice_internal.h"
 
 /** This method populates |session_state| with the s2a_SessionState instance

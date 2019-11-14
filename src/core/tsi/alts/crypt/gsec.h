@@ -451,7 +451,7 @@ grpc_status_code gsec_aes_gcm_aead_crypter_create(const uint8_t* key,
                                                   gsec_aead_crypter** crypter,
                                                   char** error_details);
 
-enum GsecHashFunction {
+enum class GsecHashFunction {
   SHA256_hash_function,
   SHA384_hash_function,
 };
@@ -459,8 +459,8 @@ enum GsecHashFunction {
 /** This method has the same functionality as the HKDF_expand function from
  *  BoringSSL, see https://tools.ietf.org/html/rfc5869 for specifications on
  *  the derivation function. This method computes an output key from the |prk|
- *  secret and |info|, and writes |out_size| bytes of the result to the |out_key|
- *  buffer.
+ *  secret and |info|, and writes |out_size| bytes of the result to the
+ * |out_key| buffer.
  *  - out_key: a buffer that the method populates with the output key, which is
  *    owned by the caller.
  *  - out_size: the number of bytes allocated to the |out_key| buffer.
