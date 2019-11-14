@@ -174,7 +174,6 @@ if test "$PHP_GRPC" != "no"; then
     src/core/ext/upb-generated/google/rpc/status.upb.c \
     src/core/ext/upb-generated/src/proto/grpc/gcp/altscontext.upb.c \
     src/core/ext/upb-generated/src/proto/grpc/gcp/handshaker.upb.c \
-    src/core/ext/upb-generated/src/proto/grpc/gcp/s2a.upb.c \
     src/core/ext/upb-generated/src/proto/grpc/gcp/transport_security_common.upb.c \
     src/core/ext/upb-generated/src/proto/grpc/health/v1/health.upb.c \
     src/core/ext/upb-generated/src/proto/grpc/lb/v1/load_balancer.upb.c \
@@ -448,8 +447,6 @@ if test "$PHP_GRPC" != "no"; then
     src/core/tsi/local_transport_security.cc \
     src/core/tsi/s2a/handshaker/s2a_handshaker_client.cc \
     src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.cc \
-    src/core/tsi/s2a/record_protocol/s2a_crypter.cc \
-    src/core/tsi/s2a/record_protocol/s2a_crypter_util.cc \
     src/core/tsi/ssl/session_cache/ssl_session_boringssl.cc \
     src/core/tsi/ssl/session_cache/ssl_session_cache.cc \
     src/core/tsi/ssl/session_cache/ssl_session_openssl.cc \
@@ -839,7 +836,6 @@ if test "$PHP_GRPC" != "no"; then
   PHP_ADD_BUILD_DIR($ext_builddir/src/core/tsi/alts/handshaker)
   PHP_ADD_BUILD_DIR($ext_builddir/src/core/tsi/alts/zero_copy_frame_protector)
   PHP_ADD_BUILD_DIR($ext_builddir/src/core/tsi/s2a/handshaker)
-  PHP_ADD_BUILD_DIR($ext_builddir/src/core/tsi/s2a/record_protocol)
   PHP_ADD_BUILD_DIR($ext_builddir/src/core/tsi/ssl/session_cache)
   PHP_ADD_BUILD_DIR($ext_builddir/third_party/address_sorting)
   PHP_ADD_BUILD_DIR($ext_builddir/third_party/boringssl/crypto)
