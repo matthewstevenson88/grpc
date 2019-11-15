@@ -26,102 +26,51 @@
 #include "src/core/tsi/s2a/s2a_constants.h"
 #include "test/core/tsi/s2a/s2a_test_util.h"
 
-#include <string>
-#include <iostream>
-#include <grpc/support/string_util.h>
-
 const size_t aes_128_gcm_traffic_secret_size = SHA256_DIGEST_LENGTH;
 uint8_t aes_128_gcm_traffic_secret[aes_128_gcm_traffic_secret_size] = {
-  0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b,
-  0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b,
-  0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b};
+    0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b,
+    0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b,
+    0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b};
 const size_t aes_256_gcm_traffic_secret_size = SHA384_DIGEST_LENGTH;
 uint8_t aes_256_gcm_traffic_secret[aes_256_gcm_traffic_secret_size] = {
-  0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b,
-  0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b,
-  0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b,
-  0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b};
+    0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b,
+    0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b,
+    0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b,
+    0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b};
 const size_t chacha_poly_traffic_secret_size = SHA256_DIGEST_LENGTH;
 uint8_t chacha_poly_traffic_secret[chacha_poly_traffic_secret_size] = {
-  0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b,
-  0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b,
-  0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b};
+    0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b,
+    0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b,
+    0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b};
 
 static grpc_status_code setup_crypter(TLSCiphersuite ciphersuite,
                                       grpc_channel* channel,
                                       s2a_crypter** crypter,
                                       char** error_details) {
-
-  //char* short_secret = gpr_strdup("kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk");
-  uint8_t short_secret[] = {107, 107, 107, 107,107, 107, 107, 107,107, 107, 107, 107,
-    107, 107, 107, 107,107, 107, 107, 107,107, 107, 107, 107,107, 107, 107, 107,107, 107, 107, 107};
-  GPR_ASSERT(short_secret[0] == 107);
   uint8_t* traffic_secret;
   size_t traffic_secret_size;
   switch (ciphersuite) {
     case TLS_AES_128_GCM_SHA256_ciphersuite:
-      std::cout << "AES-128-GCM" << std::endl;
-      //traffic_secret = aes_128_gcm_traffic_secret;
-      traffic_secret = short_secret;
+      traffic_secret = aes_128_gcm_traffic_secret;
       traffic_secret_size = aes_128_gcm_traffic_secret_size;
       break;
     case TLS_AES_256_GCM_SHA384_ciphersuite:
-      std::cout << "AES-256-GCM" << std::endl;
       traffic_secret = aes_256_gcm_traffic_secret;
       traffic_secret_size = aes_256_gcm_traffic_secret_size;
       break;
     case TLS_CHACHA20_POLY1305_SHA256_ciphersuite:
-      std::cout << "CHACHA-POLY" << std::endl;
       traffic_secret = chacha_poly_traffic_secret;
       traffic_secret_size = chacha_poly_traffic_secret_size;
       break;
     default:
-      GPR_ASSERT(0 == 1);
+      gpr_log(GPR_ERROR, S2A_UNSUPPORTED_CIPHERSUITE);
+      abort();
   }
-  return s2a_crypter_create(/** tls_version **/ 0, s2a_numeric_ciphersuite(ciphersuite),
-                            traffic_secret, traffic_secret_size, traffic_secret,
-                            traffic_secret_size, channel, crypter, error_details);
-}
-
-// grpc_byte_buffer* session_state_buffer = create_example_session_state(
-//      /** admissible_tls_version **/ true, ciphersuite,
-//      /** has_in_out_key **/ true,
-//      /** correct_key_size **/ true,
-//      /** has_in_out_sequence **/ true,
-//      /** has_in_out_fixed_nonce **/ true);
-/**  upb::Arena arena;
-  s2a_SessionState* session_state = nullptr;
-  grpc_status_code deserialize_status = s2a_deserialize_session_state(
-      session_state_buffer, arena.ptr(), &session_state, error_details);
-  if (deserialize_status != GRPC_STATUS_OK) {
-    return deserialize_status;
-  }
-  GPR_ASSERT(session_state != nullptr);
-  grpc_byte_buffer_destroy(session_state_buffer);
-
-  upb_strview in_key = s2a_SessionState_in_key(session_state);
-  upb_strview out_key = s2a_SessionState_out_key(session_state);
-  size_t key_size;
-  if (in_key.size != out_key.size) {
-    return GRPC_STATUS_INTERNAL;
-  } else {
-    key_size = in_key.size;
-  }
-  upb_strview in_nonce = s2a_SessionState_in_fixed_nonce(session_state);
-  upb_strview out_nonce = s2a_SessionState_out_fixed_nonce(session_state);
-  size_t nonce_size;
-  if (in_nonce.size != out_nonce.size) {
-    return GRPC_STATUS_INTERNAL;
-  } else {
-    nonce_size = in_nonce.size;
-  }
-
   return s2a_crypter_create(
-      s2a_SessionState_tls_version(session_state),
-      s2a_SessionState_tls_ciphersuite(session_state), (uint8_t*)in_key.data,
-      (uint8_t*)out_key.data, key_size, (uint8_t*)in_nonce.data,
-      (uint8_t*)out_nonce.data, nonce_size, channel, crypter, error_details);
-}**/
+      /** tls_version **/ 0, s2a_numeric_ciphersuite(ciphersuite),
+      traffic_secret, traffic_secret_size, traffic_secret, traffic_secret_size,
+      channel, crypter, error_details);
+}
 
 static void test_incorrect_tls_version() {
   s2a_crypter* crypter = nullptr;
@@ -131,12 +80,11 @@ static void test_incorrect_tls_version() {
   uint8_t out_traffic_secret[32] = "out_traffic_secret";
   grpc_status_code status = s2a_crypter_create(
       /** TLS 1.2 **/ 1, TLS_AES_128_GCM_SHA256, in_traffic_secret,
-      SHA256_DIGEST_LENGTH, out_traffic_secret, SHA256_DIGEST_LENGTH,
-      channel, &crypter, &error_details);
+      SHA256_DIGEST_LENGTH, out_traffic_secret, SHA256_DIGEST_LENGTH, channel,
+      &crypter, &error_details);
   GPR_ASSERT(status == GRPC_STATUS_FAILED_PRECONDITION);
   int correct_error_message =
       strcmp(error_details, S2A_UNSUPPORTED_TLS_VERSION);
-  std::cout << error_details << std::endl;
   GPR_ASSERT(correct_error_message == 0);
 
   // Cleanup.
@@ -150,14 +98,13 @@ static void test_incorrect_key_size() {
   char* error_details = nullptr;
   uint8_t in_traffic_secret[SHA256_DIGEST_LENGTH] = "in_traffic_secret";
   uint8_t out_traffic_secret[SHA256_DIGEST_LENGTH] = "out_traffic_secret";
-  //uint8_t* in_traffic_secret = (uint8_t*)gpr_zalloc(SHA256_DIGEST_LENGTH*sizeof(uint8_t));
-  //uint8_t* out_traffic_secret = (uint8_t*)gpr_zalloc(SHA256_DIGEST_LENGTH*sizeof(uint8_t));
   grpc_status_code status = s2a_crypter_create(
       /** TLS 1.3 **/ 0, TLS_AES_128_GCM_SHA256, in_traffic_secret,
       SHA256_DIGEST_LENGTH, out_traffic_secret, SHA256_DIGEST_LENGTH - 1,
       channel, &crypter, &error_details);
   GPR_ASSERT(status == GRPC_STATUS_FAILED_PRECONDITION);
-  int correct_error_message = strcmp(error_details, S2A_TRAFFIC_SECRET_SIZE_MISMATCH);
+  int correct_error_message =
+      strcmp(error_details, S2A_TRAFFIC_SECRET_SIZE_MISMATCH);
   GPR_ASSERT(correct_error_message == 0);
 
   // Cleanup.
@@ -288,14 +235,18 @@ static void test_create_crypter_success(TLSCiphersuite ciphersuite) {
 
   switch (ciphersuite) {
     case TLS_AES_128_GCM_SHA256_ciphersuite:
-      verify_half_connections(ciphersuite, crypter, aes_128_gcm_traffic_secret_size, aes_128_gcm_traffic_secret);
+      verify_half_connections(ciphersuite, crypter,
+                              aes_128_gcm_traffic_secret_size,
+                              aes_128_gcm_traffic_secret);
       break;
     case TLS_AES_256_GCM_SHA384_ciphersuite:
-      verify_half_connections(ciphersuite, crypter, aes_256_gcm_traffic_secret_size,
+      verify_half_connections(ciphersuite, crypter,
+                              aes_256_gcm_traffic_secret_size,
                               aes_256_gcm_traffic_secret);
       break;
     case TLS_CHACHA20_POLY1305_SHA256_ciphersuite:
-      verify_half_connections(ciphersuite, crypter, chacha_poly_traffic_secret_size,
+      verify_half_connections(ciphersuite, crypter,
+                              chacha_poly_traffic_secret_size,
                               chacha_poly_traffic_secret);
       break;
     default:
@@ -552,19 +503,19 @@ static void test_encrypt_empty_plaintext(TLSCiphersuite ciphersuite) {
 }
 
 int main(int argc, char** argv) {
-  //test_incorrect_tls_version();
-  //test_incorrect_key_size();
-  //test_deserialize_byte_buffer();
+  // test_incorrect_tls_version();
+  // test_incorrect_key_size();
+  // test_deserialize_byte_buffer();
   size_t number_ciphersuites = 3;
   TLSCiphersuite ciphersuite[3] = {TLS_AES_128_GCM_SHA256_ciphersuite,
                                    TLS_AES_256_GCM_SHA384_ciphersuite,
                                    TLS_CHACHA20_POLY1305_SHA256_ciphersuite};
   for (size_t i = 0; i < number_ciphersuites; i++) {
     test_create_crypter_success(ciphersuite[i]);
-    //test_encrypt_record_bad_size(ciphersuite[i]);
-    //test_encrypt_record_success(ciphersuite[i]);
-    //test_encrypt_three_records(ciphersuite[i]);
-    //test_encrypt_empty_plaintext(ciphersuite[i]);
+    // test_encrypt_record_bad_size(ciphersuite[i]);
+    // test_encrypt_record_success(ciphersuite[i]);
+    // test_encrypt_three_records(ciphersuite[i]);
+    // test_encrypt_empty_plaintext(ciphersuite[i]);
   }
   return 0;
 }

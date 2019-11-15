@@ -2093,8 +2093,8 @@ static void gsec_test_do_vector_tests_ieee() {
   gsec_aead_free_test_vector(test_vector_20);
 }
 
-static void hkdf_check_out_key(GsecHashFunction hash_function, uint8_t* info, size_t info_size,
-                               uint8_t* prk, size_t prk_size,
+static void hkdf_check_out_key(GsecHashFunction hash_function, uint8_t* info,
+                               size_t info_size, uint8_t* prk, size_t prk_size,
                                uint8_t* correct_out_key, size_t out_key_size) {
   uint8_t* out_key =
       static_cast<uint8_t*>(gpr_zalloc(out_key_size * sizeof(uint8_t)));

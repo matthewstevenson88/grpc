@@ -24,8 +24,6 @@
 #include "src/core/tsi/s2a/record_protocol/s2a_crypter_util.h"
 #include "src/core/tsi/s2a/s2a_constants.h"
 
-#include <iostream>
-
 /** The following buffers were generated using a different TLS 1.3
  *  implementation. The keys and nonces are derived from the traffic secret
  *  "kkkk...k", with the length determined by the ciphersuite. **/
@@ -132,14 +130,11 @@ void verify_half_connections(TLSCiphersuite ciphersuite, s2a_crypter* crypter,
   switch (ciphersuite) {
     case TLS_AES_128_GCM_SHA256_ciphersuite:
       expected_nonce = aes_128_gcm_nonce_bytes;
-      std::cout << "AES-128-GCM" << std::endl;
       break;
     case TLS_AES_256_GCM_SHA384_ciphersuite:
-      std::cout << "AES-256-GCM" << std::endl;
       expected_nonce = aes_256_gcm_nonce_bytes;
       break;
     case TLS_CHACHA20_POLY1305_SHA256_ciphersuite:
-      std::cout << "CHACHA-POLY" << std::endl;
       expected_nonce = chacha_poly_nonce_bytes;
       break;
     default:
@@ -148,24 +143,20 @@ void verify_half_connections(TLSCiphersuite ciphersuite, s2a_crypter* crypter,
   }
   check_half_connection(crypter, /** in_half_connection **/ true,
                         /** expected_sequence **/ 0,
-                        expected_traffic_secret_size,
-                        expected_traffic_secret,
+                        expected_traffic_secret_size, expected_traffic_secret,
                         /** expected nonce size **/ 12, expected_nonce,
                         SSL3_RT_HEADER_LENGTH);
   check_half_connection(crypter, /** in_half_connection **/ true,
                         /** expected_sequence **/ 0,
-                        expected_traffic_secret_size,
-                        expected_traffic_secret,
+                        expected_traffic_secret_size, expected_traffic_secret,
                         /** expected nonce size **/ 12, expected_nonce,
                         SSL3_RT_HEADER_LENGTH);
 }
 
-static grpc_byte_buffer* create_example_session_state(bool admissible_tls_version,
-                                               TLSCiphersuite ciphersuite,
-                                               bool has_in_out_key,
-                                               bool correct_key_size,
-                                               bool has_in_out_sequence,
-                                               bool has_in_out_fixed_nonce) {
+static grpc_byte_buffer* create_example_session_state(
+    bool admissible_tls_version, TLSCiphersuite ciphersuite,
+    bool has_in_out_key, bool correct_key_size, bool has_in_out_sequence,
+    bool has_in_out_fixed_nonce) {
   upb::Arena arena;
   s2a_SessionState* session_state = s2a_SessionState_new(arena.ptr());
 

@@ -29,6 +29,10 @@
 #define POLY1305_TAG_LEN 16
 #endif
 
+#ifndef EVP_AEAD_MAX_KEY_LENGTH
+#define EVP_AEAD_MAX_KEY_LENGTH 80
+#endif
+
 #ifndef EVP_AEAD_MAX_NONCE_LENGTH
 #define EVP_AEAD_MAX_NONCE_LENGTH 24
 #endif
@@ -65,8 +69,11 @@
   "S2A does not support the desired TLS version."
 #define S2A_UNSUPPORTED_CIPHERSUITE \
   "S2A does not support the desired TLS ciphersuite."
-#define S2A_CREATE_NULLPTR "There is an unexpected nullptr argument to |s2a_crypter_create|."
-#define S2A_TRAFFIC_SECRET_SIZE_MISMATCH "The size of the provisioned traffic secret does not match the ciphersuite traffic secret size."
+#define S2A_CREATE_NULLPTR \
+  "There is an unexpected nullptr argument to |s2a_crypter_create|."
+#define S2A_TRAFFIC_SECRET_SIZE_MISMATCH                                       \
+  "The size of the provisioned traffic secret does not match the ciphersuite " \
+  "traffic secret size."
 #define S2A_KEY_SIZE_MISMATCH \
   "The size of the provisioned keys does not match the ciphersuite key size."
 #define S2A_NONCE_SIZE_MISMATCH                                              \
