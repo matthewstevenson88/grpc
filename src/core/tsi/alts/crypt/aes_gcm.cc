@@ -183,11 +183,11 @@ static void aes_gcm_mask_nonce(uint8_t* dst, const uint8_t* nonce,
 }
 
 static grpc_status_code hkdf_derivation(HMAC_CTX* hmac, const EVP_MD* digest,
-                                        const size_t digest_size,
-                                        size_t n, uint8_t* buffer,
-                                        const uint8_t* prk, size_t prk_size,
-                                        const uint8_t* info, size_t info_size,
-                                        uint8_t* out_key, size_t out_size) {
+                                        const size_t digest_size, size_t n,
+                                        uint8_t* buffer, const uint8_t* prk,
+                                        size_t prk_size, const uint8_t* info,
+                                        size_t info_size, uint8_t* out_key,
+                                        size_t out_size) {
   if (!HMAC_Init_ex(hmac, prk, prk_size, digest, nullptr)) {
     return GRPC_STATUS_INTERNAL;
   }
@@ -236,8 +236,8 @@ grpc_status_code hkdf_derive_secret(uint8_t* out_key, size_t out_size,
   HMAC_CTX hmac;
   HMAC_CTX_init(&hmac);
   derivation_status =
-      hkdf_derivation(&hmac, digest, digest_size, n, buf, prk, prk_size,
-                      info, info_size, out_key, out_size);
+      hkdf_derivation(&hmac, digest, digest_size, n, buf, prk, prk_size, info,
+                      info_size, out_key, out_size);
   HMAC_CTX_cleanup(&hmac);
 #else
   HMAC_CTX* hmac = HMAC_CTX_new();
@@ -245,8 +245,8 @@ grpc_status_code hkdf_derive_secret(uint8_t* out_key, size_t out_size,
     return GRPC_STATUS_INTERNAL;
   }
   derivation_status =
-      hkdf_derivation(hmac, digest, digest_size, n, buf, prk, prk_size,
-                      info, info_size, out_key, out_size);
+      hkdf_derivation(hmac, digest, digest_size, n, buf, prk, prk_size, info,
+                      info_size, out_key, out_size);
   HMAC_CTX_free(hmac);
 #endif
   return derivation_status;
