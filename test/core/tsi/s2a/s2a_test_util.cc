@@ -132,11 +132,14 @@ void verify_half_connections(TLSCiphersuite ciphersuite, s2a_crypter* crypter,
   switch (ciphersuite) {
     case TLS_AES_128_GCM_SHA256_ciphersuite:
       expected_nonce = aes_128_gcm_nonce_bytes;
+      std::cout << "AES-128-GCM" << std::endl;
       break;
     case TLS_AES_256_GCM_SHA384_ciphersuite:
+      std::cout << "AES-256-GCM" << std::endl;
       expected_nonce = aes_256_gcm_nonce_bytes;
       break;
     case TLS_CHACHA20_POLY1305_SHA256_ciphersuite:
+      std::cout << "CHACHA-POLY" << std::endl;
       expected_nonce = chacha_poly_nonce_bytes;
       break;
     default:

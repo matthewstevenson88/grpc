@@ -38,7 +38,7 @@ typedef struct s2a_half_connection {
   uint8_t* traffic_secret;
   size_t fixed_nonce_size = 0;
   uint8_t* fixed_nonce;
-  uint8_t additional_data_size = 0;
+  size_t additional_data_size = 0;
 } s2a_half_connection;
 
 /** The main struct for the s2a_crypter interface. **/
@@ -81,16 +81,23 @@ static grpc_status_code derive_tls13_secret(uint16_t ciphersuite, bool is_key,
                                             uint8_t* secret, size_t secret_size,
                                             size_t output_size, uint8_t* output,
                                             char** error_details) {
-  const uint8_t key_suffix[] = "\x09tls13 key\x00";
-  const uint8_t nonce_suffix[] = "\x08tls13 iv\x00";
-  const uint8_t* suffix;
+  std::cout << "Traffic secret is " << std::endl;
+  for (size_t i = 0; i < secret_size; i++) {
+      std::cout << static_cast<unsigned>(secret[i]) << ",";
+  }
+  std::cout << "." << std::endl;
+  const char key_suffix[] = "\x09tls13 key\x00";
+  const char nonce_suffix[] = "\x08tls13 iv\x00";
+  const char* suffix;
   size_t suffix_size;
   if (is_key) {
     suffix = key_suffix;
     suffix_size = sizeof(key_suffix) - 1;
+    GPR_ASSERT(suffix_size == 11);
   } else {
     suffix = nonce_suffix;
     suffix_size = sizeof(nonce_suffix) - 1;
+    GPR_ASSERT(suffix_size == 10);
   }
 
   GsecHashFunction hash_function;
@@ -115,8 +122,20 @@ static grpc_status_code derive_tls13_secret(uint16_t ciphersuite, bool is_key,
   label[1] = output_size;
   memcpy(label + 2, suffix, suffix_size);
 
-  return hkdf_derive_secret(output, output_size, hash_function,
+  grpc_status_code status = hkdf_derive_secret(output, output_size, hash_function,
                             secret, secret_size, label, label_size);
+  if (is_key) {
+    std::cout << "Key:";
+  } else {
+    std::cout << "Nonce:";
+  }
+  for (size_t i = 0; i < output_size; i++) {
+      std::cout << static_cast<unsigned>(output[i]) << ",";
+  }
+  if (status != GRPC_STATUS_OK) {
+    std::cout << "Status is not ok." << std::endl;
+  }
+  std::cout << ". End of derive_secret function." << std::endl;
 }
 
 static grpc_status_code assign_crypter(bool in, uint8_t* traffic_secret,
@@ -124,6 +143,12 @@ static grpc_status_code assign_crypter(bool in, uint8_t* traffic_secret,
                                        uint64_t sequence, s2a_crypter** crypter,
                                        char** error_details) {
   s2a_crypter* rp_crypter = *crypter;
+
+  std::cout << "Traffic secret is " << std::endl;
+  for (size_t i = 0; i < traffic_secret_size; i++) {
+      std::cout << static_cast<unsigned>(traffic_secret[i]) << ",";
+  }
+  std::cout << "." << std::endl;
 
   /** Derive the key and nonce from the traffic secret. **/
   size_t key_size;
@@ -154,8 +179,8 @@ static grpc_status_code assign_crypter(bool in, uint8_t* traffic_secret,
     return GRPC_STATUS_FAILED_PRECONDITION;
   }
 
-  uint8_t key[key_size];
-  uint8_t nonce[nonce_size];
+  uint8_t key[EVP_AEAD_MAX_KEY_LENGTH];
+  uint8_t nonce[EVP_AEAD_MAX_NONCE_LENGTH];
   grpc_status_code key_status = derive_tls13_secret(rp_crypter->ciphersuite,
                                                     /** is_key **/ true,
                                                     traffic_secret,
@@ -163,8 +188,10 @@ static grpc_status_code assign_crypter(bool in, uint8_t* traffic_secret,
                                                     key_size, key,
                                                     error_details);
   if (key_status != GRPC_STATUS_OK) {
+    std::cout << "Key status was not ok." << std::endl;
     return key_status;
   }
+
   grpc_status_code nonce_status = derive_tls13_secret(rp_crypter->ciphersuite,
                                                       /** is_key **/ false,
                                                       traffic_secret,
@@ -174,6 +201,17 @@ static grpc_status_code assign_crypter(bool in, uint8_t* traffic_secret,
   if (nonce_status != GRPC_STATUS_OK) {
     return nonce_status;
   }
+
+  std::cout << "Key is " << std::endl;
+  for (size_t i = 0; i < key_size; i++) {
+      std::cout << static_cast<unsigned>(key[i]) << ",";
+  }
+  std::cout << "." << std::endl;
+  std::cout << "Nonce is " << std::endl;
+  for (size_t i = 0; i < nonce_size; i++) {
+      std::cout << static_cast<unsigned>(nonce[i]) << ",";
+  }
+  std::cout << "." << std::endl;
 
   /** Create the aead crypter. **/
   gsec_aead_crypter* aead_crypter = nullptr;
@@ -203,6 +241,7 @@ static grpc_status_code assign_crypter(bool in, uint8_t* traffic_secret,
     rp_crypter->out_aead_crypter = aead_crypter;
   }
 
+  char* cast_nonce = reinterpret_cast<char*>(nonce);
   /** Assign the remaining data for the half connection. **/
   s2a_half_connection* half_connection =
       (s2a_half_connection*)gpr_malloc(sizeof(s2a_half_connection));
@@ -219,7 +258,7 @@ static grpc_status_code assign_crypter(bool in, uint8_t* traffic_secret,
   half_connection->fixed_nonce_size = nonce_size;
   half_connection->fixed_nonce =
       (uint8_t*)gpr_zalloc(nonce_size * sizeof(uint8_t));
-  memcpy(half_connection->fixed_nonce, nonce, nonce_size);
+  memcpy(half_connection->fixed_nonce, cast_nonce, nonce_size);
   half_connection->additional_data_size = SSL3_RT_HEADER_LENGTH;
 
   return GRPC_STATUS_OK;
@@ -239,6 +278,9 @@ grpc_status_code s2a_crypter_create(
     *error_details = gpr_strdup(S2A_UNSUPPORTED_TLS_VERSION);
     return GRPC_STATUS_FAILED_PRECONDITION;
   }
+
+  std::cout << "in_traffic_secret[0]=" << static_cast<unsigned>(in_traffic_secret[0]) << std::endl;
+  GPR_ASSERT(in_traffic_secret[0] == 107);
 
   *crypter = grpc_core::New<s2a_crypter>(tls_version, tls_ciphersuite);
   s2a_crypter* rp_crypter = *crypter;
