@@ -2098,15 +2098,12 @@ static void hkdf_check_out_key(GsecHashFunction hash_function,
                                std::vector<uint8_t>& info,
                                std::vector<uint8_t>& prk,
                                std::vector<uint8_t>& correct_out_key) {
-  std::vector<uint8_t> out_key;
-  out_key.resize(correct_out_key.size(), 0);
+  std::vector<uint8_t> out_key(correct_out_key.size(), 0);
   grpc_status_code derive_status =
       hkdf_derive_secret(out_key.data(), out_key.size(), hash_function,
                          prk.data(), prk.size(), info.data(), info.size());
   GPR_ASSERT(derive_status == GRPC_STATUS_OK);
-  for (size_t i = 0; i < out_key.size(); i++) {
-    GPR_ASSERT(out_key[i] == correct_out_key[i]);
-  }
+  GPR_ASSERT(out_key == correct_out_key);
 }
 
 static void gsec_test_derive_data() {
