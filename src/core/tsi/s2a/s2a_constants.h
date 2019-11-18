@@ -52,6 +52,10 @@
  *  decrypting TLS 1.3 records. **/
 #define TLS_ADDITIONAL_DATA_BYTES_SIZE 13
 
+/** The maximum size of a frame expected by the S2A frame protector. **/
+// TODO(mattstev): took this from ALTS - should it be different?
+constexpr size_t kS2AMaxFrameSize = 16 * 1024 * 1024;
+
 /** S2A error messages. **/
 #define S2A_UNSUPPORTED_TLS_VERSION \
   "S2A does not support the desired TLS version."
@@ -74,5 +78,7 @@
 #define S2A_INVALID_UNPROTECTED_VEC \
   "Ensure |unprotected_vec| is nullptr iff |unprotected_vec_size| = 0."
 #define S2A_RECORD_INCOMPLETE "The TLS record is incomplete."
+#define S2A_FRAME_EXCEED_MAX_SIZE \
+  "The frame size is larger than the maximum frame size."
 
 #endif  // GRPC_CORE_TSI_S2A_S2A_CONSTANTS_H

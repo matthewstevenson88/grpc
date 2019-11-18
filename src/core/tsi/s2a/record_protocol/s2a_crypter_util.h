@@ -24,6 +24,8 @@
 #include <grpc/grpc.h>
 #include "src/core/ext/upb-generated/src/proto/grpc/gcp/s2a.upb.h"
 #include "src/core/lib/slice/slice_internal.h"
+#include "src/core/tsi/s2a/record_protocol/s2a_crypter.h"
+#include "src/core/tsi/transport_security_interface.h"
 
 /** This method populates |session_state| with the s2a_SessionState instance
  *  extracted from |session_state_buffer|.
@@ -49,5 +51,8 @@
 grpc_status_code s2a_deserialize_session_state(
     grpc_byte_buffer* session_state_buffer, upb_arena* arena,
     s2a_SessionState** session_state, char** error_details);
+
+/** This method returns the tsi_result corresponding to |status|. **/
+tsi_result s2a_util_convert_to_tsi_result(s2a_decrypt_status status);
 
 #endif  // GRPC_CORE_TSI_S2A_RECORD_PROTOCOL_S2A_CRYPTER_UTIL_H

@@ -24,21 +24,21 @@
 #include "src/core/lib/iomgr/exec_ctx.h"
 #include "src/core/lib/slice/slice_internal.h"
 #include "src/core/tsi/alts/handshaker/alts_tsi_utils.h"
-// TODO: is constants include necessary?
-#include "src/core/tsi/s2a/s2a_constants.h"
 #include "src/core/tsi/s2a/frame_protector/s2a_frame_protector.h"
 #include "src/core/tsi/s2a/record_protocol/s2a_crypter.h"
+#include "src/core/tsi/s2a/record_protocol/s2a_crypter_util.h"
+#include "src/core/tsi/s2a/s2a_constants.h"
 
+// TODO(mattstev): comments.
 typedef struct s2a_zero_copy_grpc_protector {
   tsi_zero_copy_grpc_protector base;
   s2a_crypter* crypter;
   size_t max_protected_frame_size;
   size_t max_unprotected_data_size;
-  // TODO: comment on what these are!
   grpc_slice_buffer protected_sb;
   grpc_slice_buffer protected_staging_sb;
   grpc_slice_buffer unprotected_staging_sb;
-  uint64_t current_frame_size;
+  size_t current_frame_size;
 } s2a_zero_copy_grpc_protector;
 
 /** --- tsi_zero_copy_grpc_protector methods implementation. --- **/
@@ -80,26 +80,85 @@ static tsi_result s2a_zero_copy_grpc_protector_protect(
   return alts_tsi_utils_convert_to_tsi_result(status);
 }
 
+// TODO(mattstev): add a comment.
+static bool s2a_read_frame_size(const grpc_slice_buffer* sb,
+                                size_t* total_frame_size) {
+  GPR_ASSERT(total_frame_size != nullptr);
+  if (sb == nullptr || sb->length < SSL3_RT_HEADER_LENGTH) {
+    return false;
+  }
+  uint8_t header_buffer[SSL3_RT_HEADER_LENGTH];
+  uint8_t* buffer = header_buffer;
+  size_t bytes_remaining = SSL3_RT_HEADER_LENGTH;
+  for (size_t i = 0; i < sb->count; i++) {
+    size_t slice_length = GRPC_SLICE_LENGTH(sb->slices[i]);
+    if (bytes_remaining <= slice_length) {
+      memcpy(buffer, GRPC_SLICE_START_PTR(sb->slices[i]), bytes_remaining);
+      bytes_remaining = 0;
+      break;
+    } else {
+      memcpy(buffer, GRPC_SLICE_START_PTR(sb->slices[i]), slice_length);
+      buffer += slice_length;
+      bytes_remaining -= slice_length;
+    }
+  }
+  GPR_ASSERT(bytes_remaining == 0);
+  size_t payload_size = (header_buffer[3] << 8) + header_buffer[4];
+  if (payload_size + SSL3_RT_HEADER_LENGTH > kS2AMaxFrameSize) {
+    gpr_log(GPR_ERROR, S2A_FRAME_EXCEED_MAX_SIZE);
+    return false;
+  }
+  *total_frame_size = payload_size + SSL3_RT_HEADER_LENGTH;
+  return true;
+}
+
 static tsi_result s2a_zero_copy_grpc_protector_unprotect(
     tsi_zero_copy_grpc_protector* self, grpc_slice_buffer* protected_slices,
     grpc_slice_buffer* unprotected_slices) {
-  if (self == nullptr || protected_slices == nullptr || unprotected_slices == nullptr) {
-    gpr_log(GPR_ERROR, "Invalid nullptr arguments to |s2a_zero_copy_grpc_protector_unprotect|.");
+  if (self == nullptr || protected_slices == nullptr ||
+      unprotected_slices == nullptr) {
+    gpr_log(GPR_ERROR,
+            "Invalid nullptr arguments to "
+            "|s2a_zero_copy_grpc_protector_unprotect|.");
     return TSI_INVALID_ARGUMENT;
   }
   s2a_zero_copy_grpc_protector* protector =
       reinterpret_cast<s2a_zero_copy_grpc_protector*>(self);
   char* error_details = nullptr;
+  grpc_slice_buffer_move_into(protected_slices, &(protector->protected_sb));
 
-  while (protector->protected_sb.length >= ...) {
+  // TODO(mattstev): add comments.
+  while (protector->protected_sb.length >= SSL3_RT_HEADER_LENGTH) {
     if (protector->current_frame_size == 0) {
-
+      if (!s2a_read_frame_size(&(protector->protected_sb),
+                               &(protector->current_frame_size))) {
+        grpc_slice_buffer_reset_and_unref_internal(&(protector->protected_sb));
+        return TSI_DATA_CORRUPTED;
+      }
     }
     if (protector->protected_sb.length < protector->current_frame_size) {
       break;
     }
-    tsi_result status;
-
+    s2a_decrypt_status status;
+    if (protector->protected_sb.length == protector->current_frame_size) {
+      status =
+          s2a_unprotect_record(protector->crypter, &(protector->protected_sb),
+                               unprotected_slices, &error_details);
+    } else {
+      grpc_slice_buffer_move_first(&(protector->protected_sb),
+                                   protector->current_frame_size,
+                                   &(protector->protected_staging_sb));
+      status = s2a_unprotect_record(protector->crypter,
+                                    &(protector->protected_staging_sb),
+                                    unprotected_slices, &error_details);
+    }
+    protector->current_frame_size = 0;
+    if (status != OK) {
+      grpc_slice_buffer_reset_and_unref_internal(&(protector->protected_sb));
+      gpr_log(GPR_ERROR, "Failed to unprotect record: %s", error_details);
+      gpr_free(error_details);
+      return s2a_util_convert_to_tsi_result(status);
+    }
   }
   return TSI_OK;
 }

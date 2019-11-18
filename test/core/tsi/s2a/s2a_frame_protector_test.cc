@@ -75,32 +75,27 @@ static void s2a_zero_copy_grpc_protector_create_test(
    *  nullptr arguments. **/
   tsi_result create_result = s2a_zero_copy_grpc_protector_create(
       /** tls_version **/ 0, tls_ciphersuite, (uint8_t*)key, (uint8_t*)key,
-      key_size, (uint8_t*)nonce, (uint8_t*)nonce, nonce_size, channel,
-      nullptr);
+      key_size, (uint8_t*)nonce, (uint8_t*)nonce, nonce_size, channel, nullptr);
   GPR_ASSERT(create_result == TSI_INVALID_ARGUMENT);
 
   create_result = s2a_zero_copy_grpc_protector_create(
-      /** tls_version **/ 0, tls_ciphersuite, nullptr, (uint8_t*)key,
-      key_size, (uint8_t*)nonce, (uint8_t*)nonce, nonce_size, channel,
-      &protector);
+      /** tls_version **/ 0, tls_ciphersuite, nullptr, (uint8_t*)key, key_size,
+      (uint8_t*)nonce, (uint8_t*)nonce, nonce_size, channel, &protector);
   GPR_ASSERT(create_result == TSI_INVALID_ARGUMENT);
 
   create_result = s2a_zero_copy_grpc_protector_create(
-      /** tls_version **/ 0, tls_ciphersuite, (uint8_t*)key, nullptr,
-      key_size, (uint8_t*)nonce, (uint8_t*)nonce, nonce_size, channel,
-      &protector);
-  GPR_ASSERT(create_result == TSI_INVALID_ARGUMENT);
-
-  create_result = s2a_zero_copy_grpc_protector_create(
-      /** tls_version **/ 0, tls_ciphersuite, (uint8_t*)key, (uint8_t*)key,
-      key_size, nullptr, (uint8_t*)nonce, nonce_size, channel,
-      &protector);
+      /** tls_version **/ 0, tls_ciphersuite, (uint8_t*)key, nullptr, key_size,
+      (uint8_t*)nonce, (uint8_t*)nonce, nonce_size, channel, &protector);
   GPR_ASSERT(create_result == TSI_INVALID_ARGUMENT);
 
   create_result = s2a_zero_copy_grpc_protector_create(
       /** tls_version **/ 0, tls_ciphersuite, (uint8_t*)key, (uint8_t*)key,
-      key_size, (uint8_t*)nonce, nullptr, nonce_size, channel,
-      &protector);
+      key_size, nullptr, (uint8_t*)nonce, nonce_size, channel, &protector);
+  GPR_ASSERT(create_result == TSI_INVALID_ARGUMENT);
+
+  create_result = s2a_zero_copy_grpc_protector_create(
+      /** tls_version **/ 0, tls_ciphersuite, (uint8_t*)key, (uint8_t*)key,
+      key_size, (uint8_t*)nonce, nullptr, nonce_size, channel, &protector);
   GPR_ASSERT(create_result == TSI_INVALID_ARGUMENT);
 
   create_result = s2a_zero_copy_grpc_protector_create(
@@ -192,19 +187,17 @@ static tsi_result setup_protector(TLSCiphersuite ciphersuite,
 
   return s2a_zero_copy_grpc_protector_create(
       s2a_SessionState_tls_version(session_state),
-      s2a_SessionState_tls_ciphersuite(session_state),
-      (uint8_t*)in_key.data, (uint8_t*)out_key.data,
-      key_size, (uint8_t*)in_nonce.data,
-      (uint8_t*)out_nonce.data, nonce_size,
-      channel, protector);
+      s2a_SessionState_tls_ciphersuite(session_state), (uint8_t*)in_key.data,
+      (uint8_t*)out_key.data, key_size, (uint8_t*)in_nonce.data,
+      (uint8_t*)out_nonce.data, nonce_size, channel, protector);
 }
 
-static void s2a_zero_copy_grpc_protector_small_protect_test(TLSCiphersuite ciphersuite) {
+static void s2a_zero_copy_grpc_protector_small_protect_test(
+    TLSCiphersuite ciphersuite) {
   grpc_core::ExecCtx exec_ctx;
   tsi_zero_copy_grpc_protector* protector = nullptr;
   grpc_channel* channel = grpc_core::New<grpc_channel>();
-  tsi_result create_result = setup_protector(ciphersuite, channel,
-                                             &protector);
+  tsi_result create_result = setup_protector(ciphersuite, channel, &protector);
   if (ciphersuite == TLS_CHACHA20_POLY1305_SHA256_ciphersuite) {
     GPR_ASSERT(create_result == TSI_UNIMPLEMENTED);
 
@@ -218,16 +211,16 @@ static void s2a_zero_copy_grpc_protector_small_protect_test(TLSCiphersuite ciphe
 
   size_t test_plaintext_size = 6;
   uint8_t test_plaintext[7] = "123456";
-  grpc_slice test_slice = grpc_slice_from_static_buffer(test_plaintext,
-                                                        test_plaintext_size);
+  grpc_slice test_slice =
+      grpc_slice_from_static_buffer(test_plaintext, test_plaintext_size);
   grpc_slice_buffer plaintext_buffer;
   grpc_slice_buffer_init(&plaintext_buffer);
   grpc_slice_buffer_add(&plaintext_buffer, test_slice);
   grpc_slice_buffer record_buffer;
   grpc_slice_buffer_init(&record_buffer);
 
-  GPR_ASSERT(tsi_zero_copy_grpc_protector_protect(
-      protector, &plaintext_buffer, &record_buffer) == TSI_OK);
+  GPR_ASSERT(tsi_zero_copy_grpc_protector_protect(protector, &plaintext_buffer,
+                                                  &record_buffer) == TSI_OK);
   GPR_ASSERT(record_buffer.count == 1);
   uint8_t* record = GRPC_SLICE_START_PTR(record_buffer.slices[0]);
   size_t record_size = GRPC_SLICE_LENGTH(record_buffer.slices[0]);
@@ -237,7 +230,7 @@ static void s2a_zero_copy_grpc_protector_small_protect_test(TLSCiphersuite ciphe
   bool correct_record = check_encrypt_record(
       ciphersuite, record, record_size,
       /** record_two **/ nullptr, /** record_two_size **/ 0,
-      /** record_three **/ nullptr, /** record_three_size **/0,
+      /** record_three **/ nullptr, /** record_three_size **/ 0,
       &error_details);
   GPR_ASSERT(correct_record);
   GPR_ASSERT(error_details == nullptr);
@@ -249,12 +242,12 @@ static void s2a_zero_copy_grpc_protector_small_protect_test(TLSCiphersuite ciphe
   grpc_core::ExecCtx::Get()->Flush();
 }
 
-static void s2a_zero_copy_grpc_protector_empty_protect_test(TLSCiphersuite ciphersuite) {
+static void s2a_zero_copy_grpc_protector_empty_protect_test(
+    TLSCiphersuite ciphersuite) {
   grpc_core::ExecCtx exec_ctx;
   tsi_zero_copy_grpc_protector* protector = nullptr;
   grpc_channel* channel = grpc_core::New<grpc_channel>();
-  tsi_result create_result = setup_protector(ciphersuite, channel,
-                                             &protector);
+  tsi_result create_result = setup_protector(ciphersuite, channel, &protector);
   if (ciphersuite == TLS_CHACHA20_POLY1305_SHA256_ciphersuite) {
     GPR_ASSERT(create_result == TSI_UNIMPLEMENTED);
 
@@ -274,15 +267,15 @@ static void s2a_zero_copy_grpc_protector_empty_protect_test(TLSCiphersuite ciphe
   grpc_slice_buffer record_buffer;
   grpc_slice_buffer_init(&record_buffer);
 
-  GPR_ASSERT(tsi_zero_copy_grpc_protector_protect(
-      protector, &plaintext_buffer, &record_buffer) == TSI_OK);
+  GPR_ASSERT(tsi_zero_copy_grpc_protector_protect(protector, &plaintext_buffer,
+                                                  &record_buffer) == TSI_OK);
   GPR_ASSERT(record_buffer.count == 1);
   uint8_t* record = GRPC_SLICE_START_PTR(record_buffer.slices[0]);
   size_t record_size = GRPC_SLICE_LENGTH(record_buffer.slices[0]);
   GPR_ASSERT(record_size == expected_message_size(/** plaintext_size **/ 0));
   char* error_details = nullptr;
-  GPR_ASSERT(check_record_empty_plaintext(ciphersuite, record,
-                                          record_size, &error_details));
+  GPR_ASSERT(check_record_empty_plaintext(ciphersuite, record, record_size,
+                                          &error_details));
   GPR_ASSERT(error_details == nullptr);
 
   grpc_slice_buffer_destroy_internal(&plaintext_buffer);
@@ -291,7 +284,6 @@ static void s2a_zero_copy_grpc_protector_empty_protect_test(TLSCiphersuite ciphe
   grpc_core::Delete<grpc_channel>(channel);
   grpc_core::ExecCtx::Get()->Flush();
 }
-
 
 int main(int /** argc **/, char** /** argv **/) {
   size_t number_ciphersuites = 3;
@@ -303,5 +295,7 @@ int main(int /** argc **/, char** /** argv **/) {
     s2a_zero_copy_grpc_protector_small_protect_test(ciphersuite[i]);
     s2a_zero_copy_grpc_protector_empty_protect_test(ciphersuite[i]);
   }
+  // TODO(mattstev): add unprotect tests. Note that this is blocked by the PR
+  // containing the implementation of the decrypt method.
   return 0;
 }

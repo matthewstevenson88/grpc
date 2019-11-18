@@ -50,3 +50,14 @@ grpc_status_code s2a_deserialize_session_state(
   }
   return GRPC_STATUS_OK;
 }
+
+tsi_result s2a_util_convert_to_tsi_result(s2a_decrypt_status status) {
+  switch (status) {
+    case OK:
+      return TSI_OK;
+    default:
+      // TODO(mattstev): add more specifics for other error codes once I decide
+      // how they will be used by the S2A TSI handshaker.
+      return TSI_UNIMPLEMENTED;
+  }
+}
