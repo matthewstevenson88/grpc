@@ -22,10 +22,11 @@
 #include <grpc/byte_buffer_reader.h>
 #include <grpc/grpc.h>
 #include <cstdint>
-#include "src/core/ext/upb-generated/src/proto/grpc/gcp/s2a.upb.h"
 #include "src/core/lib/gprpp/memory.h"
-#include "src/core/lib/slice/slice_internal.h"
 #include "src/core/tsi/alts/crypt/gsec.h"
+#include "src/core/tsi/grpc_shadow_boringssl.h"
+#include "src/proto/grpc/gcp/s2a.upb.h"
+#include "src/core/lib/slice/slice_internal.h"
 #include "src/core/tsi/s2a/s2a_constants.h"
 
 /** The S2A record protocol interface. It provides encrypt and decrypt

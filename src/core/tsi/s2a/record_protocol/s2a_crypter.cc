@@ -151,16 +151,16 @@ grpc_status_code s2a_crypter_create(
   size_t expected_nonce_size;
   switch (rp_crypter->ciphersuite) {
     case TLS_AES_128_GCM_SHA256:
-      expected_key_size = TLS_AES_128_GCM_SHA256_KEY_SIZE;
-      expected_nonce_size = TLS_AES_128_GCM_SHA256_NONCE_SIZE;
+      expected_key_size = kTlsAes128GcmSha256KeySize;
+      expected_nonce_size = kTlsAes128GcmSha256NonceSize;
       break;
     case TLS_AES_256_GCM_SHA384:
-      expected_key_size = TLS_AES_256_GCM_SHA384_KEY_SIZE;
-      expected_nonce_size = TLS_AES_256_GCM_SHA384_NONCE_SIZE;
+      expected_key_size = kTlsAes256GcmSha384KeySize;
+      expected_nonce_size = kTlsAes256GcmSha384NonceSize;
       break;
     case TLS_CHACHA20_POLY1305_SHA256:
-      expected_key_size = TLS_CHACHA20_POLY1305_SHA256_KEY_SIZE;
-      expected_nonce_size = TLS_CHACHA20_POLY1305_SHA256_NONCE_SIZE;
+      expected_key_size = kTlsChacha20Poly1305Sha256KeySize;
+      expected_nonce_size = kTlsChacha20Poly1305Sha256NonceSize;
       break;
     default:
       *error_details = gpr_strdup(S2A_UNSUPPORTED_CIPHERSUITE);
@@ -176,8 +176,8 @@ grpc_status_code s2a_crypter_create(
   }
 
   size_t tag_size = (rp_crypter->ciphersuite == TLS_CHACHA20_POLY1305_SHA256)
-                        ? POLY1305_TAG_LEN
-                        : EVP_AEAD_AES_GCM_TAG_LEN;
+                        ? kPoly1305TagLength
+                        : kEvpAeadAesGcmTagLength;
 
   grpc_status_code in_crypter_status = assign_crypter(
       /** in **/ true, derived_in_key, key_size, derived_in_nonce, nonce_size,

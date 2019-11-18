@@ -19,19 +19,10 @@
 #ifndef GRPC_CORE_TSI_S2A_S2A_CONSTANTS_H
 #define GRPC_CORE_TSI_S2A_S2A_CONSTANTS_H
 
-/** The following constants are defined in BoringSSL but not OpenSSL.
- *  See the aead.h file in BoringSSL for more documentation. **/
-#ifndef EVP_AEAD_AES_GCM_TAG_LEN
-#define EVP_AEAD_AES_GCM_TAG_LEN 16
-#endif
-
-#ifndef POLY1305_TAG_LEN
-#define POLY1305_TAG_LEN 16
-#endif
-
-#ifndef EVP_AEAD_MAX_NONCE_LENGTH
-#define EVP_AEAD_MAX_NONCE_LENGTH 24
-#endif
+/** The following constants are ciphersuite-specific data. **/
+constexpr size_t kEvpAeadAesGcmTagLength = 16;
+constexpr size_t kEvpAeadMaxNonceLength = 24;
+constexpr size_t kPoly1305TagLength = 16;
 
 /** The uint16_t's for the supported TLS 1.3 ciphersuites. **/
 #define TLS_AES_128_GCM_SHA256 0x009c
@@ -40,13 +31,13 @@
 
 /** The following constants represent the key and nonce sizes of the supported
  *  ciphersuites. **/
-#define TLS_AES_128_GCM_SHA256_KEY_SIZE 16
-#define TLS_AES_256_GCM_SHA384_KEY_SIZE 32
-#define TLS_CHACHA20_POLY1305_SHA256_KEY_SIZE 32
+constexpr size_t kTlsAes128GcmSha256KeySize = 16;
+constexpr size_t kTlsAes256GcmSha384KeySize = 32;
+constexpr size_t kTlsChacha20Poly1305Sha256KeySize = 32;
 
-#define TLS_AES_128_GCM_SHA256_NONCE_SIZE 12
-#define TLS_AES_256_GCM_SHA384_NONCE_SIZE 12
-#define TLS_CHACHA20_POLY1305_SHA256_NONCE_SIZE 12
+constexpr size_t kTlsAes128GcmSha256NonceSize = 12;
+constexpr size_t kTlsAes256GcmSha384NonceSize = 12;
+constexpr size_t kTlsChacha20Poly1305Sha256NonceSize = 12;
 
 /** The size of the additional data bytes buffer used for encrypting and
  *  decrypting TLS 1.3 records. **/

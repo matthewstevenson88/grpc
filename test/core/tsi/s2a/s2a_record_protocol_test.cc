@@ -76,9 +76,9 @@ static void test_incorrect_tls_version() {
   char* error_details = nullptr;
   grpc_status_code status = s2a_crypter_create(
       /** TLS 1.2 **/ 1, TLS_AES_128_GCM_SHA256, /** in key **/ nullptr,
-      /** out key **/ nullptr, TLS_AES_128_GCM_SHA256_KEY_SIZE,
+      /** out key **/ nullptr, kTlsAes128GcmSha256KeySize,
       /** in nonce **/ nullptr, /** out nonce **/ nullptr,
-      TLS_AES_128_GCM_SHA256_NONCE_SIZE, channel, &crypter, &error_details);
+      kTlsAes128GcmSha256NonceSize, channel, &crypter, &error_details);
   GPR_ASSERT(status == GRPC_STATUS_FAILED_PRECONDITION);
   int correct_error_message =
       strcmp(error_details, S2A_UNSUPPORTED_TLS_VERSION);
@@ -99,8 +99,8 @@ static void test_incorrect_key_size() {
   uint8_t derived_out_nonce[24] = "derived_out_nonce";
   grpc_status_code status = s2a_crypter_create(
       /** TLS 1.3 **/ 0, TLS_AES_128_GCM_SHA256, derived_in_key,
-      derived_out_key, TLS_AES_128_GCM_SHA256_KEY_SIZE - 1, derived_in_nonce,
-      derived_out_nonce, TLS_AES_128_GCM_SHA256_NONCE_SIZE, channel, &crypter,
+      derived_out_key, kTlsAes128GcmSha256KeySize - 1, derived_in_nonce,
+      derived_out_nonce, kTlsAes128GcmSha256NonceSize, channel, &crypter,
       &error_details);
   GPR_ASSERT(status == GRPC_STATUS_FAILED_PRECONDITION);
   int correct_error_message = strcmp(error_details, S2A_KEY_SIZE_MISMATCH);
@@ -191,19 +191,19 @@ static void test_create_crypter_success(TLSCiphersuite ciphersuite) {
   size_t correct_tag_size = 0;
   switch (ciphersuite) {
     case TLS_AES_128_GCM_SHA256_ciphersuite:
-      correct_key_size = TLS_AES_128_GCM_SHA256_KEY_SIZE;
-      correct_nonce_size = TLS_AES_128_GCM_SHA256_NONCE_SIZE;
-      correct_tag_size = EVP_AEAD_AES_GCM_TAG_LEN;
+      correct_key_size = kTlsAes128GcmSha256KeySize;
+      correct_nonce_size = kTlsAes128GcmSha256NonceSize;
+      correct_tag_size = kEvpAeadAesGcmTagLength;
       break;
     case TLS_AES_256_GCM_SHA384_ciphersuite:
-      correct_key_size = TLS_AES_256_GCM_SHA384_KEY_SIZE;
-      correct_nonce_size = TLS_AES_256_GCM_SHA384_NONCE_SIZE;
-      correct_tag_size = EVP_AEAD_AES_GCM_TAG_LEN;
+      correct_key_size = kTlsAes256GcmSha384KeySize;
+      correct_nonce_size = kTlsAes256GcmSha384NonceSize;
+      correct_tag_size = kEvpAeadAesGcmTagLength;
       break;
     case TLS_CHACHA20_POLY1305_SHA256_ciphersuite:
-      correct_key_size = TLS_CHACHA20_POLY1305_SHA256_KEY_SIZE;
-      correct_nonce_size = TLS_CHACHA20_POLY1305_SHA256_NONCE_SIZE;
-      correct_tag_size = POLY1305_TAG_LEN;
+      correct_key_size = kTlsChacha20Poly1305Sha256KeySize;
+      correct_nonce_size = kTlsChacha20Poly1305Sha256NonceSize;
+      correct_tag_size = kPoly1305TagLength;
       break;
     default:
       break;
