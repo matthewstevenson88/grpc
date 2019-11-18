@@ -1011,6 +1011,20 @@ grpc_cc_library(
 )
 
 grpc_cc_library(
+    name = "s2a_upb",
+    srcs = [
+        "src/core/ext/upb-generated/src/proto/grpc/gcp/s2a.upb.c",
+    ],
+    hdrs = [
+        "src/core/ext/upb-generated/src/proto/grpc/gcp/s2a.upb.h",
+    ],
+    external_deps = [
+        "upb_lib",
+    ],
+    language = "c++",
+)
+
+grpc_cc_library(
     name = "grpc_client_channel",
     srcs = [
         "src/core/ext/filters/client_channel/backend_metric.cc",
@@ -1961,6 +1975,16 @@ grpc_cc_library(
 )
 
 grpc_cc_library(
+    name = "s2a_constants",
+    srcs = [ ],
+    hdrs = [
+        "src/core/tsi/s2a/s2a_constants.h",
+    ],
+    language = "c++",
+    deps = [ ],
+)
+
+grpc_cc_library(
     name = "s2a_record_protocol",
     srcs = [
       "src/core/tsi/s2a/record_protocol/s2a_crypter.cc",
@@ -1975,6 +1999,7 @@ grpc_cc_library(
         "gpr",
         "grpc_base",
         "grpc_shadow_boringssl",
+        "s2a_constants",
         "s2a_upb",
     ],
 )

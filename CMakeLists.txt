@@ -1406,6 +1406,9 @@ add_library(grpc
   src/core/tsi/transport_security_grpc.cc
   src/core/tsi/s2a/handshaker/s2a_handshaker_client.cc
   src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.cc
+  src/core/tsi/s2a/record_protocol/s2a_crypter.cc
+  src/core/tsi/s2a/record_protocol/s2a_crypter_util.cc
+  src/core/ext/upb-generated/src/proto/grpc/gcp/s2a.upb.c
   src/core/ext/transport/chttp2/server/chttp2_server.cc
   src/core/ext/transport/chttp2/client/secure/secure_channel_create.cc
   src/core/ext/transport/chttp2/server/insecure/server_chttp2.cc
@@ -1886,6 +1889,9 @@ add_library(grpc_cronet
   src/core/tsi/transport_security_grpc.cc
   src/core/tsi/s2a/handshaker/s2a_handshaker_client.cc
   src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.cc
+  src/core/tsi/s2a/record_protocol/s2a_crypter.cc
+  src/core/tsi/s2a/record_protocol/s2a_crypter_util.cc
+  src/core/ext/upb-generated/src/proto/grpc/gcp/s2a.upb.c
 )
 
 set_target_properties(grpc_cronet PROPERTIES
@@ -1981,7 +1987,7 @@ add_library(grpc_test_util
   test/core/end2end/data/server1_key.cc
   test/core/end2end/data/test_root_cert.cc
   test/core/security/oauth2_utils.cc
-  test/core/tsi/s2a/record_protocol/s2a_test_util.cc
+  test/core/tsi/s2a/s2a_test_util.cc
   src/core/ext/filters/client_channel/resolver/fake/fake_resolver.cc
   test/core/end2end/cq_verifier.cc
   test/core/end2end/fixtures/http_proxy_fixture.cc
@@ -14729,7 +14735,7 @@ endif()
 if(gRPC_BUILD_TESTS)
 
 add_executable(s2a_record_protocol_test
-  test/core/tsi/s2a/record_protocol/s2a_record_protocol_test.cc
+  test/core/tsi/s2a/s2a_record_protocol_test.cc
   third_party/googletest/googletest/src/gtest-all.cc
   third_party/googletest/googlemock/src/gmock-all.cc
 )

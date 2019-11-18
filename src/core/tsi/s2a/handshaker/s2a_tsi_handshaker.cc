@@ -45,5 +45,5 @@ bool s2a_tsi_handshaker_has_shutdown(s2a_tsi_handshaker* handshaker) {
   return false;
 }
 
-} // grpc
-} // experimental
+}  // namespace experimental
+}  // namespace grpc

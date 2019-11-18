@@ -26,6 +26,7 @@ grpc_cc_library(
         "libssl",
     ],
     deps = [
+        "//:s2a_constants",
         "//:s2a_record_protocol",
     ],
 )
@@ -38,6 +39,7 @@ grpc_cc_test(
     ],
     language = "C++",
     deps = [
+        "//:s2a_constants",
         "//:s2a_record_protocol",
         ":s2a_test_util",
         "//:gpr",
