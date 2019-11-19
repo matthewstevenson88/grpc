@@ -451,7 +451,7 @@ grpc_status_code gsec_aes_gcm_aead_crypter_create(const uint8_t* key,
                                                   gsec_aead_crypter** crypter,
                                                   char** error_details);
 
-enum GsecHashFunction {
+enum class GsecHashFunction {
   SHA256_hash_function,
   SHA384_hash_function,
 };

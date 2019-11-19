@@ -58,6 +58,23 @@ typedef struct s2a_crypter {
       : tls_version(version), ciphersuite(cipher) {}
 } s2a_crypter;
 
+/** This function returns the tag size of the ciphersuite supported by
+ *  |crypter|. The caller must not pass in nullptr for |crypter|.
+ *  - crypter: an instance of s2a_crypter. **/
+static size_t s2a_tag_size(const s2a_crypter* crypter) {
+  GPR_ASSERT(crypter != nullptr);
+  switch (crypter->ciphersuite) {
+    case kTlsAes128GcmSha256:
+    case kTlsAes256GcmSha384:
+      return kEvpAeadAesGcmTagLength;
+    case kTlsChacha20Poly1305Sha256:
+      return kPoly1305TagLength;
+    default:
+      gpr_log(GPR_ERROR, kS2AUnsupportedCiphersuite);
+      abort();
+  }
+}
+
 /** This method writes |out_size| bytes of derived secret to |output|, based on
  *  |secret| and |ciphersuite|. If |is_key| is true, the derived secret is a
  *  key; otherwise, the derived secret is a nonce.
@@ -178,18 +195,18 @@ static grpc_status_code assign_crypter(bool in, uint8_t* traffic_secret,
   gsec_aead_crypter* aead_crypter = nullptr;
   grpc_status_code aead_crypter_status;
   switch (rp_crypter->ciphersuite) {
-    case TLS_AES_128_GCM_SHA256:
-    case TLS_AES_256_GCM_SHA384:
+    case kTlsAes128GcmSha256:
+    case kTlsAes256GcmSha384:
       aead_crypter_status = gsec_aes_gcm_aead_crypter_create(
           key, key_size, nonce_size, tag_size,
-          /** rekey **/ false, &aead_crypter, error_details);
+          /* rekey=*/ false, &aead_crypter, error_details);
       break;
-    case TLS_CHACHA20_POLY1305_SHA256:
+    case kTlsChacha20Poly1305Sha256:
       aead_crypter_status = gsec_chacha_poly_aead_crypter_create(
           key, key_size, nonce_size, tag_size, &aead_crypter, error_details);
       break;
     default:
-      *error_details = gpr_strdup(S2A_UNSUPPORTED_CIPHERSUITE);
+      *error_details = gpr_strdup(kS2AUnsupportedCiphersuite);
       return GRPC_STATUS_FAILED_PRECONDITION;
   }
   if (aead_crypter_status != GRPC_STATUS_OK) {
@@ -202,8 +219,8 @@ static grpc_status_code assign_crypter(bool in, uint8_t* traffic_secret,
   }
 
   /** Assign the remaining data for the half connection. **/
-  s2a_half_connection* half_connection =
-      (s2a_half_connection*)gpr_malloc(sizeof(s2a_half_connection));
+  s2a_half_connection* half_connection = static_cast<s2a_half_connection*>(
+      gpr_malloc(sizeof(s2a_half_connection)));
   if (in) {
     rp_crypter->in_connection = half_connection;
   } else {
@@ -235,7 +252,7 @@ grpc_status_code s2a_crypter_create(
     return GRPC_STATUS_FAILED_PRECONDITION;
   }
   if (tls_version != 0) {
-    *error_details = gpr_strdup(S2A_UNSUPPORTED_TLS_VERSION);
+    *error_details = gpr_strdup(kS2AUnsupportedTlsVersion);
     return GRPC_STATUS_FAILED_PRECONDITION;
   }
 
@@ -246,31 +263,44 @@ grpc_status_code s2a_crypter_create(
   rp_crypter->in_connection = nullptr;
   rp_crypter->out_connection = nullptr;
 
-  size_t tag_size;
   switch (rp_crypter->ciphersuite) {
-    case TLS_AES_128_GCM_SHA256:
-      tag_size = EVP_AEAD_AES_GCM_TAG_LEN;
+    case kTlsAes128GcmSha256:
+      expected_key_size = kTlsAes128GcmSha256KeySize;
+      expected_nonce_size = kTlsAes128GcmSha256NonceSize;
       break;
-    case TLS_AES_256_GCM_SHA384:
-      tag_size = EVP_AEAD_AES_GCM_TAG_LEN;
+    case kTlsAes256GcmSha384:
+      expected_key_size = kTlsAes256GcmSha384KeySize;
+      expected_nonce_size = kTlsAes256GcmSha384NonceSize;
       break;
-    case TLS_CHACHA20_POLY1305_SHA256:
-      tag_size = POLY1305_TAG_LEN;
+    case kTlsChacha20Poly1305Sha256:
+      expected_key_size = kTlsChacha20Poly1305Sha256KeySize;
+      expected_nonce_size = kTlsChacha20Poly1305Sha256NonceSize;
       break;
     default:
-      *error_details = gpr_strdup(S2A_UNSUPPORTED_CIPHERSUITE);
+      *error_details = gpr_strdup(kS2AUnsupportedCiphersuite);
       return GRPC_STATUS_FAILED_PRECONDITION;
   }
-
+  
   grpc_status_code in_crypter_status = assign_crypter(
-      /** in **/ true, in_traffic_secret, in_traffic_secret_size, tag_size,
+      /** in **/ true, in_traffic_secret, in_traffic_secret_size, s2a_tag_size(crypter),
       /** sequence **/ 0, crypter, error_details);
+
+  // TODO(mattstev): modify these.
+  if (expected_key_size != key_size) {
+    *error_details = gpr_strdup(kS2AKeySizeMismatch);
+    return GRPC_STATUS_FAILED_PRECONDITION;
+  }
+  if (expected_nonce_size != nonce_size) {
+    *error_details = gpr_strdup(kS2ANonceSizeMismatch);
+    return GRPC_STATUS_FAILED_PRECONDITION;
+  }
+
   if (in_crypter_status != GRPC_STATUS_OK) {
     return in_crypter_status;
   }
 
   grpc_status_code out_crypter_status = assign_crypter(
-      /** in **/ false, out_traffic_secret, out_traffic_secret_size, tag_size,
+      /** in **/ false, out_traffic_secret, out_traffic_secret_size, s2a_tag_size(crypter),
       /** sequence **/ 0, crypter, error_details);
   if (out_crypter_status != GRPC_STATUS_OK) {
     return out_crypter_status;
@@ -346,23 +376,6 @@ void check_half_connection(s2a_crypter* crypter, bool in_half_connection,
              expected_additional_data_size);
 }
 
-/** This function returns the tag size of the ciphersuite supported by
- *  |crypter|. The caller must not pass in nullptr for |crypter|.
- *  - crypter: an instance of s2a_crypter. **/
-static size_t s2a_tag_size(const s2a_crypter* crypter) {
-  GPR_ASSERT(crypter != nullptr);
-  switch (crypter->ciphersuite) {
-    case TLS_AES_128_GCM_SHA256:
-    case TLS_AES_256_GCM_SHA384:
-      return EVP_AEAD_AES_GCM_TAG_LEN;
-    case TLS_CHACHA20_POLY1305_SHA256:
-      return POLY1305_TAG_LEN;
-    default:
-      gpr_log(GPR_ERROR, S2A_UNSUPPORTED_CIPHERSUITE);
-      abort();
-  }
-}
-
 /** This function returns the max number of bytes occupied by the nonce of a
  *  TLS 1.3 record that is handled by |crypter|. The caller must not pass in
  *  nullptr for |crypter|.
@@ -371,7 +384,7 @@ static size_t s2a_max_aead_nonce_size(const s2a_crypter* crypter) {
   GPR_ASSERT(crypter != nullptr);
   /** If additional supported ciphersuites are added, then there may be
    *  additional options for the return value. **/
-  return EVP_AEAD_MAX_NONCE_LENGTH;
+  return kEvpAeadMaxNonceLength;
 }
 
 /** This function increments the sequence field of |half_connection|. If the
@@ -451,9 +464,9 @@ static uint8_t* s2a_additional_data(uint8_t* sequence, size_t sequence_size,
                                     uint8_t* record_header, size_t header_size,
                                     size_t payload_size) {
   size_t additional_data_size = sequence_size + header_size;
-  GPR_ASSERT(additional_data_size == TLS_ADDITIONAL_DATA_BYTES_SIZE);
+  GPR_ASSERT(additional_data_size == kTlsAdditionalDataBytesSize);
   uint8_t* additional_data =
-      (uint8_t*)gpr_malloc(additional_data_size * sizeof(uint8_t));
+      static_cast<uint8_t*>(gpr_malloc(additional_data_size * sizeof(uint8_t)));
   memcpy(additional_data, sequence, sequence_size);
   memcpy(additional_data + sequence_size, record_header, header_size);
   additional_data[11] = payload_size >> 8;
@@ -476,7 +489,8 @@ static uint8_t* s2a_nonce(s2a_crypter* crypter, uint8_t* sequence,
   GPR_ASSERT(max_nonce_size > sequence_size);
   GPR_ASSERT(sequence != nullptr);
   GPR_ASSERT(nonce_size != nullptr);
-  uint8_t* nonce = (uint8_t*)gpr_malloc(max_nonce_size * sizeof(uint8_t));
+  uint8_t* nonce =
+      static_cast<uint8_t*>(gpr_malloc(max_nonce_size * sizeof(uint8_t)));
   *nonce_size = crypter->out_connection->fixed_nonce_size;
   memset(nonce, 0, max_nonce_size);
   memcpy(nonce, crypter->out_connection->fixed_nonce, *nonce_size);
@@ -495,9 +509,8 @@ grpc_status_code s2a_write_tls13_record(
   GPR_ASSERT(crypter->out_connection->initialized);
   GPR_ASSERT(protected_record.iov_base != nullptr);
   GPR_ASSERT(bytes_written != nullptr);
-  if ((unprotected_vec == nullptr && unprotected_vec_size > 0) ||
-      (unprotected_vec != nullptr && unprotected_vec_size == 0)) {
-    *error_details = gpr_strdup(S2A_INVALID_UNPROTECTED_VEC);
+  if (unprotected_vec == nullptr && unprotected_vec_size > 0) {
+    *error_details = gpr_strdup(kS2AInvalidUnprotectedVec);
     return GRPC_STATUS_FAILED_PRECONDITION;
   }
   size_t plaintext_size =
@@ -505,11 +518,11 @@ grpc_status_code s2a_write_tls13_record(
   size_t payload_size = plaintext_size + s2a_tag_size(crypter) + 1;
 
   if (plaintext_size > SSL3_RT_MAX_PLAIN_LENGTH) {
-    *error_details = gpr_strdup(S2A_PLAINTEXT_EXCEED_MAX_SIZE);
+    *error_details = gpr_strdup(kS2APlaintextExceedMaxSize);
     return GRPC_STATUS_FAILED_PRECONDITION;
   }
   if (payload_size + SSL3_RT_HEADER_LENGTH > protected_record.iov_len) {
-    *error_details = gpr_strdup(S2A_PLAINTEXT_INSUFFICIENT_RECORD_SIZE);
+    *error_details = gpr_strdup(kS2APlaintextInsufficientRecordSize);
     return GRPC_STATUS_FAILED_PRECONDITION;
   }
 
@@ -533,7 +546,7 @@ grpc_status_code s2a_write_tls13_record(
   iovec aad_vec = {(void*)(additional_data + 8), SSL3_RT_HEADER_LENGTH};
 
   /** The following constructs the nonce for the TLS payload in local
-   *  storage. It is built by taking the fixed nonce from |crypter|'s
+   *  storage. It is built by taking the nonce mask from |crypter|'s
    *  out_connection and applying XOR operations with the bytes of the
    *  current sequence number. **/
   size_t nonce_size;
@@ -577,7 +590,7 @@ grpc_status_code s2a_encrypt(s2a_crypter* crypter, uint8_t* plaintext,
                              size_t record_allocated_size, size_t* record_size,
                              char** error_details) {
   if (plaintext == nullptr && plaintext_size > 0) {
-    *error_details = gpr_strdup(S2A_PLAINTEXT_NULLPTR);
+    *error_details = gpr_strdup(kS2APlaintextNullptr);
     return GRPC_STATUS_INVALID_ARGUMENT;
   }
   iovec plaintext_vec = {(void*)plaintext, plaintext_size};
