@@ -21,6 +21,7 @@
 
 #include <grpc/grpc.h>
 #include <grpc/support/sync.h>
+#include <vector>
 #include "src/core/tsi/s2a/record_protocol/s2a_crypter.h"
 
 grpc_byte_buffer* create_example_session_state(bool admissible_tls_version,
@@ -31,6 +32,15 @@ grpc_byte_buffer* create_example_session_state(bool admissible_tls_version,
                                                bool has_in_out_fixed_nonce);
 
 size_t expected_message_size(size_t plaintext_size);
+
+/** This method encrypts |plaintext| using |crypter|, writes the resulting TLs
+ *  1.3 record to |record|, and verifies that the TLS 1.3 record has the
+ * expected size. **/
+void encrypt_plaintext_and_verify_size(s2a_crypter* crypter,
+                                       std::vector<uint8_t>& plaintext,
+                                       std::vector<uint8_t>& record,
+                                       size_t* record_size,
+                                       char** error_details);
 
 /** This method verifies whether |record_*| and |record_*_size| match the TLS
  *  1.3 record obtained from a particular plaintext and using a crypter
@@ -45,18 +55,17 @@ size_t expected_message_size(size_t plaintext_size);
  *    match the first two TLS records;
  *  - if all of |record_one|, |record_two|, and |record_three| are not nullptr,
  *    then the method returns true iff they match the first three TLS records;
- *  - in any other case, the method returns false and possibly populates
- *    |error_details|. **/
-bool check_encrypt_record(uint16_t ciphersuite, uint8_t* record_one,
-                          size_t record_one_size, uint8_t* record_two,
-                          size_t record_two_size, uint8_t* record_three,
-                          size_t record_three_size, char** error_details);
+ *  - in any other case, the method returns false. **/
+bool check_encrypt_record(uint16_t ciphersuite,
+                          std::vector<uint8_t>& record_one,
+                          std::vector<uint8_t>& record_two,
+                          std::vector<uint8_t>& record_three);
 
 /** This method returns true if |record| and |record_size| match the TLS 1.3
  *  record obtained from an empty plaintext and using a crypter configured by
  *  the output of the |create_example_session_state| method. Otherwise, this
  *  method returns false. **/
-bool check_record_empty_plaintext(uint16_t ciphersuite, uint8_t* record,
-                                  size_t record_size, char** error_details);
+bool check_record_empty_plaintext(uint16_t ciphersuite,
+                                  std::vector<uint8_t>& record);
 
 #endif  //  GRPC_TEST_CORE_TSI_S2A_S2A_TEST_UTIL_H
