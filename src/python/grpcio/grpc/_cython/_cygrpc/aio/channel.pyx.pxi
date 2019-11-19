@@ -15,6 +15,7 @@
 cdef class AioChannel:
     def __cinit__(self, bytes target):
         self.channel = grpc_insecure_channel_create(<char *>target, NULL, NULL)
+        self.cq = CallbackCompletionQueue()
         self._target = target
 
     def __repr__(self):
@@ -25,6 +26,6 @@ cdef class AioChannel:
     def close(self):
         grpc_channel_destroy(self.channel)
 
-    async def unary_unary(self, method, request, timeout):
+    async def unary_unary(self, method, request, timeout, cancel_status):
         call = _AioCall(self)
-        return await call.unary_unary(method, request, timeout)
+        return await call.unary_unary(method, request, timeout, cancel_status)

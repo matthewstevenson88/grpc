@@ -185,7 +185,7 @@ Pod::Spec.new do |s|
     ss.header_mappings_dir = '.'
     ss.libraries = 'z'
     ss.dependency "#{s.name}/Interface", version
-    ss.dependency 'BoringSSL-GRPC', '0.0.4'
+    ss.dependency 'BoringSSL-GRPC', '0.0.5'
     ss.compiler_flags = '-DGRPC_SHADOW_BORINGSSL_SYMBOLS'
 
     ss.source_files = 'src/core/ext/filters/census/grpc_context.cc',
@@ -565,7 +565,6 @@ Pod::Spec.new do |s|
                       'src/core/lib/gprpp/orphanable.h',
                       'src/core/lib/gprpp/ref_counted.h',
                       'src/core/lib/gprpp/ref_counted_ptr.h',
-                      'src/core/lib/gprpp/set.h',
                       'src/core/lib/gprpp/string_view.h',
                       'src/core/lib/gprpp/sync.h',
                       'src/core/lib/gprpp/thd.h',
@@ -1159,7 +1158,6 @@ Pod::Spec.new do |s|
                               'src/core/lib/gprpp/orphanable.h',
                               'src/core/lib/gprpp/ref_counted.h',
                               'src/core/lib/gprpp/ref_counted_ptr.h',
-                              'src/core/lib/gprpp/set.h',
                               'src/core/lib/gprpp/string_view.h',
                               'src/core/lib/gprpp/sync.h',
                               'src/core/lib/gprpp/thd.h',

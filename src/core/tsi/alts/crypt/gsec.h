@@ -451,17 +451,21 @@ grpc_status_code gsec_aes_gcm_aead_crypter_create(const uint8_t* key,
                                                   gsec_aead_crypter** crypter,
                                                   char** error_details);
 
+enum class GsecHashFunction {
+  SHA256_hash_function,
+  SHA384_hash_function,
+};
+
 /** This method has the same functionality as the HKDF_expand function from
- *  BoringSSL, but specialized to the case of the AES-128-GCM-SHA256 and
- *  AES-256-GCM-SHA384 ciphersuites; see https://tools.ietf.org/html/rfc5869
- *  for specifications on the derivation function. This method computes an
- *  output key from the |prk| secret and |info|, and writes |out_size| bytes
- *  of the result to the |out_key| buffer.
+ *  BoringSSL, see https://tools.ietf.org/html/rfc5869 for specifications on
+ *  the derivation function. This method computes an output key from the |prk|
+ *  secret and |info|, and writes |out_size| bytes of the result to the
+ * |out_key| buffer.
  *  - out_key: a buffer that the method populates with the output key, which is
  *    owned by the caller.
  *  - out_size: the number of bytes allocated to the |out_key| buffer.
- *  - is_sha256: this boolean is true iff the ciphersuite employs SHA256, and
- *    false iff it employs SHA384.
+ *  - hash_function: this variable indicates the type of hash function to be
+ *    used to derive the secret..
  *  - prk: a pseudorandom key used to derive |out_key|.
  *  - prk_size: the size of the |prk| buffer.
  *  - info: additional context information used to derive |out_key|.
@@ -469,10 +473,10 @@ grpc_status_code gsec_aes_gcm_aead_crypter_create(const uint8_t* key,
  *
  *  On success, the method returns GRPC_STATUS_OK; otherwise, it returns an
  *  appropriate error code. **/
-grpc_status_code aes_gcm_derive_data(uint8_t* out_key, size_t out_size,
-                                     bool is_sha256, const uint8_t* prk,
-                                     size_t prk_size, const uint8_t* info,
-                                     size_t info_size);
+grpc_status_code hkdf_derive_secret(uint8_t* out_key, size_t out_size,
+                                    GsecHashFunction hash_function,
+                                    const uint8_t* prk, size_t prk_size,
+                                    const uint8_t* info, size_t info_size);
 /**
  * This method creates an AEAD crypter instance of CHACHA-POLY encryption scheme
  * which supports 32 bytes long keys, 12 bytes long nonces, and
