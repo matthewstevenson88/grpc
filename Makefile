@@ -4477,7 +4477,7 @@ LIBGRPC_TEST_UTIL_SRC = \
     test/core/end2end/data/server1_key.cc \
     test/core/end2end/data/test_root_cert.cc \
     test/core/security/oauth2_utils.cc \
-    test/core/tsi/s2a/record_protocol/s2a_test_util.cc \
+    test/core/tsi/s2a/s2a_test_util.cc \
     src/core/ext/filters/client_channel/resolver/fake/fake_resolver.cc \
     test/core/end2end/cq_verifier.cc \
     test/core/end2end/fixtures/http_proxy_fixture.cc \
@@ -19209,7 +19209,7 @@ endif
 
 
 S2A_RECORD_PROTOCOL_TEST_SRC = \
-    test/core/tsi/s2a/record_protocol/s2a_record_protocol_test.cc \
+    test/core/tsi/s2a/s2a_record_protocol_test.cc \
 
 S2A_RECORD_PROTOCOL_TEST_OBJS = $(addprefix $(OBJDIR)/$(CONFIG)/, $(addsuffix .o, $(basename $(S2A_RECORD_PROTOCOL_TEST_SRC))))
 ifeq ($(NO_SECURE),true)
@@ -19240,7 +19240,7 @@ endif
 
 endif
 
-$(OBJDIR)/$(CONFIG)/test/core/tsi/s2a/record_protocol/s2a_record_protocol_test.o:  $(LIBDIR)/$(CONFIG)/libgrpc_test_util.a $(LIBDIR)/$(CONFIG)/libgrpc.a
+$(OBJDIR)/$(CONFIG)/test/core/tsi/s2a/s2a_record_protocol_test.o:  $(LIBDIR)/$(CONFIG)/libgrpc_test_util.a $(LIBDIR)/$(CONFIG)/libgrpc.a
 
 deps_s2a_record_protocol_test: $(S2A_RECORD_PROTOCOL_TEST_OBJS:.o=.dep)
 
@@ -23414,7 +23414,7 @@ test/core/end2end/tests/call_creds.cc: $(OPENSSL_DEP)
 test/core/security/oauth2_utils.cc: $(OPENSSL_DEP)
 test/core/tsi/alts/crypt/gsec_test_util.cc: $(OPENSSL_DEP)
 test/core/tsi/alts/handshaker/alts_handshaker_service_api_test_lib.cc: $(OPENSSL_DEP)
-test/core/tsi/s2a/record_protocol/s2a_test_util.cc: $(OPENSSL_DEP)
+test/core/tsi/s2a/s2a_test_util.cc: $(OPENSSL_DEP)
 test/core/util/reconnect_server.cc: $(OPENSSL_DEP)
 test/core/util/test_tcp_server.cc: $(OPENSSL_DEP)
 test/cpp/end2end/test_health_check_service_impl.cc: $(OPENSSL_DEP)

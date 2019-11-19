@@ -1990,7 +1990,7 @@ add_library(grpc_test_util
   test/core/end2end/data/server1_key.cc
   test/core/end2end/data/test_root_cert.cc
   test/core/security/oauth2_utils.cc
-  test/core/tsi/s2a/record_protocol/s2a_test_util.cc
+  test/core/tsi/s2a/s2a_test_util.cc
   src/core/ext/filters/client_channel/resolver/fake/fake_resolver.cc
   test/core/end2end/cq_verifier.cc
   test/core/end2end/fixtures/http_proxy_fixture.cc
@@ -14808,7 +14808,7 @@ endif()
 if(gRPC_BUILD_TESTS)
 
 add_executable(s2a_record_protocol_test
-  test/core/tsi/s2a/record_protocol/s2a_record_protocol_test.cc
+  test/core/tsi/s2a/s2a_record_protocol_test.cc
   third_party/googletest/googletest/src/gtest-all.cc
   third_party/googletest/googlemock/src/gmock-all.cc
 )
