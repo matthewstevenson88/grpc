@@ -3916,6 +3916,9 @@ LIBGRPC_SRC = \
     src/core/tsi/s2a/handshaker/s2a_handshaker_client.cc \
     src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.cc \
     src/core/lib/security/credentials/s2a/grpc_s2a_credentials_options.cc \
+    src/core/tsi/s2a/record_protocol/s2a_crypter.cc \
+    src/core/tsi/s2a/record_protocol/s2a_crypter_util.cc \
+    src/core/ext/upb-generated/src/proto/grpc/gcp/s2a.upb.c \
     src/core/ext/transport/chttp2/server/chttp2_server.cc \
     src/core/ext/transport/chttp2/client/secure/secure_channel_create.cc \
     src/core/ext/transport/chttp2/server/insecure/server_chttp2.cc \
@@ -4391,6 +4394,9 @@ LIBGRPC_CRONET_SRC = \
     src/core/tsi/s2a/handshaker/s2a_handshaker_client.cc \
     src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.cc \
     src/core/lib/security/credentials/s2a/grpc_s2a_credentials_options.cc \
+    src/core/tsi/s2a/record_protocol/s2a_crypter.cc \
+    src/core/tsi/s2a/record_protocol/s2a_crypter_util.cc \
+    src/core/ext/upb-generated/src/proto/grpc/gcp/s2a.upb.c \
 
 PUBLIC_HEADERS_C += \
     include/grpc/impl/codegen/byte_buffer.h \
@@ -23309,6 +23315,7 @@ src/core/ext/transport/cronet/transport/cronet_api_dummy.cc: $(OPENSSL_DEP)
 src/core/ext/transport/cronet/transport/cronet_transport.cc: $(OPENSSL_DEP)
 src/core/ext/upb-generated/src/proto/grpc/gcp/altscontext.upb.c: $(OPENSSL_DEP)
 src/core/ext/upb-generated/src/proto/grpc/gcp/handshaker.upb.c: $(OPENSSL_DEP)
+src/core/ext/upb-generated/src/proto/grpc/gcp/s2a.upb.c: $(OPENSSL_DEP)
 src/core/ext/upb-generated/src/proto/grpc/gcp/transport_security_common.upb.c: $(OPENSSL_DEP)
 src/core/lib/http/httpcli_security_connector.cc: $(OPENSSL_DEP)
 src/core/lib/security/context/security_context.cc: $(OPENSSL_DEP)
@@ -23382,6 +23389,8 @@ src/core/tsi/fake_transport_security.cc: $(OPENSSL_DEP)
 src/core/tsi/local_transport_security.cc: $(OPENSSL_DEP)
 src/core/tsi/s2a/handshaker/s2a_handshaker_client.cc: $(OPENSSL_DEP)
 src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.cc: $(OPENSSL_DEP)
+src/core/tsi/s2a/record_protocol/s2a_crypter.cc: $(OPENSSL_DEP)
+src/core/tsi/s2a/record_protocol/s2a_crypter_util.cc: $(OPENSSL_DEP)
 src/core/tsi/ssl/session_cache/ssl_session_boringssl.cc: $(OPENSSL_DEP)
 src/core/tsi/ssl/session_cache/ssl_session_cache.cc: $(OPENSSL_DEP)
 src/core/tsi/ssl/session_cache/ssl_session_openssl.cc: $(OPENSSL_DEP)

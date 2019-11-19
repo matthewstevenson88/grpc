@@ -1412,6 +1412,9 @@ add_library(grpc
   src/core/tsi/s2a/handshaker/s2a_handshaker_client.cc
   src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.cc
   src/core/lib/security/credentials/s2a/grpc_s2a_credentials_options.cc
+  src/core/tsi/s2a/record_protocol/s2a_crypter.cc
+  src/core/tsi/s2a/record_protocol/s2a_crypter_util.cc
+  src/core/ext/upb-generated/src/proto/grpc/gcp/s2a.upb.c
   src/core/ext/transport/chttp2/server/chttp2_server.cc
   src/core/ext/transport/chttp2/client/secure/secure_channel_create.cc
   src/core/ext/transport/chttp2/server/insecure/server_chttp2.cc
@@ -1895,6 +1898,9 @@ add_library(grpc_cronet
   src/core/tsi/s2a/handshaker/s2a_handshaker_client.cc
   src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.cc
   src/core/lib/security/credentials/s2a/grpc_s2a_credentials_options.cc
+  src/core/tsi/s2a/record_protocol/s2a_crypter.cc
+  src/core/tsi/s2a/record_protocol/s2a_crypter_util.cc
+  src/core/ext/upb-generated/src/proto/grpc/gcp/s2a.upb.c
 )
 
 set_target_properties(grpc_cronet PROPERTIES

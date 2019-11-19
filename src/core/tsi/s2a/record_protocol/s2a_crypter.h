@@ -21,10 +21,10 @@
 
 #include <grpc/grpc.h>
 #include <cstdint>
-#include "src/core/ext/upb-generated/src/proto/grpc/gcp/s2a.upb.h"
 #include "src/core/lib/gprpp/memory.h"
 #include "src/core/tsi/alts/crypt/gsec.h"
 #include "src/core/tsi/grpc_shadow_boringssl.h"
+#include "src/proto/grpc/gcp/s2a.upb.h"
 
 #include <grpc/byte_buffer_reader.h>
 

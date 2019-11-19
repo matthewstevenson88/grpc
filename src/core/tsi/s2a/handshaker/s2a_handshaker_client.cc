@@ -52,5 +52,5 @@ tsi_result s2a_handshaker_client_create(
 
 void s2a_handshaker_client_destroy(s2a_handshaker_client* client) { return; }
 
-} // grpc
-} // experimental
+}  // namespace experimental
+}  // namespace grpc

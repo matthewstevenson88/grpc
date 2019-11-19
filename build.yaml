@@ -1627,11 +1627,18 @@ filegroups:
   headers:
   - src/core/tsi/s2a/handshaker/s2a_handshaker_client.h
   - src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.h
+  - src/core/tsi/s2a/record_protocol/s2a_crypter.h
+  - src/core/tsi/s2a/record_protocol/s2a_crypter_util.h
+  - src/core/tsi/s2a/s2a_constants.h
   src:
   - src/core/tsi/s2a/handshaker/s2a_handshaker_client.cc
   - src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.cc
+  - src/core/tsi/s2a/record_protocol/s2a_crypter.cc
+  - src/core/tsi/s2a/record_protocol/s2a_crypter_util.cc
   uses:
+  - alts_tsi
   - grpc_base
+  - s2a_upb
   - tsi_interface
   - tsi
 - name: s2a_util
@@ -1643,6 +1650,13 @@ filegroups:
   - src/core/lib/security/credentials/s2a/grpc_s2a_credentials_options.cc
   uses:
   - grpc_base
+- name: s2a_upb
+  headers:
+  - src/core/ext/upb-generated/src/proto/grpc/gcp/s2a.upb.h
+  src:
+  - src/core/ext/upb-generated/src/proto/grpc/gcp/s2a.upb.c
+  deps:
+  - upb
 - name: transport_security_test_lib
   headers:
   - test/core/tsi/transport_security_test_lib.h

@@ -334,6 +334,8 @@
     <file baseinstalldir="/" name="src/core/ext/upb-generated/src/proto/grpc/gcp/altscontext.upb.h" role="src" />
     <file baseinstalldir="/" name="src/core/ext/upb-generated/src/proto/grpc/gcp/handshaker.upb.c" role="src" />
     <file baseinstalldir="/" name="src/core/ext/upb-generated/src/proto/grpc/gcp/handshaker.upb.h" role="src" />
+    <file baseinstalldir="/" name="src/core/ext/upb-generated/src/proto/grpc/gcp/s2a.upb.c" role="src" />
+    <file baseinstalldir="/" name="src/core/ext/upb-generated/src/proto/grpc/gcp/s2a.upb.h" role="src" />
     <file baseinstalldir="/" name="src/core/ext/upb-generated/src/proto/grpc/gcp/transport_security_common.upb.c" role="src" />
     <file baseinstalldir="/" name="src/core/ext/upb-generated/src/proto/grpc/gcp/transport_security_common.upb.h" role="src" />
     <file baseinstalldir="/" name="src/core/ext/upb-generated/src/proto/grpc/health/v1/health.upb.c" role="src" />
@@ -848,6 +850,11 @@
     <file baseinstalldir="/" name="src/core/tsi/s2a/handshaker/s2a_handshaker_client.h" role="src" />
     <file baseinstalldir="/" name="src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.cc" role="src" />
     <file baseinstalldir="/" name="src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.h" role="src" />
+    <file baseinstalldir="/" name="src/core/tsi/s2a/record_protocol/s2a_crypter.cc" role="src" />
+    <file baseinstalldir="/" name="src/core/tsi/s2a/record_protocol/s2a_crypter.h" role="src" />
+    <file baseinstalldir="/" name="src/core/tsi/s2a/record_protocol/s2a_crypter_util.cc" role="src" />
+    <file baseinstalldir="/" name="src/core/tsi/s2a/record_protocol/s2a_crypter_util.h" role="src" />
+    <file baseinstalldir="/" name="src/core/tsi/s2a/s2a_constants.h" role="src" />
     <file baseinstalldir="/" name="src/core/tsi/ssl/session_cache/ssl_session.h" role="src" />
     <file baseinstalldir="/" name="src/core/tsi/ssl/session_cache/ssl_session_boringssl.cc" role="src" />
     <file baseinstalldir="/" name="src/core/tsi/ssl/session_cache/ssl_session_cache.cc" role="src" />

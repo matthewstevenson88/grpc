@@ -78,7 +78,7 @@ void s2a_tsi_handshaker_result_set_unused_bytes(tsi_handshaker_result* result,
  *  s2a_tsi_handshaker instance has been shutdown. **/
 bool s2a_tsi_handshaker_has_shutdown(s2a_tsi_handshaker* handshaker);
 
-} // grpc
-} // experimantal
+}  // namespace experimental
+}  // namespace grpc
 
 #endif  // GRPC_CORE_TSI_S2A_HANDSHAKER_S2A_TSI_HANDSHAKER_H
