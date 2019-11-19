@@ -1641,6 +1641,13 @@ filegroups:
   - s2a_upb
   - tsi_interface
   - tsi
+- name: s2a_upb
+  headers:
+  - src/core/ext/upb-generated/src/proto/grpc/gcp/s2a.upb.h
+  src:
+  - src/core/ext/upb-generated/src/proto/grpc/gcp/s2a.upb.c
+  deps:
+  - upb
 - name: s2a_util
   public_headers:
   - include/grpc/grpc_security.h
@@ -1650,13 +1657,6 @@ filegroups:
   - src/core/lib/security/credentials/s2a/grpc_s2a_credentials_options.cc
   uses:
   - grpc_base
-- name: s2a_upb
-  headers:
-  - src/core/ext/upb-generated/src/proto/grpc/gcp/s2a.upb.h
-  src:
-  - src/core/ext/upb-generated/src/proto/grpc/gcp/s2a.upb.c
-  deps:
-  - upb
 - name: transport_security_test_lib
   headers:
   - test/core/tsi/transport_security_test_lib.h
