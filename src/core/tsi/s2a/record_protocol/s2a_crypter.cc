@@ -112,17 +112,17 @@ static grpc_status_code derive_tls13_secret(uint16_t ciphersuite, bool is_key,
 
   GsecHashFunction hash_function;
   switch (ciphersuite) {
-    case TLS_AES_128_GCM_SHA256:
-      hash_function = SHA256_hash_function;
+    case kTlsAes128GcmSha256:
+      hash_function = GsecHashFunction::SHA256_hash_function;
       break;
-    case TLS_AES_256_GCM_SHA384:
-      hash_function = SHA384_hash_function;
+    case kTlsAes256GcmSha384:
+      hash_function = GsecHashFunction::SHA384_hash_function;
       break;
-    case TLS_CHACHA20_POLY1305_SHA256:
-      hash_function = SHA256_hash_function;
+    case kTlsChacha20Poly1305Sha256:
+      hash_function = GsecHashFunction::SHA256_hash_function;
       break;
     default:
-      *error_details = gpr_strdup(S2A_UNSUPPORTED_CIPHERSUITE);
+      *error_details = gpr_strdup(kS2AUnsupportedCiphersuite);
       return GRPC_STATUS_FAILED_PRECONDITION;
   }
 
@@ -149,32 +149,32 @@ static grpc_status_code assign_crypter(bool in, uint8_t* traffic_secret,
   size_t nonce_size;
   size_t expected_traffic_secret_size;
   switch (rp_crypter->ciphersuite) {
-    case TLS_AES_128_GCM_SHA256:
-      key_size = TLS_AES_128_GCM_SHA256_KEY_SIZE;
-      nonce_size = TLS_AES_128_GCM_SHA256_NONCE_SIZE;
-      expected_traffic_secret_size = SHA256_DIGEST_LENGTH;
+    case kTlsAes128GcmSha256:
+      key_size = kTlsAes128GcmSha256KeySize;
+      nonce_size = kTlsAes128GcmSha256NonceSize;
+      expected_traffic_secret_size = kSha256DigestLength;
       break;
-    case TLS_AES_256_GCM_SHA384:
-      key_size = TLS_AES_256_GCM_SHA384_KEY_SIZE;
-      nonce_size = TLS_AES_256_GCM_SHA384_NONCE_SIZE;
-      expected_traffic_secret_size = SHA384_DIGEST_LENGTH;
+    case kTlsAes256GcmSha384:
+      key_size = kTlsAes256GcmSha384KeySize;
+      nonce_size = kTlsAes256GcmSha384NonceSize;
+      expected_traffic_secret_size = kSha384DigestLength;
       break;
-    case TLS_CHACHA20_POLY1305_SHA256:
-      key_size = TLS_CHACHA20_POLY1305_SHA256_KEY_SIZE;
-      nonce_size = TLS_CHACHA20_POLY1305_SHA256_NONCE_SIZE;
-      expected_traffic_secret_size = SHA256_DIGEST_LENGTH;
+    case kTlsChacha20Poly1305Sha256:
+      key_size = kTlsChacha20Poly1305Sha256KeySize;
+      nonce_size = kTlsChacha20Poly1305Sha256NonceSize;
+      expected_traffic_secret_size = kSha256DigestLength;
       break;
     default:
-      *error_details = gpr_strdup(S2A_UNSUPPORTED_CIPHERSUITE);
+      *error_details = gpr_strdup(kS2AUnsupportedCiphersuite);
       return GRPC_STATUS_FAILED_PRECONDITION;
   }
   if (traffic_secret_size != expected_traffic_secret_size) {
-    *error_details = gpr_strdup(S2A_TRAFFIC_SECRET_SIZE_MISMATCH);
+    *error_details = gpr_strdup(kS2ATrafficSecretSizeMismatch);
     return GRPC_STATUS_FAILED_PRECONDITION;
   }
 
-  uint8_t key[EVP_AEAD_MAX_KEY_LENGTH];
-  uint8_t nonce[EVP_AEAD_MAX_NONCE_LENGTH];
+  uint8_t key[kEvpAeadMaxKeyLength];
+  uint8_t nonce[kEvpAeadMaxNonceLength];
   grpc_status_code key_status =
       derive_tls13_secret(rp_crypter->ciphersuite,
                           /** is_key **/ true, traffic_secret,
@@ -199,7 +199,7 @@ static grpc_status_code assign_crypter(bool in, uint8_t* traffic_secret,
     case kTlsAes256GcmSha384:
       aead_crypter_status = gsec_aes_gcm_aead_crypter_create(
           key, key_size, nonce_size, tag_size,
-          /* rekey=*/ false, &aead_crypter, error_details);
+          /* rekey=*/false, &aead_crypter, error_details);
       break;
     case kTlsChacha20Poly1305Sha256:
       aead_crypter_status = gsec_chacha_poly_aead_crypter_create(
@@ -248,7 +248,7 @@ grpc_status_code s2a_crypter_create(
     s2a_crypter** crypter, char** error_details) {
   if (crypter == nullptr || in_traffic_secret == nullptr ||
       out_traffic_secret == nullptr || channel == nullptr) {
-    *error_details = gpr_strdup(S2A_CREATE_NULLPTR);
+    *error_details = gpr_strdup(kS2ACreateNullptr);
     return GRPC_STATUS_FAILED_PRECONDITION;
   }
   if (tls_version != 0) {
@@ -263,44 +263,17 @@ grpc_status_code s2a_crypter_create(
   rp_crypter->in_connection = nullptr;
   rp_crypter->out_connection = nullptr;
 
-  switch (rp_crypter->ciphersuite) {
-    case kTlsAes128GcmSha256:
-      expected_key_size = kTlsAes128GcmSha256KeySize;
-      expected_nonce_size = kTlsAes128GcmSha256NonceSize;
-      break;
-    case kTlsAes256GcmSha384:
-      expected_key_size = kTlsAes256GcmSha384KeySize;
-      expected_nonce_size = kTlsAes256GcmSha384NonceSize;
-      break;
-    case kTlsChacha20Poly1305Sha256:
-      expected_key_size = kTlsChacha20Poly1305Sha256KeySize;
-      expected_nonce_size = kTlsChacha20Poly1305Sha256NonceSize;
-      break;
-    default:
-      *error_details = gpr_strdup(kS2AUnsupportedCiphersuite);
-      return GRPC_STATUS_FAILED_PRECONDITION;
-  }
-  
   grpc_status_code in_crypter_status = assign_crypter(
-      /** in **/ true, in_traffic_secret, in_traffic_secret_size, s2a_tag_size(crypter),
+      /** in **/ true, in_traffic_secret, in_traffic_secret_size,
+      s2a_tag_size(rp_crypter),
       /** sequence **/ 0, crypter, error_details);
-
-  // TODO(mattstev): modify these.
-  if (expected_key_size != key_size) {
-    *error_details = gpr_strdup(kS2AKeySizeMismatch);
-    return GRPC_STATUS_FAILED_PRECONDITION;
-  }
-  if (expected_nonce_size != nonce_size) {
-    *error_details = gpr_strdup(kS2ANonceSizeMismatch);
-    return GRPC_STATUS_FAILED_PRECONDITION;
-  }
-
   if (in_crypter_status != GRPC_STATUS_OK) {
     return in_crypter_status;
   }
 
   grpc_status_code out_crypter_status = assign_crypter(
-      /** in **/ false, out_traffic_secret, out_traffic_secret_size, s2a_tag_size(crypter),
+      /** in **/ false, out_traffic_secret, out_traffic_secret_size,
+      s2a_tag_size(rp_crypter),
       /** sequence **/ 0, crypter, error_details);
   if (out_crypter_status != GRPC_STATUS_OK) {
     return out_crypter_status;
@@ -439,8 +412,7 @@ static grpc_status_code s2a_write_tls13_record_header(uint8_t record_type,
                                                       char** error_details) {
   GPR_ASSERT(record_header != nullptr);
   if (header_size != SSL3_RT_HEADER_LENGTH) {
-    *error_details = gpr_strdup(
-        "The header size does not match the size of a TLS 1.3 record header.");
+    *error_details = gpr_strdup(kS2AHeaderSizeMismatch);
     return GRPC_STATUS_FAILED_PRECONDITION;
   }
   record_header[0] = record_type;

@@ -24,7 +24,7 @@
 #include "src/core/tsi/s2a/record_protocol/s2a_crypter_util.h"
 #include "src/core/tsi/s2a/s2a_constants.h"
 
-/** The following buffers were generated using a different TLS 1.3
+/** The following vectors were generated using a different TLS 1.3
  *  implementation. The keys and nonces are derived from the traffic secret
  *  "kkkk...k", with the length determined by the ciphersuite. **/
 std::vector<uint8_t> aes_128_gcm_key_bytes = {
@@ -48,7 +48,7 @@ std::vector<uint8_t> chacha_poly_nonce_bytes = {0xb5, 0x80, 0x3d, 0x82, 0xad,
                                                 0x88, 0x54, 0xd2, 0xe5, 0x98,
                                                 0x18, 0x7f, 0x00};
 
-/** The record_one buffers are obtained by encrypting the plaintext "123456"
+/** The record_one vectors are obtained by encrypting the plaintext "123456"
  *  using the above keys and sequence number 0. **/
 std::vector<uint8_t> aes_128_gcm_record_one_bytes = {
     0x17, 0x03, 0x03, 0x00, 0x17, 0xf2, 0xe4, 0xe4, 0x11, 0xac,
@@ -63,7 +63,7 @@ std::vector<uint8_t> chacha_poly_record_one_bytes = {
     0x30, 0x43, 0x70, 0x33, 0x8b, 0xb0, 0x7c, 0xe4, 0x68, 0xe6,
     0xb8, 0xa0, 0x94, 0x4a, 0x33, 0x8b, 0xa4, 0x02};
 
-/** The record_two buffers are obtained by encrypting the plaintext "789123456"
+/** The record_two vectors are obtained by encrypting the plaintext "789123456"
  *  using the above keys and sequence number 1. **/
 std::vector<uint8_t> aes_128_gcm_record_two_bytes = {
     0x17, 0x03, 0x03, 0x00, 0x1a, 0xd7, 0x85, 0x3a, 0xfd, 0x6d, 0x7c,
@@ -78,7 +78,7 @@ std::vector<uint8_t> chacha_poly_record_two_bytes = {
     0xc1, 0x10, 0xc1, 0x72, 0x26, 0x25, 0x42, 0xc6, 0x79, 0x16, 0xb7,
     0x8f, 0xa0, 0xd1, 0xc1, 0x26, 0x17, 0x09, 0xcd, 0x00};
 
-/** The record_three buffers are obtained by encrypting the plaintext "7891"
+/** The record_three vectors are obtained by encrypting the plaintext "7891"
  *  using the above keys and the sequence number 2. **/
 std::vector<uint8_t> aes_128_gcm_record_three_bytes = {
     0x17, 0x03, 0x03, 0x00, 0x15, 0xaf, 0x77, 0x8b, 0xe,
@@ -93,7 +93,7 @@ std::vector<uint8_t> chacha_poly_record_three_bytes = {
     0xcf, 0x1d, 0xc6, 0x95, 0x09, 0x49, 0x41, 0xab, 0xa1,
     0x6c, 0x6c, 0x24, 0x30, 0x5c, 0xc8, 0x40, 0x8a};
 
-/** The empty_record buffers are obtained by encrypting an empty plaintext using
+/** The empty_record vectors are obtained by encrypting an empty plaintext using
  *  the above keys and the sequence number 0. **/
 std::vector<uint8_t> aes_128_gcm_empty_record_bytes = {
     0x17, 0x03, 0x03, 0x00, 0x11, 0xd4, 0x7c, 0xb2, 0xec, 0x04, 0x0f,
@@ -106,35 +106,34 @@ std::vector<uint8_t> chacha_poly_empty_record_bytes = {
     0x17, 0x03, 0x03, 0x00, 0x11, 0xef, 0x8f, 0x7a, 0x42, 0x8d, 0xdc,
     0x84, 0xee, 0x59, 0x68, 0xcd, 0x63, 0x06, 0xbf, 0x1d, 0x2d, 0x1b};
 
-void verify_half_connections(TLSCiphersuite ciphersuite, s2a_crypter* crypter,
-                             size_t expected_traffic_secret_size,
-                             uint8_t* expected_traffic_secret) {
+void verify_half_connections(uint16_t ciphersuite, s2a_crypter* crypter,
+                             std::vector<uint8_t>& expected_traffic_secret) {
   GPR_ASSERT(crypter != nullptr);
   uint8_t* expected_nonce = nullptr;
   switch (ciphersuite) {
-    case TLS_AES_128_GCM_SHA256_ciphersuite:
-      expected_nonce = aes_128_gcm_nonce_bytes;
+    case kTlsAes128GcmSha256:
+      expected_nonce = aes_128_gcm_nonce_bytes.data();
       break;
-    case TLS_AES_256_GCM_SHA384_ciphersuite:
-      expected_nonce = aes_256_gcm_nonce_bytes;
+    case kTlsAes256GcmSha384:
+      expected_nonce = aes_256_gcm_nonce_bytes.data();
       break;
-    case TLS_CHACHA20_POLY1305_SHA256_ciphersuite:
-      expected_nonce = chacha_poly_nonce_bytes;
+    case kTlsChacha20Poly1305Sha256:
+      expected_nonce = chacha_poly_nonce_bytes.data();
       break;
     default:
-      gpr_log(GPR_ERROR, S2A_UNSUPPORTED_CIPHERSUITE);
+      gpr_log(GPR_ERROR, kS2AUnsupportedCiphersuite);
       abort();
   }
-  check_half_connection(crypter, /** in_half_connection **/ true,
-                        /** expected_sequence **/ 0,
-                        expected_traffic_secret_size, expected_traffic_secret,
-                        /** expected nonce size **/ 12, expected_nonce,
-                        SSL3_RT_HEADER_LENGTH);
-  check_half_connection(crypter, /** in_half_connection **/ true,
-                        /** expected_sequence **/ 0,
-                        expected_traffic_secret_size, expected_traffic_secret,
-                        /** expected nonce size **/ 12, expected_nonce,
-                        SSL3_RT_HEADER_LENGTH);
+  check_half_connection(
+      crypter, /** in_half_connection **/ true,
+      /** expected_sequence **/ 0, expected_traffic_secret.size(),
+      expected_traffic_secret.data(),
+      /** expected nonce size **/ 12, expected_nonce, SSL3_RT_HEADER_LENGTH);
+  check_half_connection(
+      crypter, /** in_half_connection **/ true,
+      /** expected_sequence **/ 0, expected_traffic_secret.size(),
+      expected_traffic_secret.data(),
+      /** expected nonce size **/ 12, expected_nonce, SSL3_RT_HEADER_LENGTH);
 }
 
 grpc_byte_buffer* create_example_session_state(bool admissible_tls_version,
