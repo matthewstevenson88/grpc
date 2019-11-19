@@ -107,7 +107,7 @@ uint8_t chacha_poly_empty_record_bytes[empty_record_size] = {
     0x84, 0xee, 0x59, 0x68, 0xcd, 0x63, 0x06, 0xbf, 0x1d, 0x2d, 0x1b};
 
 grpc_byte_buffer* create_example_session_state(bool admissible_tls_version,
-                                               TLSCiphersuite ciphersuite,
+                                               uint16_t ciphersuite,
                                                bool has_in_out_key,
                                                bool correct_key_size,
                                                bool has_in_out_sequence,
@@ -118,21 +118,9 @@ grpc_byte_buffer* create_example_session_state(bool admissible_tls_version,
   uint16_t tls_version = admissible_tls_version ?
                                                 /** TLS 1.3 **/ 0
                                                 : /** TLS 1.2 **/ 1;
-  uint16_t tls_ciphersuite;
-  switch (ciphersuite) {
-    case TLS_AES_128_GCM_SHA256_ciphersuite:
-      tls_ciphersuite = TLS_AES_128_GCM_SHA256;
-      break;
-    case TLS_AES_256_GCM_SHA384_ciphersuite:
-      tls_ciphersuite = TLS_AES_256_GCM_SHA384;
-      break;
-    case TLS_CHACHA20_POLY1305_SHA256_ciphersuite:
-      tls_ciphersuite = TLS_CHACHA20_POLY1305_SHA256;
-      break;
-  }
 
   s2a_SessionState_set_tls_version(session_state, (int32_t)tls_version);
-  s2a_SessionState_set_tls_ciphersuite(session_state, (int32_t)tls_ciphersuite);
+  s2a_SessionState_set_tls_ciphersuite(session_state, (int32_t)ciphersuite);
 
   if (has_in_out_sequence) {
     s2a_SessionState_set_in_sequence(session_state, 0);
@@ -141,7 +129,7 @@ grpc_byte_buffer* create_example_session_state(bool admissible_tls_version,
   if (has_in_out_key) {
     if (correct_key_size) {
       switch (ciphersuite) {
-        case TLS_AES_128_GCM_SHA256_ciphersuite: {
+        case kTlsAes128GcmSha256: {
           s2a_SessionState_set_in_key(
               session_state, upb_strview_make((char*)aes_128_gcm_key_bytes,
                                               /** key size **/ 16));
@@ -149,7 +137,7 @@ grpc_byte_buffer* create_example_session_state(bool admissible_tls_version,
               session_state, upb_strview_make((char*)aes_128_gcm_key_bytes,
                                               /** key size **/ 16));
         } break;
-        case TLS_AES_256_GCM_SHA384_ciphersuite: {
+        case kTlsAes256GcmSha384: {
           s2a_SessionState_set_in_key(
               session_state, upb_strview_make((char*)aes_256_gcm_key_bytes,
                                               /** key size **/ 32));
@@ -157,7 +145,7 @@ grpc_byte_buffer* create_example_session_state(bool admissible_tls_version,
               session_state, upb_strview_make((char*)aes_256_gcm_key_bytes,
                                               /** key size **/ 32));
         } break;
-        case TLS_CHACHA20_POLY1305_SHA256_ciphersuite: {
+        case kTlsChacha20Poly1305Sha256: {
           s2a_SessionState_set_in_key(
               session_state, upb_strview_make((char*)chacha_poly_key_bytes,
                                               /** key size **/ 32));
@@ -167,7 +155,7 @@ grpc_byte_buffer* create_example_session_state(bool admissible_tls_version,
         } break;
       }
     } else {
-      const char* key = (ciphersuite == TLS_AES_128_GCM_SHA256_ciphersuite)
+      const char* key = (ciphersuite == kTlsAes128GcmSha256)
                             ? "kkkkkkkkkkkkkkkkj"
                             : "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkj";
       s2a_SessionState_set_in_key(session_state, upb_strview_makez(key));
@@ -176,7 +164,7 @@ grpc_byte_buffer* create_example_session_state(bool admissible_tls_version,
   }
   if (has_in_out_fixed_nonce) {
     switch (ciphersuite) {
-      case TLS_AES_128_GCM_SHA256_ciphersuite: {
+      case kTlsAes128GcmSha256: {
         s2a_SessionState_set_in_fixed_nonce(
             session_state, upb_strview_make((char*)aes_128_gcm_nonce_bytes,
                                             /** nonce size **/ 12));
@@ -184,7 +172,7 @@ grpc_byte_buffer* create_example_session_state(bool admissible_tls_version,
             session_state, upb_strview_make((char*)aes_128_gcm_nonce_bytes,
                                             /** nonce size **/ 12));
       } break;
-      case TLS_AES_256_GCM_SHA384_ciphersuite: {
+      case kTlsAes256GcmSha384: {
         s2a_SessionState_set_in_fixed_nonce(
             session_state, upb_strview_make((char*)aes_256_gcm_nonce_bytes,
                                             /** nonce size **/ 12));
@@ -192,7 +180,7 @@ grpc_byte_buffer* create_example_session_state(bool admissible_tls_version,
             session_state, upb_strview_make((char*)aes_256_gcm_nonce_bytes,
                                             /** nonce size **/ 12));
       } break;
-      case TLS_CHACHA20_POLY1305_SHA256_ciphersuite: {
+      case kTlsChacha20Poly1305Sha256: {
         s2a_SessionState_set_in_fixed_nonce(
             session_state, upb_strview_make((char*)chacha_poly_nonce_bytes,
                                             /** nonce size **/ 12));
@@ -226,7 +214,7 @@ void verify_record(uint8_t* record, size_t record_size, uint8_t* correct_record,
   }
 }
 
-bool check_encrypt_record(TLSCiphersuite ciphersuite, uint8_t* record_one,
+bool check_encrypt_record(uint16_t ciphersuite, uint8_t* record_one,
                           size_t record_one_size, uint8_t* record_two,
                           size_t record_two_size, uint8_t* record_three,
                           size_t record_three_size, char** error_details) {
@@ -240,15 +228,15 @@ bool check_encrypt_record(TLSCiphersuite ciphersuite, uint8_t* record_one,
     GPR_ASSERT(record_three_size == 0);
   }
   switch (ciphersuite) {
-    case TLS_AES_128_GCM_SHA256_ciphersuite:
+    case kTlsAes128GcmSha256:
       verify_record(record_one, record_one_size, aes_128_gcm_record_one_bytes,
                     correct_record_one_size);
       break;
-    case TLS_AES_256_GCM_SHA384_ciphersuite:
+    case kTlsAes256GcmSha384:
       verify_record(record_one, record_one_size, aes_256_gcm_record_one_bytes,
                     correct_record_one_size);
       break;
-    case TLS_CHACHA20_POLY1305_SHA256_ciphersuite:
+    case kTlsChacha20Poly1305Sha256:
       verify_record(record_one, record_one_size, chacha_poly_record_one_bytes,
                     correct_record_one_size);
       break;
@@ -257,15 +245,15 @@ bool check_encrypt_record(TLSCiphersuite ciphersuite, uint8_t* record_one,
     return true;
   }
   switch (ciphersuite) {
-    case TLS_AES_128_GCM_SHA256_ciphersuite:
+    case kTlsAes128GcmSha256:
       verify_record(record_two, record_two_size, aes_128_gcm_record_two_bytes,
                     correct_record_two_size);
       break;
-    case TLS_AES_256_GCM_SHA384_ciphersuite:
+    case kTlsAes256GcmSha384:
       verify_record(record_two, record_two_size, aes_256_gcm_record_two_bytes,
                     correct_record_two_size);
       break;
-    case TLS_CHACHA20_POLY1305_SHA256_ciphersuite:
+    case kTlsChacha20Poly1305Sha256:
       verify_record(record_two, record_two_size, chacha_poly_record_two_bytes,
                     correct_record_two_size);
       break;
@@ -274,15 +262,15 @@ bool check_encrypt_record(TLSCiphersuite ciphersuite, uint8_t* record_one,
     return true;
   }
   switch (ciphersuite) {
-    case TLS_AES_128_GCM_SHA256_ciphersuite:
+    case kTlsAes128GcmSha256:
       verify_record(record_three, record_three_size,
                     aes_128_gcm_record_three_bytes, correct_record_three_size);
       break;
-    case TLS_AES_256_GCM_SHA384_ciphersuite:
+    case kTlsAes256GcmSha384:
       verify_record(record_three, record_three_size,
                     aes_256_gcm_record_three_bytes, correct_record_three_size);
       break;
-    case TLS_CHACHA20_POLY1305_SHA256_ciphersuite:
+    case kTlsChacha20Poly1305Sha256:
       verify_record(record_three, record_three_size,
                     chacha_poly_record_three_bytes, correct_record_three_size);
       break;
@@ -290,21 +278,21 @@ bool check_encrypt_record(TLSCiphersuite ciphersuite, uint8_t* record_one,
   return true;
 }
 
-bool check_record_empty_plaintext(TLSCiphersuite ciphersuite, uint8_t* record,
+bool check_record_empty_plaintext(uint16_t ciphersuite, uint8_t* record,
                                   size_t record_size, char** error_details) {
   if (record == nullptr) {
     GPR_ASSERT(record_size == 0);
   }
   switch (ciphersuite) {
-    case TLS_AES_128_GCM_SHA256_ciphersuite:
+    case kTlsAes128GcmSha256:
       verify_record(record, record_size, aes_128_gcm_empty_record_bytes,
                     empty_record_size);
       break;
-    case TLS_AES_256_GCM_SHA384_ciphersuite:
+    case kTlsAes256GcmSha384:
       verify_record(record, record_size, aes_256_gcm_empty_record_bytes,
                     empty_record_size);
       break;
-    case TLS_CHACHA20_POLY1305_SHA256_ciphersuite:
+    case kTlsChacha20Poly1305Sha256:
       verify_record(record, record_size, chacha_poly_empty_record_bytes,
                     empty_record_size);
       break;

@@ -23,14 +23,8 @@
 #include <grpc/support/sync.h>
 #include "src/core/tsi/s2a/record_protocol/s2a_crypter.h"
 
-enum TLSCiphersuite {
-  TLS_AES_128_GCM_SHA256_ciphersuite,
-  TLS_AES_256_GCM_SHA384_ciphersuite,
-  TLS_CHACHA20_POLY1305_SHA256_ciphersuite,
-};
-
 grpc_byte_buffer* create_example_session_state(bool admissible_tls_version,
-                                               TLSCiphersuite ciphersuite,
+                                               uint16_t ciphersuite,
                                                bool has_in_out_key,
                                                bool correct_key_size,
                                                bool has_in_out_sequence,
@@ -53,7 +47,7 @@ size_t expected_message_size(size_t plaintext_size);
  *    then the method returns true iff they match the first three TLS records;
  *  - in any other case, the method returns false and possibly populates
  *    |error_details|. **/
-bool check_encrypt_record(TLSCiphersuite ciphersuite, uint8_t* record_one,
+bool check_encrypt_record(uint16_t ciphersuite, uint8_t* record_one,
                           size_t record_one_size, uint8_t* record_two,
                           size_t record_two_size, uint8_t* record_three,
                           size_t record_three_size, char** error_details);
@@ -62,7 +56,7 @@ bool check_encrypt_record(TLSCiphersuite ciphersuite, uint8_t* record_one,
  *  record obtained from an empty plaintext and using a crypter configured by
  *  the output of the |create_example_session_state| method. Otherwise, this
  *  method returns false. **/
-bool check_record_empty_plaintext(TLSCiphersuite ciphersuite, uint8_t* record,
+bool check_record_empty_plaintext(uint16_t ciphersuite, uint8_t* record,
                                   size_t record_size, char** error_details);
 
 #endif  //  GRPC_TEST_CORE_TSI_S2A_S2A_TEST_UTIL_H

@@ -23,11 +23,11 @@
 #include <grpc/grpc.h>
 #include <cstdint>
 #include "src/core/lib/gprpp/memory.h"
+#include "src/core/lib/slice/slice_internal.h"
 #include "src/core/tsi/alts/crypt/gsec.h"
 #include "src/core/tsi/grpc_shadow_boringssl.h"
-#include "src/proto/grpc/gcp/s2a.upb.h"
-#include "src/core/lib/slice/slice_internal.h"
 #include "src/core/tsi/s2a/s2a_constants.h"
+#include "src/proto/grpc/gcp/s2a.upb.h"
 
 /** The S2A record protocol interface. It provides encrypt and decrypt
  *  functionality. The interface is thread-compatible. **/
