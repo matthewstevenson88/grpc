@@ -185,7 +185,7 @@ Pod::Spec.new do |s|
     ss.header_mappings_dir = '.'
     ss.libraries = 'z'
     ss.dependency "#{s.name}/Interface", version
-    ss.dependency 'BoringSSL-GRPC', '0.0.4'
+    ss.dependency 'BoringSSL-GRPC', '0.0.5'
     ss.compiler_flags = '-DGRPC_SHADOW_BORINGSSL_SYMBOLS'
 
     ss.source_files = 'src/core/ext/filters/census/grpc_context.cc',
@@ -563,7 +563,6 @@ Pod::Spec.new do |s|
                       'src/core/lib/gprpp/orphanable.h',
                       'src/core/lib/gprpp/ref_counted.h',
                       'src/core/lib/gprpp/ref_counted_ptr.h',
-                      'src/core/lib/gprpp/set.h',
                       'src/core/lib/gprpp/string_view.h',
                       'src/core/lib/gprpp/sync.h',
                       'src/core/lib/gprpp/thd.h',
@@ -908,6 +907,7 @@ Pod::Spec.new do |s|
                       'src/core/lib/uri/uri_parser.h',
                       'src/core/plugin_registry/grpc_plugin_registry.cc',
                       'src/core/tsi/alts/crypt/aes_gcm.cc',
+                      'src/core/tsi/alts/crypt/chacha_poly.cc',
                       'src/core/tsi/alts/crypt/gsec.cc',
                       'src/core/tsi/alts/crypt/gsec.h',
                       'src/core/tsi/alts/frame_protector/alts_counter.cc',
@@ -1156,7 +1156,6 @@ Pod::Spec.new do |s|
                               'src/core/lib/gprpp/orphanable.h',
                               'src/core/lib/gprpp/ref_counted.h',
                               'src/core/lib/gprpp/ref_counted_ptr.h',
-                              'src/core/lib/gprpp/set.h',
                               'src/core/lib/gprpp/string_view.h',
                               'src/core/lib/gprpp/sync.h',
                               'src/core/lib/gprpp/thd.h',
@@ -1398,6 +1397,8 @@ Pod::Spec.new do |s|
                       'test/core/iomgr/endpoint_tests.h',
                       'test/core/security/oauth2_utils.cc',
                       'test/core/security/oauth2_utils.h',
+                      'test/core/tsi/s2a/record_protocol/s2a_test_util.cc',
+                      'test/core/tsi/s2a/record_protocol/s2a_test_util.h',
                       'test/core/util/cmdline.cc',
                       'test/core/util/cmdline.h',
                       'test/core/util/debugger_macros.cc',

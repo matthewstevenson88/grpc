@@ -1,4 +1,4 @@
-# Copyright 2017 gRPC authors.
+# Copyright 2019 gRPC authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,46 +14,34 @@
 
 load("//bazel:grpc_build_system.bzl", "grpc_cc_library", "grpc_cc_test", "grpc_package")
 
-grpc_package(name = "test/core/memory_usage")
-
 licenses(["notice"])  # Apache v2
 
-grpc_cc_library(
-    name = "memory_usage_client",
-    testonly = 1,
-    srcs = ["client.cc"],
-    deps = [
-        "//:gpr",
-        "//:grpc",
-        "//test/core/util:grpc_test_util",
-    ],
-)
+grpc_package(name = "test/core/tsi/s2a")
 
 grpc_cc_library(
-    name = "memory_usage_server",
-    testonly = 1,
-    srcs = ["server.cc"],
+    name = "s2a_test_util",
+    srcs = ["s2a_test_util.cc"],
+    hdrs = ["s2a_test_util.h"],
+    external_deps = [
+        "libssl",
+    ],
     deps = [
-        "//:gpr",
-        "//:grpc",
-        "//test/core/end2end:ssl_test_data",
-        "//test/core/util:grpc_test_util",
+        "//:s2a_record_protocol",
     ],
 )
 
 grpc_cc_test(
-    name = "memory_usage_test",
-    srcs = ["memory_usage_test.cc"],
-    data = [
-        ":memory_usage_client",
-        ":memory_usage_server",
+    name = "s2a_record_protocol_test",
+    srcs = ["s2a_record_protocol_test.cc"],
+    external_deps = [
+        "libssl",
     ],
     language = "C++",
-    tags = ["no_windows"],  # TODO(jtattermusch): breaks windows RBE build if enabled
     deps = [
+        "//:s2a_record_protocol",
+        ":s2a_test_util",
         "//:gpr",
         "//:grpc",
-        "//test/core/util:grpc_test_util",
     ],
-    uses_polling = False,
 )
+

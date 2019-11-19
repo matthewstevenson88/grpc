@@ -451,4 +451,27 @@ grpc_status_code gsec_aes_gcm_aead_crypter_create(const uint8_t* key,
                                                   gsec_aead_crypter** crypter,
                                                   char** error_details);
 
+/**
+ * This method creates an AEAD crypter instance of CHACHA-POLY encryption scheme
+ * which supports 32 bytes long keys, 12 bytes long nonces, and
+ * 16 bytes long tags. It should be noted that once the lengths of key, nonce,
+ * and tag are determined at construction time, they cannot be modified later.
+ *
+ * - key: buffer containing a key which is binded with AEAD crypter instance.
+ * - key_length: length of a key in bytes, which should be always 32.
+ * - nonce_length: length of a nonce in bytes, which should be always 12..
+ * - tag_length: length of a tag in bytes, which should be always 16.
+ * - crypter: address of CHACHA-POLY crypter instance returned from the method.
+ * - error_details: a buffer containing an error message if the method does not
+ *   function correctly. It is legal to pass nullptr into error_details, and
+ *   otherwise, the parameter should be freed with gpr_free.
+ *
+ * On success of instance creation, it stores the address of instance at
+ * crypter. Otherwise, it returns an error status code together with its details
+ * specified in error_details.
+ */
+grpc_status_code gsec_chacha_poly_aead_crypter_create(
+    const uint8_t* key, size_t key_length, size_t nonce_length,
+    size_t tag_length, gsec_aead_crypter** crypter, char** error_details);
+
 #endif /* GRPC_CORE_TSI_ALTS_CRYPT_GSEC_H */
