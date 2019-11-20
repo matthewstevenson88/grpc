@@ -273,8 +273,12 @@ static void test_encrypt_record_bad_size(uint16_t ciphersuite) {
 
   /** Test the case when the memory allocated for the record is insufficient.**/
   std::vector<uint8_t> test_plaintext = {'1', '2', '3', '4', '5', '6'};
+  size_t max_record_overhead;
+  grpc_status_code overhead_status =
+      s2a_max_record_overhead(crypter, &max_record_overhead, &error_details);
+  GPR_ASSERT(overhead_status == GRPC_STATUS_OK);
   size_t record_allocated_size =
-      test_plaintext.size() - 2 + s2a_max_record_overhead(crypter);
+      test_plaintext.size() - 2 + max_record_overhead;
   std::vector<uint8_t> record(record_allocated_size, 0);
   size_t record_size;
   grpc_status_code insufficient_memory_status = s2a_encrypt(
@@ -290,8 +294,7 @@ static void test_encrypt_record_bad_size(uint16_t ciphersuite) {
   /** Test the case when the size of the plaintext is larger than the TLS 1.3
    *  RFC allows; see https://tools.ietf.org/html/rfc8446#section-5.1 . **/
   std::vector<uint8_t> oversized_plaintext(SSL3_RT_MAX_PLAIN_LENGTH + 1, 0);
-  record_allocated_size =
-      oversized_plaintext.size() + s2a_max_record_overhead(crypter);
+  record_allocated_size = oversized_plaintext.size() + max_record_overhead;
   record.resize(record_allocated_size, 0);
   grpc_status_code oversized_plaintext_status = s2a_encrypt(
       crypter, oversized_plaintext.data(), oversized_plaintext.size(),
@@ -327,9 +330,13 @@ static void test_encrypt_record_success(uint16_t ciphersuite) {
   GPR_ASSERT(status == GRPC_STATUS_OK);
   GPR_ASSERT(error_details == nullptr);
 
+  size_t max_record_overhead;
+  grpc_status_code overhead_status =
+      s2a_max_record_overhead(crypter, &max_record_overhead, &error_details);
+  GPR_ASSERT(overhead_status == GRPC_STATUS_OK);
+
   std::vector<uint8_t> test_plaintext = {'1', '2', '3', '4', '5', '6'};
-  size_t record_allocated_size =
-      test_plaintext.size() + s2a_max_record_overhead(crypter);
+  size_t record_allocated_size = test_plaintext.size() + max_record_overhead;
   std::vector<uint8_t> record(record_allocated_size, 0);
   size_t record_size;
   grpc_status_code encrypt_status = s2a_encrypt(
@@ -371,9 +378,14 @@ static void test_encrypt_three_records(uint16_t ciphersuite) {
   GPR_ASSERT(status == GRPC_STATUS_OK);
   GPR_ASSERT(error_details == nullptr);
 
+  size_t max_record_overhead;
+  grpc_status_code overhead_status =
+      s2a_max_record_overhead(crypter, &max_record_overhead, &error_details);
+  GPR_ASSERT(overhead_status == GRPC_STATUS_OK);
+
   std::vector<uint8_t> test_plaintext_1 = {'1', '2', '3', '4', '5', '6'};
   size_t record_1_allocated_size =
-      test_plaintext_1.size() + s2a_max_record_overhead(crypter);
+      test_plaintext_1.size() + max_record_overhead;
   std::vector<uint8_t> record_1(record_1_allocated_size, 0);
   size_t record_1_size;
   encrypt_plaintext_and_verify_size(crypter, test_plaintext_1, record_1,
@@ -382,7 +394,7 @@ static void test_encrypt_three_records(uint16_t ciphersuite) {
   std::vector<uint8_t> test_plaintext_2 = {'7', '8', '9', '1', '2',
                                            '3', '4', '5', '6'};
   size_t record_2_allocated_size =
-      test_plaintext_2.size() + s2a_max_record_overhead(crypter);
+      test_plaintext_2.size() + max_record_overhead;
   std::vector<uint8_t> record_2(record_2_allocated_size, 0);
   size_t record_2_size;
   encrypt_plaintext_and_verify_size(crypter, test_plaintext_2, record_2,
@@ -390,7 +402,7 @@ static void test_encrypt_three_records(uint16_t ciphersuite) {
 
   std::vector<uint8_t> test_plaintext_3 = {'7', '8', '9', '1'};
   size_t record_3_allocated_size =
-      test_plaintext_3.size() + s2a_max_record_overhead(crypter);
+      test_plaintext_3.size() + max_record_overhead;
   std::vector<uint8_t> record_3(record_3_allocated_size, 0);
   size_t record_3_size;
   encrypt_plaintext_and_verify_size(crypter, test_plaintext_3, record_3,
@@ -427,9 +439,13 @@ static void test_encrypt_empty_plaintext(uint16_t ciphersuite) {
   GPR_ASSERT(status == GRPC_STATUS_OK);
   GPR_ASSERT(error_details == nullptr);
 
+  size_t max_record_overhead;
+  grpc_status_code overhead_status =
+      s2a_max_record_overhead(crypter, &max_record_overhead, &error_details);
+  GPR_ASSERT(overhead_status == GRPC_STATUS_OK);
+
   std::vector<uint8_t> test_plaintext = {};
-  size_t record_allocated_size =
-      test_plaintext.size() + s2a_max_record_overhead(crypter);
+  size_t record_allocated_size = test_plaintext.size() + max_record_overhead;
   std::vector<uint8_t> record(record_allocated_size, 0);
   size_t record_size;
 
