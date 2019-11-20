@@ -24,6 +24,12 @@
 #include <vector>
 #include "src/core/tsi/s2a/record_protocol/s2a_crypter.h"
 
+/** This method verifies that the in and out half connections of |crypter| are
+ *  what is expected from an s2a_crypter instance with ciphersuite |ciphersuite|
+ *  and whose in and out traffic secret is |expected_traffic_secret|. **/
+void verify_half_connections(uint16_t ciphersuite, s2a_crypter* crypter,
+                             std::vector<uint8_t>& expected_traffic_secret);
+
 grpc_byte_buffer* create_example_session_state(bool admissible_tls_version,
                                                uint16_t ciphersuite,
                                                bool has_in_out_key,
@@ -35,7 +41,7 @@ size_t expected_message_size(size_t plaintext_size);
 
 /** This method encrypts |plaintext| using |crypter|, writes the resulting TLs
  *  1.3 record to |record|, and verifies that the TLS 1.3 record has the
- * expected size. **/
+ *  expected size. **/
 void encrypt_plaintext_and_verify_size(s2a_crypter* crypter,
                                        std::vector<uint8_t>& plaintext,
                                        std::vector<uint8_t>& record,

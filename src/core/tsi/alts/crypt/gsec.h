@@ -477,6 +477,7 @@ grpc_status_code hkdf_derive_secret(uint8_t* out_key, size_t out_size,
                                     GsecHashFunction hash_function,
                                     const uint8_t* prk, size_t prk_size,
                                     const uint8_t* info, size_t info_size);
+
 /**
  * This method creates an AEAD crypter instance of CHACHA-POLY encryption scheme
  * which supports 32 bytes long keys, 12 bytes long nonces, and
