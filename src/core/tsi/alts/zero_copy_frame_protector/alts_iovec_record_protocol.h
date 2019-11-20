@@ -195,5 +195,9 @@ grpc_status_code alts_iovec_record_protocol_create(
  */
 void alts_iovec_record_protocol_destroy(alts_iovec_record_protocol* rp);
 
+// TODO(mattstev): move this function to a util file common to S2A and ALTS.
+/** Given an array of iovec, computes the total length of buffer. **/
+size_t get_total_length(const iovec_t* vec, size_t vec_length);
+
 #endif /* GRPC_CORE_TSI_ALTS_ZERO_COPY_FRAME_PROTECTOR_ALTS_IOVEC_RECORD_PROTOCOL_H \
         */

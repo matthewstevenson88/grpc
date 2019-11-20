@@ -19,31 +19,34 @@
 #ifndef GRPC_CORE_TSI_S2A_RECORD_PROTOCOL_S2A_CRYPTER_H
 #define GRPC_CORE_TSI_S2A_RECORD_PROTOCOL_S2A_CRYPTER_H
 
+#include <grpc/byte_buffer_reader.h>
 #include <grpc/grpc.h>
 #include <cstdint>
 #include "src/core/lib/gprpp/memory.h"
+#include "src/core/lib/slice/slice_internal.h"
 #include "src/core/tsi/alts/crypt/gsec.h"
 #include "src/core/tsi/grpc_shadow_boringssl.h"
+#include "src/core/tsi/s2a/s2a_constants.h"
 #include "src/proto/grpc/gcp/s2a.upb.h"
-
-#include <grpc/byte_buffer_reader.h>
-
-#include "src/core/lib/slice/slice_internal.h"
-
-/** The uint16_t's for the implemented TLS 1.3 ciphersuite. **/
-#define TLS_AES_128_GCM_SHA256 0x009c
-#define TLS_AES_256_GCM_SHA384 0x1302
-#define TLS_CHACHA20_POLY1305_SHA256 0xcca8
 
 /** The S2A record protocol interface. It provides encrypt and decrypt
  *  functionality. The interface is thread-compatible. **/
 typedef struct s2a_crypter s2a_crypter;
 
-/** This function returns the max number of bytes that |crypter| requires to
- *  create a TLS 1.3 record, beyond the size of the plaintext. If |crypter| is
- *  nullptr or was not properly initialized, then this function returns zero.
- *  - crypter: an instance of s2a_crypter. **/
-size_t s2a_max_record_overhead(const s2a_crypter* crypter);
+/** This function populates |max_record_overhead| with the max number of bytes
+ *  that |crypter| requires to create a TLS 1.3 record, beyond the size of the
+ *  plaintext. It returns GRPC_STATUS_OK on success; otherwise, it populates
+ *  |error_details| with additional info and this must be freed with gpr_free.
+ *  - crypter: an instance of s2a_crypter; the caller must not pass in nullptr
+ *    for this argument.
+ *  - max_record_overhead: the max overhead of a TLS 1.3 record created using
+ *    |crypter|; the caller must not pass in nullptr for this argument.
+ *  - error_details: the error details generated when the execution of the
+ *    function fails; it is legal (and expected) for the caller to have
+ *    |error_details| point to a nullptr. **/
+grpc_status_code s2a_max_record_overhead(const s2a_crypter* crypter,
+                                         size_t* max_record_overhead,
+                                         char** error_details);
 
 /** Assume that the S2A record protocol is using one of the above ciphersuites.
  *  The structure of a TLS 1.3 record is described below:
@@ -175,5 +178,43 @@ void check_half_connection(s2a_crypter* crypter, bool in_half_connection,
                            uint8_t expected_fixed_nonce_size,
                            uint8_t* expected_fixed_nonce,
                            uint8_t expected_additional_data_size);
+
+/** This function writes a TLS 1.3 record to |protected_record| of type
+ *  |record_type|, and with a payload containing the ciphertext obtained by
+ *  encrypting |unprotected_vec| using the outgoing_aead_crypter of |crypter|.
+ *  The arguments of the encrypt function are detailed below:
+ *  - crypter: an instance of s2a_crypter, which must have been initialized
+ *    using the s2a_crypter_create method.
+ *  - record_type: a single byte that indicates the TLS record type, i.e. one
+ *    of handshake, application data, alert, or change cipher spec.
+ *  - unprotected_vec: a pointer to the start of an iovec array, which consists
+ *    of the slices that make up the plaintext; this data is owned by the
+ *    caller. The caller must ensure that the total size of the plaintext is at
+ *    most SSL3_RT_MAX_PLAIN_LENGTH = 16384, otherwise the method returns
+ *    GRPC_STATUS_FAILED_PRECONDITION.
+ *  - unprotected_vec_size: the length of the iovec array that |unprotected_vec|
+ *    points to; the caller must ensure that |unprotected_vec_size| = 0 iff
+ *    unprotected_vec is nullptr.
+ *  - protected_record: an iovec consisting of a pointer to the memory allocated
+ *    for the TLS record and the size of the memory allocated to this record;
+ *    the caller must ensure that the size allocated to the record is at least
+ *        |plaintext_size| + s2a_max_record_overhead(crypter),
+ *    otherwise the method returns GRPC_STATUS_FAILED_PRECONDITION. Further, the
+ *    caller must ensure that the base of |protected_record| is not nullptr.
+ *  - bytes_written: the number of bytes written to |protected_record| after the
+ *    function executes successfully; the caller must not pass in
+ *    nullptr for this argument.
+ *  - error_details: the error details generated when the execution of the
+ *    function fails; it is legal (and expected) for |error_details| to point to
+ *    nullptr.
+ *
+ *  On success, the function returns GRPC_STATUS_OK; otherwise, |error_details|
+ *  is populated with an error message, and it must be freed with gpr_free. If
+ *  the function returns the error code GRPC_STATUS_OUT_OF_RANGE, the caller
+ *  must close the connection. **/
+grpc_status_code s2a_write_tls13_record(
+    s2a_crypter* crypter, uint8_t record_type, const iovec* unprotected_vec,
+    size_t unprotected_vec_size, iovec protected_record, size_t* bytes_written,
+    char** error_details);
 
 #endif  //  GRPC_CORE_TSI_S2A_RECORD_PROTOCOL_S2A_CRYPTER_H

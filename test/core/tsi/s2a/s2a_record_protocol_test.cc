@@ -18,15 +18,15 @@
 
 #include <grpc/support/alloc.h>
 #include <grpc/support/log.h>
-
 #include <openssl/ssl3.h>
+#include <vector>
 #include "src/core/lib/surface/channel.h"
 #include "src/core/tsi/s2a/record_protocol/s2a_crypter.h"
 #include "src/core/tsi/s2a/record_protocol/s2a_crypter_util.h"
 #include "src/core/tsi/s2a/s2a_constants.h"
 #include "test/core/tsi/s2a/s2a_test_util.h"
 
-static grpc_status_code setup_crypter(TLSCiphersuite ciphersuite,
+static grpc_status_code setup_crypter(uint16_t ciphersuite,
                                       grpc_channel* channel,
                                       s2a_crypter** crypter,
                                       char** error_details) {
@@ -75,13 +75,12 @@ static void test_incorrect_tls_version() {
   grpc_channel* channel = grpc_core::New<grpc_channel>();
   char* error_details = nullptr;
   grpc_status_code status = s2a_crypter_create(
-      /** TLS 1.2 **/ 1, TLS_AES_128_GCM_SHA256, /** in key **/ nullptr,
+      /** TLS 1.2 **/ 1, kTlsAes128GcmSha256, /** in key **/ nullptr,
       /** out key **/ nullptr, kTlsAes128GcmSha256KeySize,
       /** in nonce **/ nullptr, /** out nonce **/ nullptr,
       kTlsAes128GcmSha256NonceSize, channel, &crypter, &error_details);
   GPR_ASSERT(status == GRPC_STATUS_FAILED_PRECONDITION);
-  int correct_error_message =
-      strcmp(error_details, "S2A does not support the desired TLS version.");
+  int correct_error_message = strcmp(error_details, kS2AUnsupportedTlsVersion);
   GPR_ASSERT(correct_error_message == 0);
 
   // Cleanup.
@@ -93,19 +92,17 @@ static void test_incorrect_key_size() {
   s2a_crypter* crypter = nullptr;
   grpc_channel* channel = grpc_core::New<grpc_channel>();
   char* error_details = nullptr;
-  uint8_t derived_in_key[32] = "derived_in_key";
-  uint8_t derived_out_key[32] = "derived_out_key";
-  uint8_t derived_in_nonce[24] = "derived_in_nonce";
-  uint8_t derived_out_nonce[24] = "derived_out_nonce";
+  std::vector<uint8_t> derived_in_key(kTlsAes128GcmSha256KeySize - 1, 0);
+  std::vector<uint8_t> derived_out_key(kTlsAes128GcmSha256KeySize - 1, 0);
+  std::vector<uint8_t> derived_in_nonce(kTlsAes128GcmSha256NonceSize + 1, 0);
+  std::vector<uint8_t> derived_out_nonce(kTlsAes128GcmSha256NonceSize + 1, 0);
   grpc_status_code status = s2a_crypter_create(
-      /** TLS 1.3 **/ 0, TLS_AES_128_GCM_SHA256, derived_in_key,
-      derived_out_key, kTlsAes128GcmSha256KeySize - 1, derived_in_nonce,
-      derived_out_nonce, kTlsAes128GcmSha256NonceSize, channel, &crypter,
+      /** TLS 1.3 **/ 0, kTlsAes128GcmSha256, derived_in_key.data(),
+      derived_out_key.data(), derived_in_key.size(), derived_in_nonce.data(),
+      derived_out_nonce.data(), derived_in_nonce.size(), channel, &crypter,
       &error_details);
   GPR_ASSERT(status == GRPC_STATUS_FAILED_PRECONDITION);
-  int correct_error_message = strcmp(error_details,
-                                     "The size of the provisioned keys does "
-                                     "not match the ciphersuite key size.");
+  int correct_error_message = strcmp(error_details, kS2AKeySizeMismatch);
   GPR_ASSERT(correct_error_message == 0);
 
   // Cleanup.
@@ -156,16 +153,16 @@ static void test_deserialize_byte_buffer() {
   grpc_byte_buffer_destroy(buffer);
 }
 
-static void test_create_crypter_success(TLSCiphersuite ciphersuite) {
+static void test_create_crypter_success(uint16_t ciphersuite) {
   s2a_crypter* crypter = nullptr;
   grpc_channel* channel = grpc_core::New<grpc_channel>();
   char* error_details = nullptr;
   grpc_status_code status =
       setup_crypter(ciphersuite, channel, &crypter, &error_details);
-  if (ciphersuite == TLS_CHACHA20_POLY1305_SHA256_ciphersuite) {
+  if (ciphersuite == kTlsChacha20Poly1305Sha256) {
     GPR_ASSERT(status == GRPC_STATUS_UNIMPLEMENTED);
-    int correct_error_message = strcmp(
-        error_details, "The CHACHA-POLY AEAD crypter is not yet implemented.");
+    int correct_error_message =
+        strcmp(error_details, kS2AChachaPolyUnimplemented);
     GPR_ASSERT(correct_error_message == 0);
 
     // Cleanup.
@@ -192,17 +189,17 @@ static void test_create_crypter_success(TLSCiphersuite ciphersuite) {
   size_t correct_nonce_size = 0;
   size_t correct_tag_size = 0;
   switch (ciphersuite) {
-    case TLS_AES_128_GCM_SHA256_ciphersuite:
+    case kTlsAes128GcmSha256:
       correct_key_size = kTlsAes128GcmSha256KeySize;
       correct_nonce_size = kTlsAes128GcmSha256NonceSize;
       correct_tag_size = kEvpAeadAesGcmTagLength;
       break;
-    case TLS_AES_256_GCM_SHA384_ciphersuite:
+    case kTlsAes256GcmSha384:
       correct_key_size = kTlsAes256GcmSha384KeySize;
       correct_nonce_size = kTlsAes256GcmSha384NonceSize;
       correct_tag_size = kEvpAeadAesGcmTagLength;
       break;
-    case TLS_CHACHA20_POLY1305_SHA256_ciphersuite:
+    case kTlsChacha20Poly1305Sha256:
       correct_key_size = kTlsChacha20Poly1305Sha256KeySize;
       correct_nonce_size = kTlsChacha20Poly1305Sha256NonceSize;
       correct_tag_size = kPoly1305TagLength;
@@ -232,14 +229,238 @@ static void test_create_crypter_success(TLSCiphersuite ciphersuite) {
                                /** error details **/ nullptr);
   GPR_ASSERT(out_tag_size == correct_tag_size);
 
-  if (ciphersuite == TLS_AES_128_GCM_SHA256_ciphersuite) {
-    uint8_t nonce_bytes[13] = {0xb5, 0x80, 0x3d, 0x82, 0xad, 0x88, 0x54,
-                               0xd2, 0xe5, 0x98, 0x18, 0x7f, 0x00};
-    check_half_connection(crypter, true, 0, 12, nonce_bytes,
+  if (ciphersuite == kTlsAes128GcmSha256) {
+    std::vector<uint8_t> nonce_bytes = {0xb5, 0x80, 0x3d, 0x82, 0xad, 0x88,
+                                        0x54, 0xd2, 0xe5, 0x98, 0x18, 0x7f};
+    check_half_connection(crypter, /** in **/ true, /** sequence **/ 0,
+                          nonce_bytes.size(), nonce_bytes.data(),
                           SSL3_RT_HEADER_LENGTH);
-    check_half_connection(crypter, false, 0, 12, nonce_bytes,
+    check_half_connection(crypter, /** in **/ false, /** sequence **/ 0,
+                          nonce_bytes.size(), nonce_bytes.data(),
                           SSL3_RT_HEADER_LENGTH);
   }
+
+  // Cleanup.
+  s2a_crypter_destroy(crypter);
+  grpc_core::Delete<grpc_channel>(channel);
+}
+
+static void test_encrypt_record_bad_size(uint16_t ciphersuite) {
+  s2a_crypter* crypter = nullptr;
+  grpc_channel* channel = grpc_core::New<grpc_channel>();
+  char* error_details = nullptr;
+  grpc_status_code status =
+      setup_crypter(ciphersuite, channel, &crypter, &error_details);
+  if (ciphersuite == kTlsChacha20Poly1305Sha256) {
+    GPR_ASSERT(status == GRPC_STATUS_UNIMPLEMENTED);
+    int correct_error_message =
+        strcmp(error_details, kS2AChachaPolyUnimplemented);
+    GPR_ASSERT(correct_error_message == 0);
+
+    // Cleanup.
+    s2a_crypter_destroy(crypter);
+    gpr_free(error_details);
+    grpc_core::Delete<grpc_channel>(channel);
+    return;
+  }
+  GPR_ASSERT(status == GRPC_STATUS_OK);
+  GPR_ASSERT(error_details == nullptr);
+
+  /** Test the case when the memory allocated for the record is insufficient.**/
+  std::vector<uint8_t> test_plaintext = {'1', '2', '3', '4', '5', '6'};
+  size_t max_record_overhead;
+  grpc_status_code overhead_status =
+      s2a_max_record_overhead(crypter, &max_record_overhead, &error_details);
+  GPR_ASSERT(overhead_status == GRPC_STATUS_OK);
+  size_t record_allocated_size =
+      test_plaintext.size() - 2 + max_record_overhead;
+  std::vector<uint8_t> record(record_allocated_size, 0);
+  size_t record_size;
+  grpc_status_code insufficient_memory_status = s2a_encrypt(
+      crypter, test_plaintext.data(), test_plaintext.size(), record.data(),
+      record_allocated_size, &record_size, &error_details);
+  GPR_ASSERT(insufficient_memory_status == GRPC_STATUS_FAILED_PRECONDITION);
+  int correct_error_message =
+      strcmp(error_details, kS2APlaintextInsufficientRecordSize);
+  GPR_ASSERT(correct_error_message == 0);
+  gpr_free(error_details);
+  error_details = nullptr;
+
+  /** Test the case when the size of the plaintext is larger than the TLS 1.3
+   *  RFC allows; see https://tools.ietf.org/html/rfc8446#section-5.1 . **/
+  std::vector<uint8_t> oversized_plaintext(SSL3_RT_MAX_PLAIN_LENGTH + 1, 0);
+  record_allocated_size = oversized_plaintext.size() + max_record_overhead;
+  record.resize(record_allocated_size, 0);
+  grpc_status_code oversized_plaintext_status = s2a_encrypt(
+      crypter, oversized_plaintext.data(), oversized_plaintext.size(),
+      record.data(), record_allocated_size, &record_size, &error_details);
+  GPR_ASSERT(oversized_plaintext_status == GRPC_STATUS_FAILED_PRECONDITION);
+  correct_error_message = strcmp(error_details, kS2APlaintextExceedMaxSize);
+  GPR_ASSERT(correct_error_message == 0);
+
+  // Cleanup.
+  s2a_crypter_destroy(crypter);
+  grpc_core::Delete<grpc_channel>(channel);
+  gpr_free(error_details);
+}
+
+static void test_encrypt_record_success(uint16_t ciphersuite) {
+  s2a_crypter* crypter = nullptr;
+  grpc_channel* channel = grpc_core::New<grpc_channel>();
+  char* error_details = nullptr;
+  grpc_status_code status =
+      setup_crypter(ciphersuite, channel, &crypter, &error_details);
+  if (ciphersuite == kTlsChacha20Poly1305Sha256) {
+    GPR_ASSERT(status == GRPC_STATUS_UNIMPLEMENTED);
+    int correct_error_message =
+        strcmp(error_details, kS2AChachaPolyUnimplemented);
+    GPR_ASSERT(correct_error_message == 0);
+
+    // Cleanup.
+    s2a_crypter_destroy(crypter);
+    gpr_free(error_details);
+    grpc_core::Delete<grpc_channel>(channel);
+    return;
+  }
+  GPR_ASSERT(status == GRPC_STATUS_OK);
+  GPR_ASSERT(error_details == nullptr);
+
+  size_t max_record_overhead;
+  grpc_status_code overhead_status =
+      s2a_max_record_overhead(crypter, &max_record_overhead, &error_details);
+  GPR_ASSERT(overhead_status == GRPC_STATUS_OK);
+
+  std::vector<uint8_t> test_plaintext = {'1', '2', '3', '4', '5', '6'};
+  size_t record_allocated_size = test_plaintext.size() + max_record_overhead;
+  std::vector<uint8_t> record(record_allocated_size, 0);
+  size_t record_size;
+  grpc_status_code encrypt_status = s2a_encrypt(
+      crypter, test_plaintext.data(), test_plaintext.size(), record.data(),
+      record_allocated_size, &record_size, &error_details);
+  GPR_ASSERT(encrypt_status == GRPC_STATUS_OK);
+  GPR_ASSERT(record_size == expected_message_size(test_plaintext.size()));
+
+  std::vector<uint8_t> record_2(0, 0);
+  std::vector<uint8_t> record_3(0, 0);
+  bool correct_encrypted_record =
+      check_encrypt_record(ciphersuite, record, record_2, record_3);
+  GPR_ASSERT(correct_encrypted_record);
+  GPR_ASSERT(error_details == nullptr);
+
+  // Cleanup.
+  s2a_crypter_destroy(crypter);
+  grpc_core::Delete<grpc_channel>(channel);
+}
+
+static void test_encrypt_three_records(uint16_t ciphersuite) {
+  s2a_crypter* crypter = nullptr;
+  grpc_channel* channel = grpc_core::New<grpc_channel>();
+  char* error_details = nullptr;
+  grpc_status_code status =
+      setup_crypter(ciphersuite, channel, &crypter, &error_details);
+  if (ciphersuite == kTlsChacha20Poly1305Sha256) {
+    GPR_ASSERT(status == GRPC_STATUS_UNIMPLEMENTED);
+    int correct_error_message =
+        strcmp(error_details, kS2AChachaPolyUnimplemented);
+    GPR_ASSERT(correct_error_message == 0);
+
+    // Cleanup.
+    s2a_crypter_destroy(crypter);
+    gpr_free(error_details);
+    grpc_core::Delete<grpc_channel>(channel);
+    return;
+  }
+  GPR_ASSERT(status == GRPC_STATUS_OK);
+  GPR_ASSERT(error_details == nullptr);
+
+  size_t max_record_overhead;
+  grpc_status_code overhead_status =
+      s2a_max_record_overhead(crypter, &max_record_overhead, &error_details);
+  GPR_ASSERT(overhead_status == GRPC_STATUS_OK);
+
+  std::vector<uint8_t> test_plaintext_1 = {'1', '2', '3', '4', '5', '6'};
+  size_t record_1_allocated_size =
+      test_plaintext_1.size() + max_record_overhead;
+  std::vector<uint8_t> record_1(record_1_allocated_size, 0);
+  size_t record_1_size;
+  encrypt_plaintext_and_verify_size(crypter, test_plaintext_1, record_1,
+                                    &record_1_size, &error_details);
+
+  std::vector<uint8_t> test_plaintext_2 = {'7', '8', '9', '1', '2',
+                                           '3', '4', '5', '6'};
+  size_t record_2_allocated_size =
+      test_plaintext_2.size() + max_record_overhead;
+  std::vector<uint8_t> record_2(record_2_allocated_size, 0);
+  size_t record_2_size;
+  encrypt_plaintext_and_verify_size(crypter, test_plaintext_2, record_2,
+                                    &record_2_size, &error_details);
+
+  std::vector<uint8_t> test_plaintext_3 = {'7', '8', '9', '1'};
+  size_t record_3_allocated_size =
+      test_plaintext_3.size() + max_record_overhead;
+  std::vector<uint8_t> record_3(record_3_allocated_size, 0);
+  size_t record_3_size;
+  encrypt_plaintext_and_verify_size(crypter, test_plaintext_3, record_3,
+                                    &record_3_size, &error_details);
+
+  bool correct_encrypted_record =
+      check_encrypt_record(ciphersuite, record_1, record_2, record_3);
+  GPR_ASSERT(correct_encrypted_record);
+  GPR_ASSERT(error_details == nullptr);
+
+  // Cleanup.
+  s2a_crypter_destroy(crypter);
+  grpc_core::Delete<grpc_channel>(channel);
+}
+
+static void test_encrypt_empty_plaintext(uint16_t ciphersuite) {
+  s2a_crypter* crypter = nullptr;
+  grpc_channel* channel = grpc_core::New<grpc_channel>();
+  char* error_details = nullptr;
+  grpc_status_code status =
+      setup_crypter(ciphersuite, channel, &crypter, &error_details);
+  if (ciphersuite == kTlsChacha20Poly1305Sha256) {
+    GPR_ASSERT(status == GRPC_STATUS_UNIMPLEMENTED);
+    int correct_error_message =
+        strcmp(error_details, kS2AChachaPolyUnimplemented);
+    GPR_ASSERT(correct_error_message == 0);
+
+    // Cleanup.
+    s2a_crypter_destroy(crypter);
+    gpr_free(error_details);
+    grpc_core::Delete<grpc_channel>(channel);
+    return;
+  }
+  GPR_ASSERT(status == GRPC_STATUS_OK);
+  GPR_ASSERT(error_details == nullptr);
+
+  size_t max_record_overhead;
+  grpc_status_code overhead_status =
+      s2a_max_record_overhead(crypter, &max_record_overhead, &error_details);
+  GPR_ASSERT(overhead_status == GRPC_STATUS_OK);
+
+  std::vector<uint8_t> test_plaintext = {};
+  size_t record_allocated_size = test_plaintext.size() + max_record_overhead;
+  std::vector<uint8_t> record(record_allocated_size, 0);
+  size_t record_size;
+
+  /** Encrypt empty plaintext with incorrect plaintext size. **/
+  grpc_status_code bad_encrypt_status =
+      s2a_encrypt(crypter, test_plaintext.data(), /** plaintext size **/ 1,
+                  record.data(), record.size(), &record_size, &error_details);
+  GPR_ASSERT(bad_encrypt_status == GRPC_STATUS_INVALID_ARGUMENT);
+  int correct_error_message = strcmp(error_details, kS2APlaintextNullptr);
+  GPR_ASSERT(correct_error_message == 0);
+  gpr_free(error_details);
+  error_details = nullptr;
+
+  /** Encrypt empty plaintext with correct plaintext size. **/
+  grpc_status_code encrypt_status =
+      s2a_encrypt(crypter, test_plaintext.data(), test_plaintext.size(),
+                  record.data(), record.size(), &record_size, &error_details);
+  GPR_ASSERT(encrypt_status == GRPC_STATUS_OK);
+  GPR_ASSERT(record_size == expected_message_size(test_plaintext.size()));
+  GPR_ASSERT(check_record_empty_plaintext(ciphersuite, record));
 
   // Cleanup.
   s2a_crypter_destroy(crypter);
@@ -250,8 +471,15 @@ int main(int argc, char** argv) {
   test_incorrect_tls_version();
   test_incorrect_key_size();
   test_deserialize_byte_buffer();
-  test_create_crypter_success(TLS_AES_128_GCM_SHA256_ciphersuite);
-  test_create_crypter_success(TLS_AES_256_GCM_SHA384_ciphersuite);
-  test_create_crypter_success(TLS_CHACHA20_POLY1305_SHA256_ciphersuite);
+  const size_t number_ciphersuites = 3;
+  uint16_t ciphersuite[number_ciphersuites] = {
+      kTlsAes128GcmSha256, kTlsAes256GcmSha384, kTlsChacha20Poly1305Sha256};
+  for (size_t i = 0; i < number_ciphersuites; i++) {
+    test_create_crypter_success(ciphersuite[i]);
+    test_encrypt_record_bad_size(ciphersuite[i]);
+    test_encrypt_record_success(ciphersuite[i]);
+    test_encrypt_three_records(ciphersuite[i]);
+    test_encrypt_empty_plaintext(ciphersuite[i]);
+  }
   return 0;
 }
