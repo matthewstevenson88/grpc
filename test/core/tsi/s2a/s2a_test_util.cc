@@ -28,25 +28,22 @@
  *  implementation. The keys and nonces are derived from the traffic secret
  *  "kkkk...k", with the length determined by the ciphersuite. **/
 std::vector<uint8_t> aes_128_gcm_key_bytes = {
-    0xc3, 0xae, 0x75, 0x09, 0xcf, 0xce, 0xd2, 0xb8, 0x03,
-    0xa6, 0x18, 0x69, 0x56, 0xcd, 0xa7, 0x9f, 0x00};
+    0xc3, 0xae, 0x75, 0x09, 0xcf, 0xce, 0xd2, 0xb8,
+    0x03, 0xa6, 0x18, 0x69, 0x56, 0xcd, 0xa7, 0x9f};
 std::vector<uint8_t> aes_256_gcm_key_bytes = {
     0xda, 0xc7, 0x31, 0xae, 0x48, 0x66, 0x67, 0x7e, 0xd2, 0xf6, 0x5c,
     0x49, 0x0e, 0x18, 0x81, 0x7b, 0xe5, 0xcb, 0xbb, 0xd0, 0x3f, 0x59,
-    0x7a, 0xd5, 0x90, 0x41, 0xc1, 0x17, 0xb7, 0x31, 0x10, 0x9a, 0x00};
+    0x7a, 0xd5, 0x90, 0x41, 0xc1, 0x17, 0xb7, 0x31, 0x10, 0x9a};
 std::vector<uint8_t> chacha_poly_key_bytes = {
     0x13, 0x0e, 0x20, 0x00, 0x50, 0x8a, 0xce, 0x00, 0xef, 0x26, 0x5e,
     0x17, 0x2d, 0x09, 0x89, 0x2e, 0x46, 0x72, 0x56, 0xcb, 0x90, 0xda,
-    0xd9, 0xde, 0x99, 0x53, 0x3c, 0xf5, 0x48, 0xbe, 0x6a, 0x8b, 0x00};
-std::vector<uint8_t> aes_128_gcm_nonce_bytes = {0xb5, 0x80, 0x3d, 0x82, 0xad,
-                                                0x88, 0x54, 0xd2, 0xe5, 0x98,
-                                                0x18, 0x7f, 0x00};
-std::vector<uint8_t> aes_256_gcm_nonce_bytes = {0x4d, 0xb1, 0x52, 0xd2, 0x7d,
-                                                0x18, 0x0b, 0x1e, 0xe4, 0x8f,
-                                                0xa8, 0x9d, 0x00};
-std::vector<uint8_t> chacha_poly_nonce_bytes = {0xb5, 0x80, 0x3d, 0x82, 0xad,
-                                                0x88, 0x54, 0xd2, 0xe5, 0x98,
-                                                0x18, 0x7f, 0x00};
+    0xd9, 0xde, 0x99, 0x53, 0x3c, 0xf5, 0x48, 0xbe, 0x6a, 0x8b};
+std::vector<uint8_t> aes_128_gcm_nonce_bytes = {
+    0xb5, 0x80, 0x3d, 0x82, 0xad, 0x88, 0x54, 0xd2, 0xe5, 0x98, 0x18, 0x7f};
+std::vector<uint8_t> aes_256_gcm_nonce_bytes = {
+    0x4d, 0xb1, 0x52, 0xd2, 0x7d, 0x18, 0x0b, 0x1e, 0xe4, 0x8f, 0xa8, 0x9d};
+std::vector<uint8_t> chacha_poly_nonce_bytes = {
+    0xb5, 0x80, 0x3d, 0x82, 0xad, 0x88, 0x54, 0xd2, 0xe5, 0x98, 0x18, 0x7f};
 
 /** The record_one vectors are obtained by encrypting the plaintext "123456"
  *  using the above keys and sequence number 0. **/
@@ -110,30 +107,34 @@ void verify_half_connections(uint16_t ciphersuite, s2a_crypter* crypter,
                              std::vector<uint8_t>& expected_traffic_secret) {
   GPR_ASSERT(crypter != nullptr);
   uint8_t* expected_nonce = nullptr;
+  size_t expected_nonce_size;
   switch (ciphersuite) {
     case kTlsAes128GcmSha256:
       expected_nonce = aes_128_gcm_nonce_bytes.data();
+      expected_nonce_size = aes_128_gcm_nonce_bytes.size();
       break;
     case kTlsAes256GcmSha384:
       expected_nonce = aes_256_gcm_nonce_bytes.data();
+      expected_nonce_size = aes_256_gcm_nonce_bytes.size();
       break;
     case kTlsChacha20Poly1305Sha256:
       expected_nonce = chacha_poly_nonce_bytes.data();
+      expected_nonce_size = chacha_poly_nonce_bytes.size();
       break;
     default:
       gpr_log(GPR_ERROR, kS2AUnsupportedCiphersuite);
       abort();
   }
-  check_half_connection(
-      crypter, /** in_half_connection **/ true,
-      /** expected_sequence **/ 0, expected_traffic_secret.size(),
-      expected_traffic_secret.data(),
-      /** expected nonce size **/ 12, expected_nonce, SSL3_RT_HEADER_LENGTH);
-  check_half_connection(
-      crypter, /** in_half_connection **/ true,
-      /** expected_sequence **/ 0, expected_traffic_secret.size(),
-      expected_traffic_secret.data(),
-      /** expected nonce size **/ 12, expected_nonce, SSL3_RT_HEADER_LENGTH);
+  check_half_connection(crypter, /** in_half_connection **/ true,
+                        /** expected_sequence **/ 0,
+                        expected_traffic_secret.size(),
+                        expected_traffic_secret.data(), expected_nonce_size,
+                        expected_nonce, SSL3_RT_HEADER_LENGTH);
+  check_half_connection(crypter, /** in_half_connection **/ true,
+                        /** expected_sequence **/ 0,
+                        expected_traffic_secret.size(),
+                        expected_traffic_secret.data(), expected_nonce_size,
+                        expected_nonce, SSL3_RT_HEADER_LENGTH);
 }
 
 grpc_byte_buffer* create_example_session_state(bool admissible_tls_version,

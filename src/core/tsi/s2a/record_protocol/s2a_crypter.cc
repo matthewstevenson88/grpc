@@ -75,41 +75,12 @@ static size_t s2a_tag_size(const s2a_crypter* crypter) {
   }
 }
 
-/** This method writes |out_size| bytes of derived secret to |output|, based on
- *  |secret| and |ciphersuite|. If |is_key| is true, the derived secret is a
- *  key; otherwise, the derived secret is a nonce.
- *  - ciphersuite: the ciphersuite used for encryption and decryption.
- *  - is_key: a boolean value that indicates whether the derived secret is a key
- *    or a nonce.
- *  - secret: the secret used to derive the key or nonce.
- *  - secret_size: the size of the |secret| buffer.
- *  - output_size: the number of bytes to be written to the |output| buffer.
- *  - output: the buffer where the derived secret is written; this is owned by
- *    the caller.
- *  - error_details: an error message for when the creation fails. It is legal
- *    (and expected) to have |error_details| point to a nullptr; otherwise,
- *    the argument should be freed with gpr_free.
- *
- *  On success, the method returns GRPC_STATUS_OK. Otherwise, it returns an
- * error status code and details can be found in |error_details|. **/
-static grpc_status_code derive_tls13_secret(uint16_t ciphersuite, bool is_key,
-                                            uint8_t* secret, size_t secret_size,
-                                            size_t output_size, uint8_t* output,
-                                            char** error_details) {
-  const char key_suffix[] = "\x09tls13 key\x00";
-  const char nonce_suffix[] = "\x08tls13 iv\x00";
-  const char* suffix;
-  size_t suffix_size;
-  if (is_key) {
-    suffix = key_suffix;
-    suffix_size = sizeof(key_suffix) - 1;
-    GPR_ASSERT(suffix_size == 11);
-  } else {
-    suffix = nonce_suffix;
-    suffix_size = sizeof(nonce_suffix) - 1;
-    GPR_ASSERT(suffix_size == 10);
-  }
-
+/** This method write |out_size| bytes of derived secret to |output|, based on
+ *  |secret|, |suffix|, and |ciphersuite|. **/
+static grpc_status_code derive_secret(uint16_t ciphersuite, uint8_t* suffix,
+                                      size_t suffix_size, uint8_t* secret,
+                                      size_t secret_size, size_t output_size,
+                                      uint8_t* output, char** error_details) {
   GsecHashFunction hash_function;
   switch (ciphersuite) {
     case kTlsAes128GcmSha256:
@@ -126,6 +97,10 @@ static grpc_status_code derive_tls13_secret(uint16_t ciphersuite, bool is_key,
       return GRPC_STATUS_FAILED_PRECONDITION;
   }
 
+  /** The label buffer consists of 2 pieces: the first 2 bytes encode
+   *  |output_size|, and the following 10 or 11 bytes encode |suffix| (note that
+   *  the suffix is 10 bytes when deriving the nonce, and 11 bytes long when
+   *  deriving the key). **/
   uint8_t label[2 + 11];
   const size_t label_size = 2 + suffix_size;
   GPR_ASSERT(sizeof(label) >= label_size);
@@ -135,6 +110,28 @@ static grpc_status_code derive_tls13_secret(uint16_t ciphersuite, bool is_key,
 
   return hkdf_derive_secret(output, output_size, hash_function, secret,
                             secret_size, label, label_size);
+}
+
+/** This method write |out_size| bytes of derived key to |output|, based on
+ *  |secret| and |ciphersuite|. **/
+static grpc_status_code derive_key(uint16_t ciphersuite, uint8_t* secret,
+                                   size_t secret_size, size_t output_size,
+                                   uint8_t* output, char** error_details) {
+  uint8_t key_suffix[] = "\x09tls13 key\x00";
+  size_t suffix_size = sizeof(key_suffix) - 1;
+  return derive_secret(ciphersuite, key_suffix, suffix_size, secret,
+                       secret_size, output_size, output, error_details);
+}
+
+/** This method write |out_size| bytes of derived nonce to |output|, based on
+ *  |secret| and |ciphersuite|. **/
+static grpc_status_code derive_nonce(uint16_t ciphersuite, uint8_t* secret,
+                                     size_t secret_size, size_t output_size,
+                                     uint8_t* output, char** error_details) {
+  uint8_t nonce_suffix[] = "\x08tls13 iv\x00";
+  size_t suffix_size = sizeof(nonce_suffix) - 1;
+  return derive_secret(ciphersuite, nonce_suffix, suffix_size, secret,
+                       secret_size, output_size, output, error_details);
 }
 
 static grpc_status_code assign_crypter(bool in, uint8_t* traffic_secret,
@@ -176,17 +173,15 @@ static grpc_status_code assign_crypter(bool in, uint8_t* traffic_secret,
   uint8_t key[kEvpAeadMaxKeyLength];
   uint8_t nonce[kEvpAeadMaxNonceLength];
   grpc_status_code key_status =
-      derive_tls13_secret(rp_crypter->ciphersuite,
-                          /** is_key **/ true, traffic_secret,
-                          traffic_secret_size, key_size, key, error_details);
+      derive_key(rp_crypter->ciphersuite, traffic_secret, traffic_secret_size,
+                 key_size, key, error_details);
   if (key_status != GRPC_STATUS_OK) {
     return key_status;
   }
 
-  grpc_status_code nonce_status = derive_tls13_secret(
-      rp_crypter->ciphersuite,
-      /** is_key **/ false, traffic_secret, traffic_secret_size, nonce_size,
-      nonce, error_details);
+  grpc_status_code nonce_status =
+      derive_nonce(rp_crypter->ciphersuite, traffic_secret, traffic_secret_size,
+                   nonce_size, nonce, error_details);
   if (nonce_status != GRPC_STATUS_OK) {
     return nonce_status;
   }
