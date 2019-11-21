@@ -19,6 +19,7 @@
 #ifndef GRPC_CORE_TSI_S2A_S2A_CONSTANTS_H
 #define GRPC_CORE_TSI_S2A_S2A_CONSTANTS_H
 
+
 /** The following constants are ciphersuite-specific data. **/
 constexpr size_t kEvpAeadAesGcmTagLength = 16;
 constexpr size_t kEvpAeadMaxNonceLength = 24;
