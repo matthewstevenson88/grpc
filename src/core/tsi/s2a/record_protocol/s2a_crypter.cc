@@ -271,7 +271,7 @@ grpc_status_code s2a_crypter_create(
   rp_crypter->in_connection = nullptr;
   rp_crypter->out_connection = nullptr;
 
-   size_t tag_size;
+  size_t tag_size;
   grpc_status_code tag_status =
       s2a_tag_size(rp_crypter, &tag_size, error_details);
   if (tag_status != GRPC_STATUS_OK) {
