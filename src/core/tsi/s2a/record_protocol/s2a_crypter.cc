@@ -279,15 +279,15 @@ grpc_status_code s2a_crypter_create(
   }
 
   grpc_status_code in_crypter_status = assign_crypter(
-      /** in **/ true, in_traffic_secret, in_traffic_secret_size,
-      tag_size, /** sequence **/ 0, crypter, error_details);
+      /** in **/ true, in_traffic_secret, in_traffic_secret_size, tag_size,
+      /** sequence **/ 0, crypter, error_details);
   if (in_crypter_status != GRPC_STATUS_OK) {
     return in_crypter_status;
   }
 
   grpc_status_code out_crypter_status = assign_crypter(
-      /** in **/ false, out_traffic_secret, out_traffic_secret_size,
-      tag_size, /** sequence **/ 0, crypter, error_details);
+      /** in **/ false, out_traffic_secret, out_traffic_secret_size, tag_size,
+      /** sequence **/ 0, crypter, error_details);
   if (out_crypter_status != GRPC_STATUS_OK) {
     return out_crypter_status;
   }
@@ -604,25 +604,48 @@ grpc_status_code s2a_encrypt(s2a_crypter* crypter, uint8_t* plaintext,
                                 record_vec, record_size, error_details);
 }
 
-int s2a_max_plaintext_size(const s2a_crypter* crypter, size_t record_size) {
+grpc_status_code s2a_max_plaintext_size(const s2a_crypter* crypter,
+                                        size_t record_size,
+                                        size_t* plaintext_size,
+                                        char** error_details) {
   GPR_ASSERT(crypter != nullptr);
+  GPR_ASSERT(plaintext_size != nullptr);
+
   /** Note that we require this method returns 1 more than the size of the
    *  plaintext that is returned by decrypting a TLS 1.3 record of size
    *  |record_size|; this is because |crypter| requires 1 byte of extra space
    *  after the plaintext to decrypt the record type. **/
-  return record_size - SSL3_RT_HEADER_LENGTH - s2a_tag_size(crypter);
+  size_t tag_size;
+  grpc_status_code tag_status = s2a_tag_size(crypter, &tag_size, error_details);
+  if (tag_status != GRPC_STATUS_OK) {
+    return tag_status;
+  }
+  GPR_ASSERT(record_size >= SSL3_RT_HEADER_LENGTH + tag_size);
+  *plaintext_size = record_size - SSL3_RT_HEADER_LENGTH - tag_size;
+  return GRPC_STATUS_OK;
 }
 
-int s2a_max_plaintext_size(const s2a_crypter* crypter,
-                           const iovec* protected_vec,
-                           size_t protected_vec_size) {
+grpc_status_code s2a_max_plaintext_size(const s2a_crypter* crypter,
+                                        const iovec* protected_vec,
+                                        size_t protected_vec_size,
+                                        size_t* plaintext_size,
+                                        char** error_details) {
   GPR_ASSERT(crypter != nullptr);
+  GPR_ASSERT(plaintext_size != nullptr);
+
   /** Note that we require this method returns 1 more than the size of the
    *  plaintext that is returned by decrypting the TLS 1.3 payload stored in
    *  |protected_vec|; this is because |crypter| requires 1 byte of extra space
    *  after the plaintext to decrypt the record type. **/
-  return get_total_length(protected_vec, protected_vec_size) -
-         s2a_tag_size(crypter);
+  size_t tag_size;
+  grpc_status_code tag_status = s2a_tag_size(crypter, &tag_size, error_details);
+  if (tag_status != GRPC_STATUS_OK) {
+    return tag_status;
+  }
+  size_t total_vec_length = get_total_length(protected_vec, protected_vec_size);
+  GPR_ASSERT(total_vec_length >= tag_size);
+  *plaintext_size = total_vec_length - tag_size;
+  return GRPC_STATUS_OK;
 }
 
 s2a_decrypt_status s2a_decrypt_payload(
@@ -632,8 +655,13 @@ s2a_decrypt_status s2a_decrypt_payload(
   GPR_ASSERT(crypter != nullptr);
   GPR_ASSERT(bytes_written != nullptr);
   size_t payload_size = get_total_length(protected_vec, protected_vec_size);
-  size_t expected_plaintext_and_record_byte_size =
-      payload_size - s2a_tag_size(crypter);
+  size_t tag_size;
+  grpc_status_code tag_status = s2a_tag_size(crypter, &tag_size, error_details);
+  if (tag_status != GRPC_STATUS_OK) {
+    return INTERNAL_ERROR;
+  }
+  GPR_ASSERT(tag_size <= payload_size);
+  size_t expected_plaintext_and_record_byte_size = payload_size - tag_size;
   GPR_ASSERT(expected_plaintext_and_record_byte_size <=
              SSL3_RT_MAX_PLAIN_LENGTH + /** record byte **/ 1);
 
@@ -671,19 +699,29 @@ s2a_decrypt_status s2a_decrypt_record(
     char** error_details) {
   GPR_ASSERT(crypter != nullptr);
   GPR_ASSERT(bytes_written != nullptr);
-  GPR_ASSERT(
-      (int)unprotected_vec.iov_len >=
-      s2a_max_plaintext_size(crypter, protected_vec, protected_vec_size));
+  size_t max_plaintext_size;
+  grpc_status_code plaintext_status =
+      s2a_max_plaintext_size(crypter, protected_vec, protected_vec_size,
+                             &max_plaintext_size, error_details);
+  if (plaintext_status != GRPC_STATUS_OK) {
+    return INTERNAL_ERROR;
+  }
+  GPR_ASSERT(static_cast<int>(unprotected_vec.iov_len) >= max_plaintext_size);
   uint8_t* header = reinterpret_cast<uint8_t*>(record_header.iov_base);
   const uint16_t wire_version = static_cast<uint16_t>(TLS1_2_VERSION);
   size_t payload_size = get_total_length(protected_vec, protected_vec_size);
-  if (payload_size > SSL3_RT_MAX_PLAIN_LENGTH + s2a_tag_size(crypter) +
-                         /** record type **/ 1) {
+  size_t tag_size;
+  grpc_status_code tag_status = s2a_tag_size(crypter, &tag_size, error_details);
+  if (tag_status != GRPC_STATUS_OK) {
+    return INTERNAL_ERROR;
+  }
+  if (payload_size >
+      SSL3_RT_MAX_PLAIN_LENGTH + tag_size + /** record type **/ 1) {
     /** If the plaintext size exceeds the max allowed, the TLS 1.3 RFC demands
      *  that the record protocol returns a "record overflow" alert and that the
      *  connection be terminated; for more details, see
      *  https://tools.ietf.org/html/rfc8446#section-5.2 . **/
-    *error_details = gpr_strdup(S2A_RECORD_EXCEED_MAX_SIZE);
+    *error_details = gpr_strdup(kS2ARecordExceedMaxSize);
     return ALERT_RECORD_OVERFLOW;
   }
   size_t expected_payload_size = (header[3] << 8) + header[4];
@@ -691,7 +729,7 @@ s2a_decrypt_status s2a_decrypt_record(
       header[0] != SSL3_RT_APPLICATION_DATA ||
       header[1] != (wire_version >> 8) || header[2] != (wire_version & 0xff) ||
       payload_size != expected_payload_size) {
-    *error_details = gpr_strdup(S2A_RECORD_HEADER_INCORRECT_FORMAT);
+    *error_details = gpr_strdup(kS2AHeaderIncorrectFormat);
     return INVALID_RECORD;
   }
 
@@ -712,7 +750,7 @@ s2a_decrypt_status s2a_decrypt_record(
     }
   }
   if (i >= *bytes_written) {
-    *error_details = gpr_strdup(S2A_RECORD_INVALID_FORMAT);
+    *error_details = gpr_strdup(kS2ARecordInvalidFormat);
     return INVALID_RECORD;
   }
   uint8_t record_type = plaintext[i];
@@ -727,7 +765,7 @@ s2a_decrypt_status s2a_decrypt_record(
   switch (record_type) {
     case SSL3_RT_ALERT:
       if (*bytes_written < 2) {
-        *error_details = gpr_strdup(S2A_RECORD_SMALL_ALERT);
+        *error_details = gpr_strdup(kS2ARecordSmallAlert);
         return INVALID_RECORD;
       }
       if (plaintext[1] == SSL3_AD_CLOSE_NOTIFY) {
@@ -745,13 +783,13 @@ s2a_decrypt_status s2a_decrypt_record(
         // be added.
         return UNIMPLEMENTED;
       }
-      *error_details = gpr_strdup(S2A_RECORD_INVALID_FORMAT);
+      *error_details = gpr_strdup(kS2ARecordInvalidFormat);
       return INVALID_RECORD;
     case SSL3_RT_APPLICATION_DATA:
       /** There is nothing more to be done for an application data record. **/
       break;
     default:
-      *error_details = gpr_strdup(S2A_RECORD_INVALID_FORMAT);
+      *error_details = gpr_strdup(kS2ARecordInvalidFormat);
       return INVALID_RECORD;
   }
   return OK;
@@ -761,10 +799,15 @@ s2a_decrypt_status s2a_decrypt(s2a_crypter* crypter, uint8_t* record,
                                size_t record_size, uint8_t* plaintext,
                                size_t plaintext_allocated_size,
                                size_t* plaintext_size, char** error_details) {
-  GPR_ASSERT((int)plaintext_allocated_size >=
-             s2a_max_plaintext_size(crypter, record_size));
+  size_t max_plaintext_size;
+  grpc_status_code plaintext_status = s2a_max_plaintext_size(
+      crypter, record_size, &max_plaintext_size, error_details);
+  if (plaintext_status != GRPC_STATUS_OK) {
+    return INTERNAL_ERROR;
+  }
+  GPR_ASSERT(plaintext_allocated_size >= max_plaintext_size);
   if (record == nullptr && record_size > 0) {
-    *error_details = gpr_strdup(S2A_RECORD_NULLPTR);
+    *error_details = gpr_strdup(kS2ARecordNullptr);
     return FAILED_PRECONDITION;
   }
   iovec plaintext_vec = {(void*)plaintext, plaintext_allocated_size};

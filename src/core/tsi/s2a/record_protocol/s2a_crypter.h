@@ -63,14 +63,23 @@ grpc_status_code s2a_max_record_overhead(const s2a_crypter* crypter,
                                          size_t* max_record_overhead,
                                          char** error_details);
 
-/** This method returns the maximum size (in bytes) of the plaintext obtained by
- *  decrypting a TLS 1.3 record of size |record_size| using |crypter|. This
- *  method assumes that the record in question contains a TLS payload of type
- *  "application data".
+/** This method populates |plaintext_size| with the maximum size (in bytes) of
+ *  the plaintext obtained by decrypting a (valid) TLS 1.3 record of size
+ *  |record_size| using |crypter|. This method assumes that the record in
+ *  question contains a TLS payload of type "application data".
  *  - crypter: an instance of s2a_crypter, which must have been initialized
  *    using the s2a_crypter_create method.
- *  - record_size: the size of the TLS record. **/
-int s2a_max_plaintext_size(const s2a_crypter* crypter, size_t record_size);
+ *  - record_size: the size of the TLS record.
+ *  - plaintext_size: the max size of the plaintext obtained by decrypting a
+ *    record of size |record_size|; the caller must not pass in nullptr for this
+ *    argument.
+ *  - error_detials: the error details generated when the execution of the
+ *    function fails; it is legal (and expected) for the caller to have
+ *    |error_details| point to a nullptr. **/
+grpc_status_code s2a_max_plaintext_size(const s2a_crypter* crypter,
+                                        size_t record_size,
+                                        size_t* plaintext_size,
+                                        char** error_details);
 
 /** Assume that the S2A record protocol is using one of the above ciphersuites.
  *  The structure of a TLS 1.3 record is described below:
@@ -241,17 +250,26 @@ grpc_status_code s2a_write_tls13_record(
     size_t unprotected_vec_size, iovec protected_record, size_t* bytes_written,
     char** error_details);
 
-/** This method returns the maximum size (in bytes) of the plaintext obtained by
- *  decrypting |protected_vec| using |crypter|. This method assumes that
- *  |protected_vec| contains a TLS payload of type "application data".
+/** This method populates |plaintext_size| with the maximum size (in bytes) of
+ *  the plaintext obtained by decrypting |protected_vec| using |crypter|. This
+ *  method assumes that |protected_vec| contains a TLS payload of type
+ *  "application data".
  *  - crypter: an instance of s2a_crypter, which must have been initialized
  *    using the s2a_crypter_create method.
  *  - protected_vec: a pointer to a buffer of iovec's that contain the payload
  *    of a TLS 1.3 record.
- *  - protected_vec_size: the size of the |protected_vec| buffer. **/
-int s2a_max_plaintext_size(const s2a_crypter* crypter,
-                           const iovec* protected_vec,
-                           size_t protected_vec_size);
+ *  - protected_vec_size: the size of the |protected_vec| buffer.
+ *  - plaintext_size: the max size of the plaintext obtained by decrypting a
+ *    record of size |record_size|; the caller must not pass in nullptr for this
+ *    argument.
+ *  - error_detials: the error details generated when the execution of the
+ *    function fails; it is legal (and expected) for the caller to have
+ *    |error_details| point to a nullptr. **/
+grpc_status_code s2a_max_plaintext_size(const s2a_crypter* crypter,
+                                        const iovec* protected_vec,
+                                        size_t protected_vec_size,
+                                        size_t* plaintext_size,
+                                        char** error_details);
 
 /** This function decrypts and verifies the TLS 1.3 payload in |protected_vec|
  *  using the incoming_aead_crypter of |crypter|, writes the resulting plaintext
