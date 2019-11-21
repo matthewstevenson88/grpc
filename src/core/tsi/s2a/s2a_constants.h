@@ -22,8 +22,11 @@
 
 /** The following constants are ciphersuite-specific data. **/
 constexpr size_t kEvpAeadAesGcmTagLength = 16;
+constexpr size_t kEvpAeadMaxKeyLength = 80;
 constexpr size_t kEvpAeadMaxNonceLength = 24;
 constexpr size_t kPoly1305TagLength = 16;
+constexpr size_t kSha256DigestLength = 32;
+constexpr size_t kSha384DigestLength = 48;
 
 /** The uint16_t's for the supported TLS 1.3 ciphersuites. **/
 constexpr uint16_t kTlsAes128GcmSha256 = 0x009c;
@@ -49,6 +52,11 @@ constexpr char kS2AUnsupportedTlsVersion[] =
     "S2A does not support the desired TLS version.";
 constexpr char kS2AUnsupportedCiphersuite[] =
     "S2A does not support the desired TLS ciphersuite.";
+constexpr char kS2ACreateNullptr[] =
+    "There is an unexpected nullptr argument to |s2a_crypter_create|.";
+constexpr char kS2ATrafficSecretSizeMismatch[] =
+    "The size of the provisioned traffic secret does not match the ciphersuite "
+    "traffic secret size.";
 constexpr char kS2AKeySizeMismatch[] =
     "The size of the provisioned keys does not match the ciphersuite key size.";
 constexpr char kS2ANonceSizeMismatch[] =
@@ -63,6 +71,8 @@ constexpr char kS2APlaintextExceedMaxSize[] =
     "1.3 record.";
 constexpr char kS2APlaintextNullptr[] =
     "If |plaintext| is nullptr, then |plaintext_size| must be set to zero.";
+constexpr char kS2AHeaderSizeMismatch[] =
+    "The header size does not match the size of a TLS 1.3 record header.";
 constexpr char kS2AInvalidUnprotectedVec[] =
     "Ensure |unprotected_vec| is nullptr iff |unprotected_vec_size| = 0.";
 constexpr char kS2ARecordExceedMaxSize[] = "The TLS 1.3 payload exceeds the maximum size.";
