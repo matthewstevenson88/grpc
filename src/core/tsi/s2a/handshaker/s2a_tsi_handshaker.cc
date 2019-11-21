@@ -18,7 +18,7 @@
 
 #include "src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.h"
 
-namespace grpc {
+namespace grpc_core {
 namespace experimental {
 
 tsi_result s2a_tsi_handshaker_create(
@@ -46,4 +46,4 @@ bool s2a_tsi_handshaker_has_shutdown(s2a_tsi_handshaker* handshaker) {
 }
 
 }  // namespace experimental
-}  // namespace grpc
+}  // namespace grpc_core

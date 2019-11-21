@@ -27,7 +27,7 @@
 #include "src/core/tsi/transport_security_interface.h"
 #include "src/proto/grpc/gcp/s2a.upb.h"
 
-namespace grpc {
+namespace grpc_core {
 namespace experimental {
 
 typedef struct s2a_tsi_handshaker s2a_tsi_handshaker;
@@ -79,6 +79,6 @@ void s2a_tsi_handshaker_result_set_unused_bytes(tsi_handshaker_result* result,
 bool s2a_tsi_handshaker_has_shutdown(s2a_tsi_handshaker* handshaker);
 
 }  // namespace experimental
-}  // namespace grpc
+}  // namespace grpc_core
 
 #endif  // GRPC_CORE_TSI_S2A_HANDSHAKER_S2A_TSI_HANDSHAKER_H
