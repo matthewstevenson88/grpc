@@ -45,7 +45,7 @@ grpc_status_code s2a_deserialize_session_state(
   grpc_slice_unref_internal(slice);
   grpc_byte_buffer_reader_destroy(&bbr);
   if (*session_state == nullptr) {
-    *error_details = gpr_strdup("The s2a_SessionState_parse() method failed.");
+    *error_details = gpr_strdup("The |s2a_SessionState_parse| method failed.");
     return GRPC_STATUS_INTERNAL;
   }
   return GRPC_STATUS_OK;
