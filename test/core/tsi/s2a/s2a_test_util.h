@@ -30,6 +30,7 @@
 void verify_half_connections(uint16_t ciphersuite, s2a_crypter* crypter,
                              std::vector<uint8_t>& expected_traffic_secret);
 
+
 grpc_byte_buffer* create_example_session_state(bool admissible_tls_version,
                                                uint16_t ciphersuite,
                                                bool has_in_out_key,
