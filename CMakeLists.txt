@@ -799,6 +799,7 @@ if(gRPC_BUILD_TESTS)
   add_dependencies(buildtests_cxx ref_counted_test)
   add_dependencies(buildtests_cxx retry_throttle_test)
   add_dependencies(buildtests_cxx s2a_record_protocol_test)
+  add_dependencies(buildtests_cxx s2a_tsi_handshaker_test)
   add_dependencies(buildtests_cxx secure_auth_context_test)
   if(_gRPC_PLATFORM_LINUX OR _gRPC_PLATFORM_MAC OR _gRPC_PLATFORM_POSIX)
     add_dependencies(buildtests_cxx secure_sync_unary_ping_pong_test)
@@ -14758,6 +14759,41 @@ target_include_directories(s2a_record_protocol_test
 )
 
 target_link_libraries(s2a_record_protocol_test
+  ${_gRPC_PROTOBUF_LIBRARIES}
+  ${_gRPC_ALLTARGETS_LIBRARIES}
+  grpc_test_util
+  grpc
+  ${_gRPC_GFLAGS_LIBRARIES}
+)
+
+
+endif()
+if(gRPC_BUILD_TESTS)
+
+add_executable(s2a_tsi_handshaker_test
+  test/core/tsi/s2a/s2a_tsi_handshaker_test.cc
+  third_party/googletest/googletest/src/gtest-all.cc
+  third_party/googletest/googlemock/src/gmock-all.cc
+)
+
+target_include_directories(s2a_tsi_handshaker_test
+  PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${_gRPC_ADDRESS_SORTING_INCLUDE_DIR}
+    ${_gRPC_SSL_INCLUDE_DIR}
+    ${_gRPC_UPB_GENERATED_DIR}
+    ${_gRPC_UPB_GRPC_GENERATED_DIR}
+    ${_gRPC_UPB_INCLUDE_DIR}
+    ${_gRPC_ZLIB_INCLUDE_DIR}
+    third_party/googletest/googletest/include
+    third_party/googletest/googletest
+    third_party/googletest/googlemock/include
+    third_party/googletest/googlemock
+    ${_gRPC_PROTO_GENS_DIR}
+)
+
+target_link_libraries(s2a_tsi_handshaker_test
   ${_gRPC_PROTOBUF_LIBRARIES}
   ${_gRPC_ALLTARGETS_LIBRARIES}
   grpc_test_util

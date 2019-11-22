@@ -18,7 +18,7 @@
 
 #include "src/core/tsi/s2a/handshaker/s2a_handshaker_client.h"
 
-namespace grpc {
+namespace grpc_core {
 namespace experimental {
 
 tsi_result s2a_handshaker_client_start_client(
@@ -53,4 +53,4 @@ tsi_result s2a_handshaker_client_create(
 void s2a_handshaker_client_destroy(s2a_handshaker_client* client) { return; }
 
 }  // namespace experimental
-}  // namespace grpc
+}  // namespace grpc_core

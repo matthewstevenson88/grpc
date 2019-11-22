@@ -271,7 +271,7 @@ grpc_status_code s2a_crypter_create(
   rp_crypter->in_connection = nullptr;
   rp_crypter->out_connection = nullptr;
 
-   size_t tag_size;
+  size_t tag_size;
   grpc_status_code tag_status =
       s2a_tag_size(rp_crypter, &tag_size, error_details);
   if (tag_status != GRPC_STATUS_OK) {
@@ -279,15 +279,15 @@ grpc_status_code s2a_crypter_create(
   }
 
   grpc_status_code in_crypter_status = assign_crypter(
-      /** in **/ true, in_traffic_secret, in_traffic_secret_size,
-      tag_size, /** sequence **/ 0, crypter, error_details);
+      /** in **/ true, in_traffic_secret, in_traffic_secret_size, tag_size,
+      /** sequence **/ 0, crypter, error_details);
   if (in_crypter_status != GRPC_STATUS_OK) {
     return in_crypter_status;
   }
 
   grpc_status_code out_crypter_status = assign_crypter(
-      /** in **/ false, out_traffic_secret, out_traffic_secret_size,
-      tag_size, /** sequence **/ 0, crypter, error_details);
+      /** in **/ false, out_traffic_secret, out_traffic_secret_size, tag_size,
+      /** sequence **/ 0, crypter, error_details);
   if (out_crypter_status != GRPC_STATUS_OK) {
     return out_crypter_status;
   }
