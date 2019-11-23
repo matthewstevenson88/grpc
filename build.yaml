@@ -1630,6 +1630,8 @@ filegroups:
   - src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.cc
   - src/core/tsi/s2a/record_protocol/s2a_crypter.cc
   - src/core/tsi/s2a/record_protocol/s2a_crypter_util.cc
+  deps:
+  - upb
   uses:
   - alts_tsi
   - grpc_base

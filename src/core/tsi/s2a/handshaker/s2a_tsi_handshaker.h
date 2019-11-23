@@ -21,6 +21,7 @@
 
 #include <grpc/grpc.h>
 
+#include <string.h>
 #include "src/core/lib/iomgr/pollset_set.h"
 #include "src/core/tsi/s2a/handshaker/s2a_handshaker_client.h"
 #include "src/core/tsi/transport_security.h"
@@ -79,6 +80,19 @@ void s2a_tsi_handshaker_result_set_unused_bytes(tsi_handshaker_result* self,
 /** This method returns a boolean value indicating whether or not an
  *  s2a_tsi_handshaker instance has been shutdown. **/
 bool s2a_tsi_handshaker_has_shutdown(s2a_tsi_handshaker* handshaker);
+
+/** The following two methods are exposed for testing purposes only. **/
+void s2a_check_tsi_handshaker(tsi_handshaker* base, grpc_slice target_name,
+                              bool is_client, bool has_sent_start_message,
+                              bool has_created_handshaker_client,
+                              char* handshaker_service_url, bool shutdown);
+
+void s2a_check_tsi_handshaker_result(
+    tsi_handshaker_result* base, uint16_t tls_version, uint16_t tls_ciphersuite,
+    uint8_t* in_traffic_secret, uint8_t* out_traffic_secret,
+    size_t traffic_secret_size, char* spiffe_id, size_t spiffe_id_size,
+    char* hostname, size_t hostname_size, unsigned char* unused_bytes,
+    size_t unused_bytes_size, bool is_client);
 
 }  // namespace experimental
 }  // namespace grpc_core

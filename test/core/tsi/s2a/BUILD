@@ -55,6 +55,7 @@ grpc_cc_test(
     language = "C++",
     deps = [
         "//:s2a_constants",
+        ":s2a_test_util",
         "//:gpr",
         "//:grpc",
         "//:tsi",

@@ -34,7 +34,6 @@ namespace grpc_core {
 namespace experimental {
 
 /** The main struct for the S2A TSI handshaker. **/
-// TODO(mattstev): comment on the fields.
 struct s2a_tsi_handshaker {
   tsi_handshaker base;
   grpc_slice target_name;
@@ -46,14 +45,8 @@ struct s2a_tsi_handshaker {
   grpc_s2a_credentials_options* options;
   s2a_handshaker_client_vtable* client_vtable_for_testing;
   grpc_channel* channel;
-  // mu synchronizes all fields below. Note these are the
-  // only fields that can be concurrently accessed (due to
-  // potential concurrency of tsi_handshaker_shutdown and
-  // tsi_handshaker_next).
   gpr_mu mu;
   s2a_handshaker_client* client;
-  // shutdown effectively follows base.handshake_shutdown,
-  // but is synchronized by the mutex of this object.
   bool shutdown;
 };
 
@@ -238,6 +231,7 @@ tsi_result s2a_tsi_handshaker_result_create(s2a_SessionResp* response,
   tsi_result->spiffe_id = nullptr;
   tsi_result->hostname = nullptr;
   tsi_result->unused_bytes = nullptr;
+  tsi_result->unused_bytes_size = 0;
   tsi_result->is_client = is_client;
   tsi_result->base.vtable = &s2a_result_vtable;
   *self = &(tsi_result->base);
@@ -293,6 +287,55 @@ bool s2a_tsi_handshaker_has_shutdown(s2a_tsi_handshaker* handshaker) {
   GPR_ASSERT(handshaker != nullptr);
   grpc_core::MutexLock lock(&(handshaker->mu));
   return handshaker->shutdown;
+}
+
+void s2a_check_tsi_handshaker(tsi_handshaker* base, grpc_slice target_name,
+                              bool is_client, bool has_sent_start_message,
+                              bool has_created_handshaker_client,
+                              char* handshaker_service_url, bool shutdown) {
+  // TODO(mattstev): expand this implementation once more fields of
+  // s2a_tsi_handshaker are populated.
+  s2a_tsi_handshaker* handshaker = reinterpret_cast<s2a_tsi_handshaker*>(base);
+  GPR_ASSERT(grpc_slice_eq(target_name, handshaker->target_name) == 1);
+  GPR_ASSERT(is_client == handshaker->is_client);
+  GPR_ASSERT(has_sent_start_message == handshaker->has_sent_start_message);
+  GPR_ASSERT(has_created_handshaker_client ==
+             handshaker->has_created_handshaker_client);
+  GPR_ASSERT(
+      strcmp(handshaker_service_url, handshaker->handshaker_service_url) == 0);
+  GPR_ASSERT(shutdown == handshaker->shutdown);
+}
+
+void s2a_check_tsi_handshaker_result(
+    tsi_handshaker_result* base, uint16_t tls_version, uint16_t tls_ciphersuite,
+    uint8_t* in_traffic_secret, uint8_t* out_traffic_secret,
+    size_t traffic_secret_size, char* spiffe_id, size_t spiffe_id_size,
+    char* hostname, size_t hostname_size, unsigned char* unused_bytes,
+    size_t unused_bytes_size, bool is_client) {
+  s2a_tsi_handshaker_result* result =
+      reinterpret_cast<s2a_tsi_handshaker_result*>(base);
+  GPR_ASSERT(tls_version == result->tls_version);
+  GPR_ASSERT(tls_ciphersuite == result->tls_ciphersuite);
+  GPR_ASSERT(traffic_secret_size == result->traffic_secret_size);
+  for (size_t i = 0; i < traffic_secret_size; i++) {
+    GPR_ASSERT(in_traffic_secret[i] == result->in_traffic_secret[i]);
+    GPR_ASSERT(out_traffic_secret[i] == result->out_traffic_secret[i]);
+  }
+  if (spiffe_id == nullptr || result->spiffe_id == nullptr) {
+    GPR_ASSERT(spiffe_id == nullptr && result->spiffe_id == nullptr);
+  } else {
+    GPR_ASSERT(strncmp(spiffe_id, result->spiffe_id, spiffe_id_size) == 0);
+  }
+  if (hostname == nullptr || result->hostname == nullptr) {
+    GPR_ASSERT(hostname == nullptr && result->hostname == nullptr);
+  } else {
+    GPR_ASSERT(strncmp(hostname, result->hostname, hostname_size) == 0);
+  }
+  GPR_ASSERT(unused_bytes_size == result->unused_bytes_size);
+  for (size_t j = 0; j < unused_bytes_size; j++) {
+    GPR_ASSERT(unused_bytes[j] == result->unused_bytes[j]);
+  }
+  GPR_ASSERT(is_client == result->is_client);
 }
 
 }  // namespace experimental
