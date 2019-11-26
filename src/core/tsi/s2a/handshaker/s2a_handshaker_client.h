@@ -19,9 +19,12 @@
 #ifndef GRPC_CORE_TSI_S2A_HANDSHAKER_S2A_HANDSHAKER_CLIENT_H
 #define GRPC_CORE_TSI_S2A_HANDSHAKER_S2A_HANDSHAKER_CLIENT_H
 
+#include <grpc/support/port_platform.h>
+
 #include <grpc/byte_buffer.h>
 #include <grpc/byte_buffer_reader.h>
 #include <grpc/grpc.h>
+
 #include "src/core/lib/iomgr/closure.h"
 #include "src/core/lib/iomgr/pollset_set.h"
 #include "src/core/tsi/transport_security_interface.h"
@@ -113,7 +116,7 @@ void s2a_handshaker_client_shutdown(const s2a_handshaker_client* client);
  *  On success, this method returns TSI_OK. Otherwise, it returns an error code
  *  and populates |error_details| with further details; in this case, the memory
  *  allocated to |error_details| must be freed using gpr_free. **/
-tsi_result s2a_handshaker_client_create(
+tsi_result s2a_grpc_handshaker_client_create(
     s2a_tsi_handshaker* handshaker, grpc_channel* channel,
     const char* handshaker_service_url, grpc_pollset_set* interested_parties,
     grpc_s2a_credentials_options* options, const grpc_slice& target_name,

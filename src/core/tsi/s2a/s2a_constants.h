@@ -46,6 +46,15 @@ constexpr size_t kTlsChacha20Poly1305Sha256NonceSize = 12;
  *  decrypting TLS 1.3 records. **/
 constexpr size_t kTlsAdditionalDataBytesSize = 13;
 
+/** The initial size of the buffer owned by an S2A handshaker client. **/
+constexpr size_t kS2AInitialBufferSize = 256;
+
+/** The extension for the interaction with the S2A service. **/
+constexpr char kS2AServiceMethod[] = "/s2a.S2AService/SetUpSession";
+
+/** The application protocol used by S2A. **/
+constexpr char kS2AApplicationProtocol[] = "grpc";
+
 /** S2A error messages. **/
 constexpr char kS2AUnsupportedTlsVersion[] =
     "S2A does not support the desired TLS version.";
@@ -88,5 +97,7 @@ constexpr char kS2ATsiHandshakerResultInvalidSessionState[] =
 constexpr char kS2ATsiHandshakerResultUnusedBytesNullptr[] =
     "There is an unexpected nullptr argument to "
     "|s2a_handshaker_result_get_unused_bytes|.";
+constexpr char kS2AHandshakerClientNullptrArguments[] = "There is an unexpected nullptr argument to |s2a_grpc_handshaker_client_create|.";
+constexpr char kS2AHandshakerClientStartClientNullptr[] = "The |client| argument to |s2a_handshaker_client_internal_start_client| is nullptr.";
 
 #endif  // GRPC_CORE_TSI_S2A_S2A_CONSTANTS_H
