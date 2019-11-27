@@ -29,15 +29,6 @@
 #include "test/core/tsi/s2a/s2a_test_data.h"
 #include "test/core/tsi/s2a/s2a_test_util.h"
 
-/** Certain tests in this library use randomly-generated initial data. This
- *  parameter determines the number of times such a test runs. **/
-constexpr size_t kS2AIterations = 100;
-
-/** Certain tests in this library vary the size of a message to be encrypted or
- *  decrypted. This parameter determines the gap between consecutive message
- *  sizes. **/
-constexpr size_t kS2AGaps = 59;
-
 /** The following buffers are obtained by encrypting |decrypt_plaintext_one|
  *  using the crypter constructed in |create_example_session_state| and the
  *  sequence number 0. **/
@@ -742,7 +733,7 @@ static void s2a_test_decrypt_alert(uint16_t ciphersuite,
   grpc_core::Delete<grpc_channel>(channel);
 }
 
-static void s2a_test_random_roundtrips(uint16_t ciphersuite) {
+static void s2a_test_roundtrips(uint16_t ciphersuite) {
   s2a_crypter* in_crypter = nullptr;
   s2a_crypter* out_crypter = nullptr;
   grpc_channel* channel = grpc_core::New<grpc_channel>();
@@ -795,7 +786,7 @@ int main(int argc, char** argv) {
     for (size_t j = 0; j < number_alert_types; j++) {
       s2a_test_decrypt_alert(ciphersuite[i], alert[j]);
     }
-    s2a_test_random_roundtrips(ciphersuite[i]);
+    s2a_test_roundtrips(ciphersuite[i]);
   }
   return 0;
 }
