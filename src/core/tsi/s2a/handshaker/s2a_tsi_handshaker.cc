@@ -40,7 +40,6 @@ struct s2a_tsi_handshaker {
   bool is_client;
   bool has_sent_start_message;
   bool has_created_handshaker_client;
-  char* handshaker_service_url;
   grpc_pollset_set* interested_parties;
   grpc_s2a_credentials_options* options;
   s2a_handshaker_client_vtable* client_vtable_for_testing;
@@ -99,7 +98,6 @@ static void handshaker_destroy(tsi_handshaker* self) {
   if (handshaker->channel != nullptr) {
     grpc_channel_destroy_internal(handshaker->channel);
   }
-  gpr_free(handshaker->handshaker_service_url);
   gpr_mu_destroy(&(handshaker->mu));
   gpr_free(handshaker);
 }
@@ -131,7 +129,6 @@ tsi_result s2a_tsi_handshaker_create(
                                 : grpc_slice_from_static_string(target_name);
   handshaker->interested_parties = interested_parties;
   handshaker->has_created_handshaker_client = false;
-  handshaker->handshaker_service_url = gpr_strdup(handshaker_service_url);
   // TODO(mattstev): this API is exposed in a PR that is not yet merged.
   // handshaker->options = grpc_s2a_credentials_options_copy(options);
   handshaker->base.vtable = &handshaker_vtable;
@@ -301,8 +298,6 @@ void s2a_check_tsi_handshaker(tsi_handshaker* base, grpc_slice target_name,
   GPR_ASSERT(has_sent_start_message == handshaker->has_sent_start_message);
   GPR_ASSERT(has_created_handshaker_client ==
              handshaker->has_created_handshaker_client);
-  GPR_ASSERT(
-      strcmp(handshaker_service_url, handshaker->handshaker_service_url) == 0);
   GPR_ASSERT(shutdown == handshaker->shutdown);
 }
 

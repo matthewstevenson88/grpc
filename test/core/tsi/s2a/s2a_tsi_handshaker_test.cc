@@ -35,7 +35,7 @@ static void s2a_test_tsi_handshaker_create_and_destroy() {
   tsi_handshaker* handshaker = nullptr;
   char* error_details = nullptr;
   tsi_result create_result = s2a_tsi_handshaker_create(
-      &options, "target_name", "handshaker_service_url", /** is_client **/ true,
+      &options, "target_name", /** is_client **/ true,
       /** interested_parties **/ nullptr, &handshaker, &error_details);
   GPR_ASSERT(create_result == TSI_OK);
   GPR_ASSERT(error_details == nullptr);
@@ -45,7 +45,7 @@ static void s2a_test_tsi_handshaker_create_and_destroy() {
       handshaker, grpc_slice_from_static_string("target_name"),
       /** is_client **/ true,
       /** has_send_start_message **/ false,
-      /** has_created_handshaker_client **/ false, "handshaker_service_url",
+      /** has_created_handshaker_client **/ false,
       /** shutdown **/ false);
 
   tsi_handshaker_shutdown(handshaker);
@@ -60,7 +60,7 @@ static void s2a_test_tsi_handshaker_next() {
   tsi_handshaker* handshaker = nullptr;
   char* error_details = nullptr;
   tsi_result create_result = s2a_tsi_handshaker_create(
-      &options, "target_name", "handshaker_service_url", /** is_client **/ true,
+      &options, "target_name", /** is_client **/ true,
       /** interested_parties **/ nullptr, &handshaker, &error_details);
   GPR_ASSERT(create_result == TSI_OK);
   GPR_ASSERT(error_details == nullptr);
