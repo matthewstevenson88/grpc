@@ -289,7 +289,7 @@ bool s2a_tsi_handshaker_has_shutdown(s2a_tsi_handshaker* handshaker) {
 void s2a_check_tsi_handshaker(tsi_handshaker* base, grpc_slice target_name,
                               bool is_client, bool has_sent_start_message,
                               bool has_created_handshaker_client,
-                              char* handshaker_service_url, bool shutdown) {
+                              bool shutdown) {
   // TODO(mattstev): expand this implementation once more fields of
   // s2a_tsi_handshaker are populated.
   s2a_tsi_handshaker* handshaker = reinterpret_cast<s2a_tsi_handshaker*>(base);

@@ -38,8 +38,6 @@ typedef struct s2a_tsi_handshaker s2a_tsi_handshaker;
  * - options: S2A-specific options used to configure the s2a_tsi_handshaker.
  * - target_name: the name of the endpoint to which the channel connects; this
  *   data will be used for a secure naming check.
- * - handshaker_service_url: the address of S2A handshaker service; it follows
- *   the format "host:port".
  * - is_client: a boolean that is true if |client| is used at the client side,
  *   and false if |client| is used at the server side.
  * - interested_parties: set of pollsets interested in this connection.
@@ -53,7 +51,7 @@ typedef struct s2a_tsi_handshaker s2a_tsi_handshaker;
  * used. **/
 tsi_result s2a_tsi_handshaker_create(
     const grpc_s2a_credentials_options* options, const char* target_name,
-    const char* handshaker_service_url, bool is_client,
+    bool is_client,
     grpc_pollset_set* interested_parties, tsi_handshaker** self,
     char** error_details);
 
@@ -85,7 +83,7 @@ bool s2a_tsi_handshaker_has_shutdown(s2a_tsi_handshaker* handshaker);
 void s2a_check_tsi_handshaker(tsi_handshaker* base, grpc_slice target_name,
                               bool is_client, bool has_sent_start_message,
                               bool has_created_handshaker_client,
-                              char* handshaker_service_url, bool shutdown);
+                              bool shutdown);
 
 void s2a_check_tsi_handshaker_result(
     tsi_handshaker_result* base, uint16_t tls_version, uint16_t tls_ciphersuite,
