@@ -1664,6 +1664,7 @@ grpc_cc_library(
         "src/core/lib/security/credentials/local/local_credentials.cc",
         "src/core/lib/security/credentials/oauth2/oauth2_credentials.cc",
         "src/core/lib/security/credentials/plugin/plugin_credentials.cc",
+        "src/core/lib/security/credentials/s2a/grpc_s2a_credentials_options.cc",
         "src/core/lib/security/credentials/s2a/s2a_credentials.cc",
         "src/core/lib/security/credentials/ssl/ssl_credentials.cc",
         "src/core/lib/security/credentials/tls/grpc_tls_credentials_options.cc",
@@ -1704,6 +1705,7 @@ grpc_cc_library(
         "src/core/lib/security/credentials/local/local_credentials.h",
         "src/core/lib/security/credentials/oauth2/oauth2_credentials.h",
         "src/core/lib/security/credentials/plugin/plugin_credentials.h",
+        "src/core/lib/security/credentials/s2a/grpc_s2a_credentials_options.h",
         "src/core/lib/security/credentials/s2a/s2a_credentials.h",
         "src/core/lib/security/credentials/ssl/ssl_credentials.h",
         "src/core/lib/security/credentials/tls/grpc_tls_credentials_options.h",
@@ -2035,21 +2037,21 @@ grpc_cc_library(
     ],
 )
 
-grpc_cc_library(
-    name = "s2a_util",
-    srcs = [
-        "src/core/lib/security/credentials/s2a/grpc_s2a_credentials_options.cc",
-    ],
-    hdrs = [
-        "src/core/lib/security/credentials/s2a/grpc_s2a_credentials_options.h",
-    ],
-    language = "c++",
-    public_hdrs = GRPC_SECURE_PUBLIC_HDRS,
-    deps = [
-        "gpr",
-        "grpc_base",
-    ],
-)
+#grpc_cc_library(
+#    name = "s2a_util",
+#    srcs = [
+#       "src/core/lib/security/credentials/s2a/grpc_s2a_credentials_options.cc",
+#    ],
+#    hdrs = [
+#        "src/core/lib/security/credentials/s2a/grpc_s2a_credentials_options.h",
+#    ],
+#    language = "c++",
+#    public_hdrs = GRPC_SECURE_PUBLIC_HDRS,
+#    deps = [
+#        "gpr",
+#        "grpc_base",
+#    ],
+#)
 
 grpc_cc_library(
     name = "tsi",

@@ -24,6 +24,11 @@ constexpr size_t kEvpAeadAesGcmTagLength = 16;
 constexpr size_t kEvpAeadMaxNonceLength = 24;
 constexpr size_t kPoly1305TagLength = 16;
 
+/** The uint16_t's for the supported TLS 1.3 ciphersuites. **/
+constexpr uint16_t kTlsAes128GcmSha256 = 0x009c;
+constexpr uint16_t kTlsAes256GcmSha384 = 0x1302;
+constexpr uint16_t kTlsChacha20Poly1305Sha256 = 0xcca8;
+
 /** The following constants represent the key and nonce sizes of the supported
  *  ciphersuites. **/
 constexpr size_t kTlsAes128GcmSha256KeySize = 16;

@@ -26,11 +26,12 @@
 
 namespace experimental {
 
+constexpr char kGrpcS2ACredentialsType[] = "s2a";
+
 /** The main client-side struct for securing a gRPC connection using S2A. **/
 class grpc_s2a_credentials final : public grpc_channel_credentials {
  public:
-  grpc_s2a_credentials(const grpc_s2a_credentials_options* options,
-                       const char* handshaker_service_url);
+  grpc_s2a_credentials(const grpc_s2a_credentials_options* options);
   ~grpc_s2a_credentials() override;
 
   grpc_core::RefCountedPtr<grpc_channel_security_connector>
@@ -41,18 +42,15 @@ class grpc_s2a_credentials final : public grpc_channel_credentials {
 
   const grpc_s2a_credentials_options* options() const { return options_; }
   grpc_s2a_credentials_options* mutable_options() { return options_; }
-  const char* handshaker_service_url() const { return handshaker_service_url_; }
 
  private:
   grpc_s2a_credentials_options* options_;
-  char* handshaker_service_url_;
 };
 
 /** The main server-side struct for securing a gRPC connection using S2A. **/
 class grpc_s2a_server_credentials final : public grpc_server_credentials {
  public:
-  grpc_s2a_server_credentials(const grpc_s2a_credentials_options* options,
-                              const char* handshaker_service_url);
+  grpc_s2a_server_credentials(const grpc_s2a_credentials_options* options);
   ~grpc_s2a_server_credentials() override;
 
   grpc_core::RefCountedPtr<grpc_server_security_connector>
@@ -60,11 +58,9 @@ class grpc_s2a_server_credentials final : public grpc_server_credentials {
 
   const grpc_s2a_credentials_options* options() const { return options_; }
   grpc_s2a_credentials_options* mutable_options() { return options_; }
-  const char* handshaker_service_url() const { return handshaker_service_url_; }
 
  private:
   grpc_s2a_credentials_options* options_;
-  char* handshaker_service_url_;
 };
 
 }  // namespace experimental

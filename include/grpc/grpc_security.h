@@ -710,23 +710,9 @@ namespace experimental {
  *  for experimental purpose for now and subject to change. **/
 typedef struct grpc_s2a_credentials_options grpc_s2a_credentials_options;
 
-/** This method creates a grpc S2A credentials client options instance.
+/** This method creates a grpc S2A credentials options instance.
  *  It is used for experimental purpose for now and subject to change. **/
-GRPCAPI grpc_s2a_credentials_options*
-grpc_s2a_credentials_client_options_create(void);
-
-/** This method creates a grpc S2A credentials server options instance.
- *  It is used for experimental purpose for now and subject to change. **/
-GRPCAPI grpc_alts_credentials_options*
-grpc_alts_credentials_server_options_create(void);
-
-/** This method adds a target service account to grpc client's S2A credentials
- *  options instance. It is used for experimental purpose for now and subject
- *  to change.
- *  - options: grpc S2A credentials options instance.
- *  - service_account: service account of target endpoint. **/
-GRPCAPI void grpc_s2a_credentials_client_options_add_target_service_account(
-    grpc_s2a_credentials_options* options, const char* service_account);
+GRPCAPI grpc_s2a_credentials_options* grpc_s2a_credentials_options_create(void);
 
 /** This method destroys a grpc_s2a_credentials_options instance by
  *  de-allocating all of its occupied memory. It is used for experimental
@@ -738,7 +724,8 @@ GRPCAPI void grpc_s2a_credentials_options_destroy(
 
 /** This method creates an S2A channel credential object. It is used for
  *  experimental purpose for now and subject to change.
- *  - options: grpc S2A credentials options instance for a client.
+ *  - options: grpc S2A credentials options instance; this method does not
+ *    take ownership of |options|.
  *
  *  On success, it returns the created S2A channel credential object; otherwise,
  *  it returns nullptr. **/
@@ -747,7 +734,8 @@ GRPCAPI grpc_channel_credentials* grpc_s2a_credentials_create(
 
 /** This method creates an S2A server credential object. It is used for
  *  experimental purpose for now and subject to change.
- *  - options: grpc S2A credentials options instance for a server.
+ *  - options: grpc S2A credentials options instance; this method does not take
+ *    ownership of |options|.
  *
  *  On success, it returns the created S2A server credential object; otherwise,
  *  it returns nullptr. **/

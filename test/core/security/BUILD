@@ -248,7 +248,6 @@ grpc_cc_test(
     srcs = ["grpc_s2a_credentials_options_test.cc"],
     language = "C++",
     deps = [
-        "//:s2a_util",
         "//:gpr",
         "//:grpc",
     ],

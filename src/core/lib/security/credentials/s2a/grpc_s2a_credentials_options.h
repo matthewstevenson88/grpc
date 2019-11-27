@@ -21,72 +21,37 @@
 
 #include <grpc/grpc_security.h>
 #include <grpc/support/port_platform.h>
+#include <vector>
+#include "src/core/tsi/s2a/s2a_constants.h"
 
 namespace experimental {
 
-enum s2a_supported_ciphersuite {
-  AES_128_GCM_SHA256 = 0,
-  AES_256_GCM_SHA384 = 1,
-  CHACHA20_POLY1305_SHA256 = 2,
-};
-
-/** An ordered list of ciphersuites for use by the S2A. **/
-typedef struct s2a_ciphersuite {
-  struct s2a_ciphersuite* next;
-  s2a_supported_ciphersuite cipher;
-} s2a_ciphersuite;
-
-/** The V-table for the grpc_s2a_credentials_options. **/
-typedef struct grpc_s2a_credentials_options_vtable {
-  grpc_s2a_credentials_options* (*copy)(
-      const grpc_s2a_credentials_options* options);
-  void (*destruct)(grpc_s2a_credentials_options* options);
-} grpc_s2a_credentials_options_vtable;
-
-/** The base struct for the S2A credentials options. The options contain an
- *  ordered list of S2A ciphersuites; if |ciphersuite_head| is nullptr, then the
- *  AES-128-GCM-SHA256 ciphersuite is selected by default. **/
 struct grpc_s2a_credentials_options {
-  const struct grpc_s2a_credentials_options_vtable* vtable;
-  s2a_ciphersuite* ciphersuite_head;
+ public:
+  ~grpc_s2a_credentials_options();
+
+  /** Setter methods. They do not take ownership of the arguments, nor do they
+   * remove a duplicate ciphersuite or target service account from the
+   * appropriate vector, if a duplicate exists. **/
+  void set_handshaker_service_url(const char* handshaker_service_url);
+  void add_supported_ciphersuite(uint16_t ciphersuite);
+  void add_target_service_account(const char* target_service_account);
+
+  /** Create a deep copy of this grpc_s2a_credentials_options instance. **/
+  grpc_s2a_credentials_options* copy() const;
+
+  /** This method returns true if the fields of this
+   *  grpc_s2a_credentials_options instance match the arguments; otherwise, it
+   *  returns false. **/
+  bool check_fields(const char* handshaker_service_url,
+                    const std::vector<uint16_t>& supported_ciphersuites,
+                    const std::vector<char*>& target_service_account_list);
+
+ private:
+  char* handshaker_service_url_;
+  std::vector<uint16_t> supported_ciphersuites_;
+  std::vector<char*> target_service_account_list_;
 };
-
-/** An ordered list of target service accounts used for secure naming check. **/
-typedef struct target_service_account {
-  struct target_service_account* next;
-  char* data;
-} target_service_account;
-
-/** The main struct for the S2A client credentials options. The options contain
- *  an ordered list of target service accounts (if specified) used for secure
- *  naming check. **/
-typedef struct grpc_s2a_credentials_client_options {
-  grpc_s2a_credentials_options base;
-  target_service_account* target_account_list_head;
-} grpc_s2a_credentials_client_options;
-
-/** The main struct for the S2A server credentials options. The options
- *  currently do not contain any server-specific fields. **/
-typedef struct grpc_s2a_credentials_server_options {
-  grpc_s2a_credentials_options base;
-} grpc_s2a_credentials_server_options;
-
-/** This method performs a deep copy on the grpc_s2a_credentials_options
- *  instance.
- *  - options: a grpc_s2a_credentials_options instance to be copied.
- *
- *  On success, it returns a new grpc_s2a_credentials_options instance;
- *  otherwise, the method returns nullptr. **/
-grpc_s2a_credentials_options* grpc_s2a_credentials_options_copy(
-    const grpc_s2a_credentials_options* options);
-
-/** This method adds a ciphersuite to the head of the ordered list of
- *  ciphersuites supported by the S2A credentials options instance.
- *  - options: a grpc_s2a_credentials_options instance.
- *  - ciphersuite: an s2a_supported_ciphersuite. **/
-void grpc_s2a_credentials_options_add_ciphersuite(
-    grpc_s2a_credentials_options* options,
-    s2a_supported_ciphersuite ciphersuite);
 
 }  // namespace experimental
 

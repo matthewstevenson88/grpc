@@ -22,12 +22,9 @@
 
 namespace experimental {
 
-#define GRPC_S2A_CREDENTIALS_TYPE "s2a"
-
 grpc_s2a_credentials::grpc_s2a_credentials(
-    const grpc_s2a_credentials_options* options,
-    const char* handshaker_service_url)
-    : grpc_channel_credentials(GRPC_S2A_CREDENTIALS_TYPE) {
+    const grpc_s2a_credentials_options* options)
+    : grpc_channel_credentials(kGrpcS2ACredentialsType) {
   // TODO(mattstev): implement.
 }
 
@@ -46,9 +43,8 @@ grpc_s2a_credentials::create_security_connector(
 }
 
 grpc_s2a_server_credentials::grpc_s2a_server_credentials(
-    const grpc_s2a_credentials_options* options,
-    const char* handshaker_service_url)
-    : grpc_server_credentials(GRPC_S2A_CREDENTIALS_TYPE) {
+    const grpc_s2a_credentials_options* options)
+    : grpc_server_credentials(kGrpcS2ACredentialsType) {
   // TODO(mattstev): implement.
 }
 
