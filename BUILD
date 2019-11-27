@@ -1735,7 +1735,6 @@ grpc_cc_library(
         "grpc_base",
         "grpc_shadow_boringssl",
         "grpc_transport_chttp2_alpn",
-        "s2a_util",
         "tsi",
     ],
 )
@@ -2036,22 +2035,6 @@ grpc_cc_library(
         "grpc_base",
     ],
 )
-
-#grpc_cc_library(
-#    name = "s2a_util",
-#    srcs = [
-#       "src/core/lib/security/credentials/s2a/grpc_s2a_credentials_options.cc",
-#    ],
-#    hdrs = [
-#        "src/core/lib/security/credentials/s2a/grpc_s2a_credentials_options.h",
-#    ],
-#    language = "c++",
-#    public_hdrs = GRPC_SECURE_PUBLIC_HDRS,
-#    deps = [
-#        "gpr",
-#        "grpc_base",
-#    ],
-#)
 
 grpc_cc_library(
     name = "tsi",

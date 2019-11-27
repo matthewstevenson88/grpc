@@ -35,6 +35,8 @@ struct grpc_s2a_credentials_options {
    * appropriate vector, if a duplicate exists. **/
   void set_handshaker_service_url(const char* handshaker_service_url);
   void add_supported_ciphersuite(uint16_t ciphersuite);
+  /** This API should only be called at the client-side. Any target service
+   *  accounts that are added on the server-side will be ignored. **/
   void add_target_service_account(const char* target_service_account);
 
   /** Create a deep copy of this grpc_s2a_credentials_options instance. **/
@@ -42,7 +44,7 @@ struct grpc_s2a_credentials_options {
 
   /** This method returns true if the fields of this
    *  grpc_s2a_credentials_options instance match the arguments; otherwise, it
-   *  returns false. **/
+   *  returns false. It is used only for testing purposes. **/
   bool check_fields(const char* handshaker_service_url,
                     const std::vector<uint16_t>& supported_ciphersuites,
                     const std::vector<char*>& target_service_account_list);

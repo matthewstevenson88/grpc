@@ -40,6 +40,9 @@ grpc_s2a_credentials_options::~grpc_s2a_credentials_options() {
 
 void grpc_s2a_credentials_options::set_handshaker_service_url(
     const char* handshaker_service_url) {
+  if (handshaker_service_url == nullptr) {
+    return;
+  }
   if (handshaker_service_url_ != nullptr) {
     gpr_free(handshaker_service_url_);
   }
@@ -53,6 +56,9 @@ void grpc_s2a_credentials_options::add_supported_ciphersuite(
 
 void grpc_s2a_credentials_options::add_target_service_account(
     const char* target_service_account) {
+  if (target_service_account == nullptr) {
+    return;
+  }
   char* service_account = gpr_strdup(target_service_account);
   target_service_account_list_.push_back(service_account);
 }
