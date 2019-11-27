@@ -16,24 +16,26 @@
  *
  */
 
+#ifndef GRPC_CORE_TSI_S2A_HANDSHAKER_S2A_HANDSHAKER_UTIL_H
+#define GRPC_CORE_TSI_S2A_HANDSHAKER_S2A_HANDSHAKER_UTIL_H
+
+#include <grpc/byte_buffer.h>
 #include <grpc/support/port_platform.h>
-
-#include "src/core/tsi/s2a/handshaker/s2a_handshaker_client.h"
-
-#include <grpc/support/alloc.h>
-#include <grpc/support/log.h>
+#include "src/proto/grpc/gcp/s2a.upb.h"
 
 namespace grpc_core {
 namespace experimental {
 
-/** This file contains the implementation details of the |make_grpc_call| member
- *  function of the |s2a_handshaker_client| struct. This method enables the S2A
- *  handshaker client to make a gRPC call to the S2A service. **/
+/** This method converts the ciphersuite bytes (as defined in s2a_constants.h)
+ *  to the corresponding integer (as defined in s2a.proto). **/
+int32_t s2a_convert_ciphersuite_to_enum(uint16_t ciphersuite);
 
-tsi_result s2a_handshaker_client::make_grpc_call(bool is_start) {
-  // TODO(mattstev): the logic for this will be mostly shared with ALTS.
-  return TSI_UNIMPLEMENTED;
-}
+/** This method serializes |request| into a buffer, and returns a newly created
+ *  grpc_byte_buffer that holds this buffer. **/
+grpc_byte_buffer* s2a_get_serialized_session_req(
+    s2a_SessionReq* request.upb_arena* arena);
 
 }  // namespace experimental
 }  // namespace grpc_core
+
+#endif  // GRPC_CORE_TSI_S2A_HANDSHAKER_UTIL_H

@@ -72,7 +72,7 @@ struct s2a_handshaker_client {
    *  handshaker service. It returns TSI_OK on success and an error code on
    *  failure.
    *  - bytes_received: the bytes from the out_bytes field of the message
-   * received from the peer. **/
+   *    received from the peer. **/
   tsi_result server_start(grpc_slice* bytes_received);
 
   /** This method schedules a next handshaker request with the S2A's handshaker
@@ -83,12 +83,15 @@ struct s2a_handshaker_client {
 
   /** This method cancels previously scheduled, but not yet executed, handshaker
    *  requests to the S2A's handshaker service. After this operation completes,
-   * no further handshaker requests will be scheduled with the S2A. **/
+   *  no further handshaker requests will be scheduled with the S2A. **/
   void shutdown();
 
  private:
   /** TODO(mattstev): comments. **/
   tsi_result make_grpc_call(bool is_start);
+
+  /** This method prepares a serialized version of a client start message. **/
+  grpc_byte_buffer* s2a_get_serialized_start_client();
 
   /** One ref is held by the entity that created this handshaker_client, and
    *  another ref is held by the pending RECEIVE_STATUS_ON_CLIENT op. **/
@@ -100,7 +103,7 @@ struct s2a_handshaker_client {
   s2a_grpc_caller grpc_caller_;
   /** A gRPC closure to be scheduled when the response from handshaker service
    *  is received. It will be initialized with the injected grpc RPC callback.
-   * **/
+   **/
   grpc_closure on_handshaker_service_resp_recv_;
   /** Buffers containing information to be sent (or received) to (or from) the
    *  handshaker service. **/
@@ -120,10 +123,10 @@ struct s2a_handshaker_client {
    *  authorization check. **/
   grpc_slice target_name_;
   /** A boolean flag indicating if the handshaker client is used at client or
-   * the server side. **/
+   *  the server side. **/
   bool is_client_;
   /** A temporary store for data received from handshaker service used to
-   * extract unused data. **/
+   *  extract unused data. **/
   grpc_slice recv_bytes_;
   /** A buffer containing data to be sent to the grpc client or server's peer.
    * **/
@@ -135,14 +138,14 @@ struct s2a_handshaker_client {
   grpc_status_code handshake_status_code_;
   /** A gRPC status details of handshake call. **/
   grpc_slice handshake_status_details_;
-  /** The mutex |mu| synchronizes all fields below including their internal
-   * fields. **/
+  /** The mutex |mu_| synchronizes all fields below including their internal
+   *  fields. **/
   gpr_mu mu_;
   /** This status indicates whether the handshaker call's RECV_STATUS_ON_CLIENT
-   * op is done. **/
+   *  op is done. **/
   bool receive_status_finished_;
   /** If this field is not nullptr, then it contains arguments needed to
-   * complete a TSI next callback. **/
+   *  complete a TSI next callback. **/
   recv_message_result* pending_recv_message_result_;
 };
 

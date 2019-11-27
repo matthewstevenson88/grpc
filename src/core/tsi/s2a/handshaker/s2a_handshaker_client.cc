@@ -36,47 +36,43 @@ namespace experimental {
  *  The caller must ensure |client| was initialized with
  *  |s2a_grpc_handshaker_client_create| and, in particular, that |client| is not
  *  nullptr. **/
-static grpc_byte_buffer* s2a_get_serialized_start_client(
-    s2a_handshaker_client* client) {
-  GPR_ASSERT(client != nullptr);
-  s2a_grpc_handshaker_client* s2a_client =
-      reinterpret_cast<s2a_grpc_handshaker_client*>(client);
+grpc_byte_buffer* s2a_handshaker_client::s2a_get_serialized_start_client() {
   upb::Arena arena;
   s2a_SessionReq* request = s2a_SessionReq_new(arena.ptr());
-  grpc_gcp_StartClientHandshakeReq* start_client =
-      grpc_gcp_HandshakerReq_mutable_client_start(req, arena.ptr());
-  grpc_gcp_StartClientHandshakeReq_set_handshake_security_protocol(
-      start_client, grpc_gcp_ALTS);
-  grpc_gcp_StartClientHandshakeReq_add_application_protocols(
-      start_client, upb_strview_makez(ALTS_APPLICATION_PROTOCOL), arena.ptr());
-  grpc_gcp_StartClientHandshakeReq_add_record_protocols(
-      start_client, upb_strview_makez(ALTS_RECORD_PROTOCOL), arena.ptr());
-  grpc_gcp_RpcProtocolVersions* client_version =
-      grpc_gcp_StartClientHandshakeReq_mutable_rpc_versions(start_client,
-                                                            arena.ptr());
-  grpc_gcp_RpcProtocolVersions_assign_from_struct(
-      client_version, arena.ptr(), &client->options->rpc_versions);
-  grpc_gcp_StartClientHandshakeReq_set_target_name(
-      start_client,
-      upb_strview_make(reinterpret_cast<const char*>(
-                           GRPC_SLICE_START_PTR(client->target_name)),
-                       GRPC_SLICE_LENGTH(client->target_name)));
-  target_service_account* ptr =
-      (reinterpret_cast<grpc_alts_credentials_client_options*>(client->options))
-          ->target_account_list_head;
-  while (ptr != nullptr) {
-    grpc_gcp_Identity* target_identity =
-        grpc_gcp_StartClientHandshakeReq_add_target_identities(start_client,
-                                                               arena.ptr());
-    grpc_gcp_Identity_set_service_account(target_identity,
-                                          upb_strview_makez(ptr->data));
-    ptr = ptr->next;
+  s2a_ClientSessionStartReq* start_client =
+      s2a_ClientSessionStartReq_mutable_client_start(request, arena.ptr());
+  s2a_ClientSessionStartReq_add_application_protocols(
+      start_client, upb_strview_makez(kS2AApplicationProtocol), arena.ptr());
+  s2a_ClientSessionStartReq_add_tls_versions(start_client, /** TLS 1.3 **/ 0,
+                                             arena.ptr());
+  /** TODO(mattstev): the following 2 for loops use API's that are not yet
+   *  exposed (or written). **/
+  for (auto ciphersuite : options_->supported_ciphersuites()) {
+    s2a_ClientSessionStartReq_add_tls_ciphersuites(
+        start_client, s2a_convert_ciphersuite_to_enum(ciphersuite),
+        arena.ptr());
   }
-  return get_serialized_handshaker_req(req, arena.ptr());
+  for (auto service_account : options_->target_service_account_list()) {
+    if (service_account == nullptr) {
+      continue;
+    }
+    s2a_Identity* target_identity =
+        s2a_ClientSessionStartReq_add_target_identities(start_client,
+                                                        arena.ptr());
+    // TODO(mattstev): should I change the target service account list in
+    // options to somehow involve SPIFFE id's?
+    s2a_Identity_set_spiffe_id(target_identity,
+                               upb_strview_makez(service_account));
+  }
+  s2a_ClientSessionStartReq_set_target_name(
+      start_client, upb_strview_make(reinterpret_cast<const char*>(
+                        GRPC_SLICE_START_PTR(target_name_),
+                        GRPC_SLICE_LENGTH(target_name_))));
+  return s2a_get_serialized_session_req(request, arena.ptr());
 }
 
 tsi_result s2a_handshaker_client::client_start() {
-  grpc_byte_buffer* buffer = s2a_get_serialized_start_client(this);
+  grpc_byte_buffer* buffer = s2a_get_serialized_start_client();
   if (buffer == nullptr) {
     gpr_log(GPR_ERROR, kS2AGetSerializedStartClientFailed);
     return TSI_INTERNAL_ERROR;

@@ -1621,6 +1621,7 @@ filegroups:
 - name: s2a_tsi
   headers:
   - src/core/tsi/s2a/handshaker/s2a_handshaker_client.h
+  - src/core/tsi/s2a/handshaker/s2a_handshaker_util.h
   - src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.h
   - src/core/tsi/s2a/record_protocol/s2a_crypter.h
   - src/core/tsi/s2a/record_protocol/s2a_crypter_util.h
@@ -1628,6 +1629,7 @@ filegroups:
   src:
   - src/core/tsi/s2a/handshaker/s2a_handshaker_client.cc
   - src/core/tsi/s2a/handshaker/s2a_handshaker_client_caller.cc
+  - src/core/tsi/s2a/handshaker/s2a_handshaker_util.cc
   - src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.cc
   - src/core/tsi/s2a/record_protocol/s2a_crypter.cc
   - src/core/tsi/s2a/record_protocol/s2a_crypter_util.cc
