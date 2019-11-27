@@ -842,6 +842,7 @@
     <file baseinstalldir="/" name="src/core/tsi/local_transport_security.h" role="src" />
     <file baseinstalldir="/" name="src/core/tsi/s2a/handshaker/s2a_handshaker_client.cc" role="src" />
     <file baseinstalldir="/" name="src/core/tsi/s2a/handshaker/s2a_handshaker_client.h" role="src" />
+    <file baseinstalldir="/" name="src/core/tsi/s2a/handshaker/s2a_handshaker_client_caller.cc" role="src" />
     <file baseinstalldir="/" name="src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.cc" role="src" />
     <file baseinstalldir="/" name="src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.h" role="src" />
     <file baseinstalldir="/" name="src/core/tsi/s2a/record_protocol/s2a_crypter.cc" role="src" />

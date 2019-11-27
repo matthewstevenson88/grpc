@@ -947,6 +947,7 @@ Pod::Spec.new do |s|
                       'src/core/tsi/local_transport_security.h',
                       'src/core/tsi/s2a/handshaker/s2a_handshaker_client.cc',
                       'src/core/tsi/s2a/handshaker/s2a_handshaker_client.h',
+                      'src/core/tsi/s2a/handshaker/s2a_handshaker_client_caller.cc',
                       'src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.cc',
                       'src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.h',
                       'src/core/tsi/s2a/record_protocol/s2a_crypter.cc',

@@ -34,14 +34,6 @@ namespace experimental {
 
 typedef struct s2a_tsi_handshaker s2a_tsi_handshaker;
 
-/** The Secure Session Agent (S2A) handshaker client interface. It facilitates
- *  establishing a secure channel with the peer by interacting with the
- *  S2A's handshaker service. More precisely, it schedules
- *  a handshaker request that could be one of client_start, server_start,
- *  and next handshaker requests. The interface and all API's are
- *  thread-compatible. **/
-typedef struct s2a_handshaker_client s2a_handshaker_client;
-
 typedef struct grpc_s2a_credentials_options grpc_s2a_credentials_options;
 
 /** A function that makes a gRPC call to the S2A. The default caller option
@@ -49,45 +41,110 @@ typedef struct grpc_s2a_credentials_options grpc_s2a_credentials_options;
 typedef grpc_call_error (*s2a_grpc_caller)(grpc_call* call, const grpc_op* ops,
                                            size_t nops, grpc_closure* tag);
 
-/** The vtable for the S2A handshaker client operations. **/
-typedef struct s2a_handshaker_client_vtable {
-  tsi_result (*client_start)(s2a_handshaker_client* client);
-  tsi_result (*server_start)(s2a_handshaker_client* client,
-                             grpc_slice* bytes_received);
-  tsi_result (*next)(s2a_handshaker_client* client, grpc_slice* bytes_received);
-  void (*shutdown)(s2a_handshaker_client* client);
-  void (*destruct)(s2a_handshaker_client* client);
-} s2a_handshaker_client_vtable;
+/** The Secure Session Agent (S2A) handshaker client interface. It facilitates
+ *  establishing a secure channel with the peer by interacting with the
+ *  S2A's handshaker service. More precisely, it schedules
+ *  a handshaker request that could be one of client_start, server_start,
+ *  and next handshaker requests. The interface and all API's are
+ *  thread-compatible. **/
+struct s2a_handshaker_client {
+ public:
+  /** A caller should employ the API's |s2a_handshaker_client_create| and
+   *  |s2a_handshaker_client_destroy| rather than the constructor and destructor
+   *  of this class. See the comments above for these API's for details on the
+   *  arguments. **/
+  s2a_handshaker_client(s2a_tsi_handshaker* handshaker, grpc_channel* channel,
+                        grpc_pollset_set* interested_parties,
+                        grpc_s2a_credentials_options* options,
+                        const grpc_slice& target_name,
+                        grpc_iomgr_cb_func grpc_cb,
+                        tsi_handshaker_on_next_done_cb cb, void* user_data,
+                        bool is_client);
 
-/** This method schedules a client_start handshaker request with the S2A's
- *  handshaker service.
- *  - client: an s2a_handshaker_client instance.
- *  It returns TSI_OK on success and an error code on failure. **/
-tsi_result s2a_handshaker_client_start_client(
-    const s2a_handshaker_client* client);
+  ~s2a_handshaker_client();
 
-/** This method schedules a server_start handshaker request with the S2A's
- *  handshaker service.
- *  - client: an s2a_handshaker_client instance.
- *  - bytes_received: the bytes from the out_bytes field of the message received
- *    from the peer.
- *  It returns TSI_OK on success and an error code on failure. **/
-tsi_result s2a_handshaker_client_start_server(
-    const s2a_handshaker_client* client, grpc_slice* bytes_received);
+  /** This method schedules a client_start handshaker request with the S2A's
+   *  handshaker service. It returns TSI_OK on success and an error code on
+   *  failure. **/
+  tsi_result client_start();
 
-/** This method schedules a next handshaker request with the S2A's
- *  handshaker service.
- *  - client: an s2a_handshaker_client instance.
- *  - bytes_received: the bytes from the out_bytes field of the SessionResp
- *    message that the client peer received from its S2A.
- *  It returns TSI_OK on success and an error code on failure. **/
-tsi_result s2a_handshaker_client_next(const s2a_handshaker_client* client,
-                                      grpc_slice* bytes_received);
+  /** This method schedules a server_start handshaker request with the S2A's
+   *  handshaker service. It returns TSI_OK on success and an error code on
+   *  failure.
+   *  - bytes_received: the bytes from the out_bytes field of the message
+   * received from the peer. **/
+  tsi_result server_start(grpc_slice* bytes_received);
 
-/** This method cancels previously scheduled, but not yet executed, handshaker
- *  requests to the S2A's handshaker service. After this operation completes, no
- *  further handshaker requests will be scheduled with the S2A. **/
-void s2a_handshaker_client_shutdown(const s2a_handshaker_client* client);
+  /** This method schedules a next handshaker request with the S2A's handshaker
+   *  service. It returns TSI_OK on success and an error code on failure.
+   *  - bytes_received: the bytes from the out_bytes field of the SessionResp
+   *    message that the client peer received from its S2A. **/
+  tsi_result next(grpc_slice* bytes_received);
+
+  /** This method cancels previously scheduled, but not yet executed, handshaker
+   *  requests to the S2A's handshaker service. After this operation completes,
+   * no further handshaker requests will be scheduled with the S2A. **/
+  void shutdown();
+
+ private:
+  /** TODO(mattstev): comments. **/
+  tsi_result make_grpc_call(bool is_start);
+
+  /** One ref is held by the entity that created this handshaker_client, and
+   *  another ref is held by the pending RECEIVE_STATUS_ON_CLIENT op. **/
+  gpr_refcount refs_;
+  /** The S2A TSI handshaker that instantiates this S2A handshaker client. **/
+  s2a_tsi_handshaker* handshaker_;
+  /** TODO(mattstev): comments. **/
+  grpc_call* call_;
+  s2a_grpc_caller grpc_caller_;
+  /** A gRPC closure to be scheduled when the response from handshaker service
+   *  is received. It will be initialized with the injected grpc RPC callback.
+   * **/
+  grpc_closure on_handshaker_service_resp_recv_;
+  /** Buffers containing information to be sent (or received) to (or from) the
+   *  handshaker service. **/
+  grpc_byte_buffer* send_buffer_;
+  grpc_byte_buffer* recv_buffer_;
+  /** TODO(mattstev): comment. **/
+  grpc_status_code status_;
+  /** Initial metadata to be received from handshaker service. **/
+  grpc_metadata_array recv_initial_metadata_;
+  /** A callback function provided by an application to be invoked when response
+   *  is received from handshaker service. **/
+  tsi_handshaker_on_next_done_cb cb_;
+  void* user_data_;
+  /** The S2A credential options passed in from the caller. **/
+  grpc_s2a_credentials_options* options_;
+  /** The target name information to be passed to handshaker service for server
+   *  authorization check. **/
+  grpc_slice target_name_;
+  /** A boolean flag indicating if the handshaker client is used at client or
+   * the server side. **/
+  bool is_client_;
+  /** A temporary store for data received from handshaker service used to
+   * extract unused data. **/
+  grpc_slice recv_bytes_;
+  /** A buffer containing data to be sent to the grpc client or server's peer.
+   * **/
+  uint8_t* buffer_;
+  size_t buffer_size_;
+  /** A callback for receiving handshake call status. **/
+  grpc_closure on_status_received_;
+  /** A gRPC status code of handshake call. **/
+  grpc_status_code handshake_status_code_;
+  /** A gRPC status details of handshake call. **/
+  grpc_slice handshake_status_details_;
+  /** The mutex |mu| synchronizes all fields below including their internal
+   * fields. **/
+  gpr_mu mu_;
+  /** This status indicates whether the handshaker call's RECV_STATUS_ON_CLIENT
+   * op is done. **/
+  bool receive_status_finished_;
+  /** If this field is not nullptr, then it contains arguments needed to
+   * complete a TSI next callback. **/
+  recv_message_result* pending_recv_message_result_;
+};
 
 /** This method populates |client| with an instance of the
  *  s2a_handshaker_client, which is configured using the other arguments. The
@@ -110,19 +167,14 @@ void s2a_handshaker_client_shutdown(const s2a_handshaker_client* client);
  *  - client: a pointer to the address of an s2a_handshaker_client instance,
  *    which will be populated by the method. It is legal (and expected) for
  *    |client| to point to a nullptr.
- *  - error_details: an error message for when the creation fails. It is legal
- *    (and expected) to have |error_details| point to a nullptr.
  *
- *  On success, this method returns TSI_OK. Otherwise, it returns an error code
- *  and populates |error_details| with further details; in this case, the memory
- *  allocated to |error_details| must be freed using gpr_free. **/
-tsi_result s2a_grpc_handshaker_client_create(
+ *  On success, this method returns TSI_OK, and an error code otherwise. **/
+tsi_result s2a_handshaker_client_create(
     s2a_tsi_handshaker* handshaker, grpc_channel* channel,
-    const char* handshaker_service_url, grpc_pollset_set* interested_parties,
-    grpc_s2a_credentials_options* options, const grpc_slice& target_name,
-    grpc_iomgr_cb_func grpc_cb, tsi_handshaker_on_next_done_cb cb,
-    void* user_data, bool is_client, s2a_handshaker_client** client,
-    char** error_details);
+    grpc_pollset_set* interested_parties, grpc_s2a_credentials_options* options,
+    const grpc_slice& target_name, grpc_iomgr_cb_func grpc_cb,
+    tsi_handshaker_on_next_done_cb cb, void* user_data, bool is_client,
+    s2a_handshaker_client** client);
 
 /** This method destroys an s2a_handshaker_client. The caller must call this
  *  method after any use of s2a_handshaker_client_create, even if it outputs a

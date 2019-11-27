@@ -97,7 +97,12 @@ constexpr char kS2ATsiHandshakerResultInvalidSessionState[] =
 constexpr char kS2ATsiHandshakerResultUnusedBytesNullptr[] =
     "There is an unexpected nullptr argument to "
     "|s2a_handshaker_result_get_unused_bytes|.";
-constexpr char kS2AHandshakerClientNullptrArguments[] = "There is an unexpected nullptr argument to |s2a_grpc_handshaker_client_create|.";
-constexpr char kS2AHandshakerClientStartClientNullptr[] = "The |client| argument to |s2a_handshaker_client_internal_start_client| is nullptr.";
+constexpr char kS2AHandshakerClientNullptrArguments[] =
+    "There is an unexpected nullptr argument to "
+    "|s2a_grpc_handshaker_client_create|.";
+constexpr char kS2AGetSerializedStartClientFailed[] =
+    "The |s2a_get_serialized_start_client| method failed.";
+constexpr char kS2AMakeGrpcCallFailed[] =
+    "The |make_grpc_call| member function failed.";
 
 #endif  // GRPC_CORE_TSI_S2A_S2A_CONSTANTS_H

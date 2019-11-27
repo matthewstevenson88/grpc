@@ -3902,6 +3902,7 @@ LIBGRPC_SRC = \
     src/core/tsi/ssl_transport_security.cc \
     src/core/tsi/transport_security_grpc.cc \
     src/core/tsi/s2a/handshaker/s2a_handshaker_client.cc \
+    src/core/tsi/s2a/handshaker/s2a_handshaker_client_caller.cc \
     src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.cc \
     src/core/tsi/s2a/record_protocol/s2a_crypter.cc \
     src/core/tsi/s2a/record_protocol/s2a_crypter_util.cc \
@@ -4377,6 +4378,7 @@ LIBGRPC_CRONET_SRC = \
     src/core/tsi/ssl_transport_security.cc \
     src/core/tsi/transport_security_grpc.cc \
     src/core/tsi/s2a/handshaker/s2a_handshaker_client.cc \
+    src/core/tsi/s2a/handshaker/s2a_handshaker_client_caller.cc \
     src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.cc \
     src/core/tsi/s2a/record_protocol/s2a_crypter.cc \
     src/core/tsi/s2a/record_protocol/s2a_crypter_util.cc \
@@ -23283,6 +23285,7 @@ src/core/tsi/alts/zero_copy_frame_protector/alts_zero_copy_grpc_protector.cc: $(
 src/core/tsi/fake_transport_security.cc: $(OPENSSL_DEP)
 src/core/tsi/local_transport_security.cc: $(OPENSSL_DEP)
 src/core/tsi/s2a/handshaker/s2a_handshaker_client.cc: $(OPENSSL_DEP)
+src/core/tsi/s2a/handshaker/s2a_handshaker_client_caller.cc: $(OPENSSL_DEP)
 src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.cc: $(OPENSSL_DEP)
 src/core/tsi/s2a/record_protocol/s2a_crypter.cc: $(OPENSSL_DEP)
 src/core/tsi/s2a/record_protocol/s2a_crypter_util.cc: $(OPENSSL_DEP)

@@ -2040,6 +2040,7 @@ grpc_cc_library(
         "src/core/tsi/fake_transport_security.cc",
         "src/core/tsi/local_transport_security.cc",
         "src/core/tsi/s2a/handshaker/s2a_handshaker_client.cc",
+        "src/core/tsi/s2a/handshaker/s2a_handshaker_client_caller.cc",
         "src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.cc",
         "src/core/tsi/ssl/session_cache/ssl_session_boringssl.cc",
         "src/core/tsi/ssl/session_cache/ssl_session_cache.cc",
