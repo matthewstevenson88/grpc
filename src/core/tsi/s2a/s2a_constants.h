@@ -46,6 +46,9 @@ constexpr size_t kTlsChacha20Poly1305Sha256NonceSize = 12;
  *  decrypting TLS 1.3 records. **/
 constexpr size_t kTlsAdditionalDataBytesSize = 13;
 
+/** The size of the sequence buffer used for parsing TLS 1.3 records. **/
+constexpr size_t kTlsSequenceSize = 8;
+
 /** S2A error messages. **/
 constexpr char kS2AUnsupportedTlsVersion[] =
     "S2A does not support the desired TLS version.";

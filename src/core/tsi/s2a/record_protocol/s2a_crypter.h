@@ -75,7 +75,10 @@ grpc_status_code s2a_max_record_overhead(const s2a_crypter* crypter,
  *    argument.
  *  - error_detials: the error details generated when the execution of the
  *    function fails; it is legal (and expected) for the caller to have
- *    |error_details| point to a nullptr. **/
+ *    |error_details| point to a nullptr.
+ *
+ *  This method will be used by the caller to determine the size of the buffer
+ *  that must be allocated for the plaintext when calling |s2a_decrypt|. **/
 grpc_status_code s2a_max_plaintext_size(const s2a_crypter* crypter,
                                         size_t record_size,
                                         size_t* plaintext_size,
@@ -147,9 +150,13 @@ grpc_status_code s2a_encrypt(s2a_crypter* crypter, uint8_t* plaintext,
  *  - plaintext: the start of the plaintext obtained from the TLS record; this
  *    points to a part of memory that is a part of |record| and, in particular,
  *    it is owned by the caller.
- *  - plaintext_allocated_size: the size of the |plaintext| buffer; the caller
- *    must ensure that it is at least
- *      s2a_max_plaintext_size(crypter, record_size).
+ *  - plaintext_allocated_size: the size of the |plaintext| buffer. In order for
+ *    |s2a_decrypt| to successfully decrypt the record, the caller must ensure
+ *    the following: if |buffer_size| is populated as follows
+ *      size_t buffer_size;
+ *      s2a_max_plaintext_size(crypter, record_size,
+ *                             &buffer_size, error_details)
+ *    then we must have |plaintext_allocated_size| >= |buffer_size|.
  *  - plaintext_size: the size (in btes) of the memory occupied by the
  *    plaintext after the function executes successfully; the caller must not
  *    pass in nullptr for this argument.
@@ -278,7 +285,7 @@ grpc_status_code s2a_max_plaintext_size(const s2a_crypter* crypter,
  *  - crypter: an instance of s2a_crypter, which must have been initialized
  *    using the s2a_crypter_create method.
  *  - record_header: an iovec that points to a buffer containing the record
- *  header and specifies the size of the buffer.
+ *    header and specifies the size of the buffer.
  *  - protected_vec: a pointer to a buffer of iovec's that contain the payload
  *    of the record.
  *  - protected_vec_size: the size of the |protected_vec| buffer.
@@ -288,7 +295,7 @@ grpc_status_code s2a_max_plaintext_size(const s2a_crypter* crypter,
  *      s2a_max_plaintext_size(crypter, protected_vec, protected_vec_size).
  *  - bytes_written: the size (in bytes) of the plaintext written to
  *    |unprotected_vec| after the method executes successfully; the caller must
- *  not pass in nullptr for this argument.
+ *    not pass in nullptr for this argument.
  *  - error_details: the error details generated when the execution of the
  *    function fails; it is legal (and expected) for the caller to set
  *    |error_details| to point to a nullptr.

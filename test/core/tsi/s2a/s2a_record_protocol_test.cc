@@ -26,6 +26,7 @@
 #include "src/core/tsi/s2a/record_protocol/s2a_crypter.h"
 #include "src/core/tsi/s2a/record_protocol/s2a_crypter_util.h"
 #include "src/core/tsi/s2a/s2a_constants.h"
+#include "test/core/tsi/s2a/s2a_test_data.h"
 #include "test/core/tsi/s2a/s2a_test_util.h"
 
 /** Certain tests in this library use randomly-generated initial data. This
@@ -741,8 +742,7 @@ static void s2a_test_decrypt_alert(uint16_t ciphersuite,
   grpc_core::Delete<grpc_channel>(channel);
 }
 
-static void s2a_test_random_roundtrips(uint16_t ciphersuite,
-                                       size_t iterations) {
+static void s2a_test_random_roundtrips(uint16_t ciphersuite) {
   s2a_crypter* in_crypter = nullptr;
   s2a_crypter* out_crypter = nullptr;
   grpc_channel* channel = grpc_core::New<grpc_channel>();
@@ -764,57 +764,13 @@ static void s2a_test_random_roundtrips(uint16_t ciphersuite,
   GPR_ASSERT(out_status == GRPC_STATUS_OK);
   GPR_ASSERT(error_details == nullptr);
 
-  for (size_t i = 0; i < iterations; i += 1) {
-    if (i * kS2AGaps > SSL3_RT_MAX_PLAIN_LENGTH) {
-      break;
-    }
-    send_random_message(i * kS2AGaps, out_crypter, in_crypter);
-    send_random_message(i * kS2AGaps, in_crypter, out_crypter);
-  }
-  send_random_message(0, in_crypter, out_crypter);
-  for (size_t j = 0; j < iterations; j += 1) {
-    if (j * kS2AGaps > SSL3_RT_MAX_PLAIN_LENGTH) {
-      break;
-    }
-    send_random_message(SSL3_RT_MAX_PLAIN_LENGTH - j * kS2AGaps, out_crypter,
-                        in_crypter);
-    send_random_message(SSL3_RT_MAX_PLAIN_LENGTH - j * kS2AGaps, in_crypter,
-                        out_crypter);
-  }
-  send_random_message(0, in_crypter, out_crypter);
+  send_message(s2a_test_data::test_message_1, in_crypter, out_crypter);
+  send_message(s2a_test_data::test_message_2, out_crypter, in_crypter);
+  send_message(s2a_test_data::test_message_3, out_crypter, in_crypter);
 
   // Cleanup.
   s2a_crypter_destroy(in_crypter);
   s2a_crypter_destroy(out_crypter);
-  grpc_core::Delete<grpc_channel>(channel);
-}
-
-static void s2a_test_random_roundtrips_with_random_traffic_secret(
-    uint16_t ciphersuite, size_t iterations) {
-  s2a_crypter* crypter_one = nullptr;
-  s2a_crypter* crypter_two = nullptr;
-  grpc_channel* channel = grpc_core::New<grpc_channel>();
-  grpc_status_code setup_status = create_random_crypter_pair(
-      ciphersuite, &crypter_one, &crypter_two, channel);
-  if (setup_status == GRPC_STATUS_UNIMPLEMENTED) {
-    grpc_core::Delete<grpc_channel>(channel);
-    return;
-  }
-  GPR_ASSERT(setup_status == GRPC_STATUS_OK);
-
-  for (size_t i = 0; i < iterations; i++) {
-    size_t random_size = rand() % (SSL3_RT_MAX_PLAIN_LENGTH + 1);
-    bool one_is_sender = ((rand() % 2) == 0);
-    if (one_is_sender) {
-      send_random_message(random_size, crypter_one, crypter_two);
-    } else {
-      send_random_message(random_size, crypter_two, crypter_one);
-    }
-  }
-
-  // Cleanup.
-  s2a_crypter_destroy(crypter_one);
-  s2a_crypter_destroy(crypter_two);
   grpc_core::Delete<grpc_channel>(channel);
 }
 
@@ -839,9 +795,7 @@ int main(int argc, char** argv) {
     for (size_t j = 0; j < number_alert_types; j++) {
       s2a_test_decrypt_alert(ciphersuite[i], alert[j]);
     }
-    s2a_test_random_roundtrips(ciphersuite[i], kS2AIterations);
-    s2a_test_random_roundtrips_with_random_traffic_secret(ciphersuite[i],
-                                                          kS2AIterations);
+    s2a_test_random_roundtrips(ciphersuite[i]);
   }
   return 0;
 }

@@ -20,9 +20,12 @@ grpc_package(name = "test/core/tsi/s2a")
 
 grpc_cc_library(
     name = "s2a_test_util",
-    srcs = ["s2a_test_util.cc"],
+    srcs = [
+        "s2a_test_util.cc",
+        ],
     hdrs = [
         "s2a_test_util.h",
+        "s2a_test_data.h",
         ],
     external_deps = [
         "libssl",

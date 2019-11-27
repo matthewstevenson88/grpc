@@ -73,11 +73,11 @@ bool check_encrypt_record(uint16_t ciphersuite,
 bool check_record_empty_plaintext(uint16_t ciphersuite,
                                   std::vector<uint8_t>& record);
 
-/** This method generates a random message of size |message_size|, encrypts this
- *  message using |out_crypter|, decrypts this message using |in_crypter|, and
- *  then verifies that the decrypted message coincides with the original. **/
-void send_random_message(size_t message_size, s2a_crypter* out_crypter,
-                         s2a_crypter* in_crypter);
+/** This method encrypts |message| using |out_crypter|, decrypts the resulting
+ *  TLS 1.3 record using |in_crypter|, and then verifies that the decrypted
+ *  message coincides with the |message|. **/
+void send_message(std::vector<uint8_t>& message, s2a_crypter* out_crypter,
+                  s2a_crypter* in_crypter);
 
 /** This method populates |crypter_one| and |crypter_two| with compatible,
  *  random crypters that use |ciphersuite|. **/

@@ -537,15 +537,15 @@ grpc_status_code s2a_write_tls13_record(
     return header_status;
   }
 
-  uint8_t sequence[8];
+  uint8_t sequence[kTlsSequenceSize];
   sequence_to_bytes(crypter->out_connection, sequence);
 
   /** Set up the additional_data_bytes buffer, which is to be authenticated
    *  but not encrypted. **/
   uint8_t* additional_data =
-      s2a_additional_data(sequence, /** sequence size **/ 8, record_header,
+      s2a_additional_data(sequence, kTlsSequenceSize, record_header,
                           SSL3_RT_HEADER_LENGTH, payload_size);
-  iovec aad_vec = {(void*)(additional_data + /** sequence size **/ 8),
+  iovec aad_vec = {(void*)(additional_data + kTlsSequenceSize),
                    SSL3_RT_HEADER_LENGTH};
 
   /** The following constructs the nonce for the TLS payload in local
@@ -553,8 +553,7 @@ grpc_status_code s2a_write_tls13_record(
    *  out_connection and applying XOR operations with the bytes of the
    *  current sequence number. **/
   size_t nonce_size;
-  uint8_t* nonce =
-      s2a_nonce(crypter, sequence, /** sequence_size **/ 8, &nonce_size);
+  uint8_t* nonce = s2a_nonce(crypter, sequence, kTlsSequenceSize, &nonce_size);
 
   uint8_t record_type_base = record_type;
   iovec record_type_vec = {(void*)(&record_type_base), 1};
@@ -564,6 +563,9 @@ grpc_status_code s2a_write_tls13_record(
   }
   data_for_processing_vec[unprotected_vec_size] = record_type_vec;
 
+  /** Note that this TLS 1.3 implementation chooses to NOT add padding by zeros
+   *  after the ciphertext and record type. This is an optional feature, as
+   *  described in https://tools.ietf.org/html/rfc8446#section-5.4 . **/
   size_t ciphertext_and_tag_size = 0;
   uint8_t* ciphertext_buffer = record_header + SSL3_RT_HEADER_LENGTH;
   iovec ciphertext = {(void*)ciphertext_buffer, payload_size};
@@ -665,15 +667,14 @@ s2a_decrypt_status s2a_decrypt_payload(
   GPR_ASSERT(expected_plaintext_and_record_byte_size <=
              SSL3_RT_MAX_PLAIN_LENGTH + /** record byte **/ 1);
 
-  uint8_t sequence[8];
+  uint8_t sequence[kTlsSequenceSize];
   sequence_to_bytes(crypter->in_connection, sequence);
   size_t nonce_size;
-  uint8_t* nonce =
-      s2a_nonce(crypter, sequence, /** sequence size **/ 8, &nonce_size);
+  uint8_t* nonce = s2a_nonce(crypter, sequence, kTlsSequenceSize, &nonce_size);
   uint8_t* additional_data = s2a_additional_data(
       sequence, /** sequence size **/ 8, (uint8_t*)record_header.iov_base,
       record_header.iov_len, payload_size);
-  iovec aad_vec = {(void*)(additional_data + /** sequence size **/ 8),
+  iovec aad_vec = {(void*)(additional_data + kTlsSequenceSize),
                    record_header.iov_len};
 
   grpc_status_code decrypt_status = gsec_aead_crypter_decrypt_iovec(
@@ -740,27 +741,37 @@ s2a_decrypt_status s2a_decrypt_record(
     return decrypt_status;
   }
 
-  uint8_t* plaintext = reinterpret_cast<uint8_t*>(unprotected_vec.iov_base);
-  /** Search for the nonzero trailing byte, which encodes the record type and is
-   *  appended to the plaintext. **/
-  size_t i;
-  for (i = *bytes_written - 1; i < *bytes_written; i--) {
-    if (plaintext[i] != 0) {
-      break;
-    }
-  }
-  if (i >= *bytes_written) {
-    *error_details = gpr_strdup(kS2ARecordInvalidFormat);
-    return INVALID_RECORD;
-  }
-  uint8_t record_type = plaintext[i];
-  *bytes_written -= 1;
-
   grpc_status_code increment_status =
       increment_sequence(crypter->in_connection);
   if (increment_status != GRPC_STATUS_OK) {
     return INTERNAL_ERROR;
   }
+
+  uint8_t* plaintext = reinterpret_cast<uint8_t*>(unprotected_vec.iov_base);
+  /** At this point, the |s2a_decrypt_payload| method has written
+   *  |*bytes_written| bytes to |plaintext|, and these bytes are of the form
+   *    (ciphertext) + (record type byte) + (trailing zeros).
+   *  These trailing zeros should be ignored, so we will search from one end of
+   *  the |plaintext| buffer until we find the first nonzero trailing byte,
+   *  which must be the record type.
+   *
+   *  Note that this TLS 1.3 implementation does not add padding by zeros when
+   *  constructing a TLS 1.3 record; nonetheless, |s2a_decrypt_payload| must be
+   *  able to parse a TLS 1.3 record that does have padding by zeros. **/
+  size_t i;
+  for (i = *bytes_written - 1; i >= 0; i--) {
+    if (plaintext[i] != 0) {
+      break;
+    }
+  }
+  if (i < 0) {
+    *error_details = gpr_strdup(kS2ARecordInvalidFormat);
+    return INVALID_RECORD;
+  }
+  uint8_t record_type = plaintext[i];
+  /** The plaintext only occupies the first i bytes of the |plaintext| buffer,
+   *  so |bytes_written| must be updated accordingly. **/
+  *bytes_written = i;
 
   switch (record_type) {
     case SSL3_RT_ALERT:

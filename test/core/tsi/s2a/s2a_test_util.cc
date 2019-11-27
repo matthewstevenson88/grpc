@@ -25,6 +25,8 @@
 #include "src/core/tsi/s2a/record_protocol/s2a_crypter_util.h"
 #include "src/core/tsi/s2a/s2a_constants.h"
 
+#include <iostream>
+
 /** The following vectors were generated using a different TLS 1.3
  *  implementation. The keys and nonces are derived from the traffic secret
  *  "kkkk...k", with the length determined by the ciphersuite. **/
@@ -228,8 +230,8 @@ void random_array(uint8_t* bytes, size_t length) {
   }
 }
 
-void send_random_message(size_t message_size, s2a_crypter* out_crypter,
-                         s2a_crypter* in_crypter) {
+void send_message(std::vector<uint8_t>& message, s2a_crypter* out_crypter,
+                  s2a_crypter* in_crypter) {
   GPR_ASSERT(out_crypter != nullptr && in_crypter != nullptr);
   GPR_ASSERT(out_crypter != in_crypter);
   size_t max_record_overhead;
@@ -242,20 +244,18 @@ void send_random_message(size_t message_size, s2a_crypter* out_crypter,
   }
   GPR_ASSERT(max_overhead_status == GRPC_STATUS_OK);
   GPR_ASSERT(error_details == nullptr);
-  GPR_ASSERT(message_size <= SSL3_RT_MAX_PLAIN_LENGTH + max_record_overhead);
-  std::vector<uint8_t> message(message_size, 0);
-  random_array(message.data(), message_size);
+  GPR_ASSERT(message.size() <= SSL3_RT_MAX_PLAIN_LENGTH + max_record_overhead);
 
-  size_t record_allocated_size = message_size + max_record_overhead;
+  size_t record_allocated_size = message.size() + max_record_overhead;
   std::vector<uint8_t> record(record_allocated_size, 0);
   size_t record_size;
 
   grpc_status_code encrypt_status =
-      s2a_encrypt(out_crypter, message.data(), message_size, record.data(),
+      s2a_encrypt(out_crypter, message.data(), message.size(), record.data(),
                   record.size(), &record_size, &error_details);
   GPR_ASSERT(encrypt_status == GRPC_STATUS_OK);
   GPR_ASSERT(error_details == nullptr);
-  GPR_ASSERT(record_size == expected_message_size(message_size));
+  GPR_ASSERT(record_size == expected_message_size(message.size()));
 
   size_t plaintext_allocated_size;
   grpc_status_code plaintext_status = s2a_max_plaintext_size(
@@ -273,7 +273,8 @@ void send_random_message(size_t message_size, s2a_crypter* out_crypter,
                   plaintext.size(), &plaintext_size, &error_details);
   GPR_ASSERT(decrypt_status == OK);
   GPR_ASSERT(error_details == nullptr);
-  GPR_ASSERT(plaintext_size == message_size);
+
+  GPR_ASSERT(plaintext_size == message.size());
   plaintext.resize(plaintext_size);
   GPR_ASSERT(plaintext == message);
 }
