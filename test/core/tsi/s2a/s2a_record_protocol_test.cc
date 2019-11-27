@@ -176,46 +176,6 @@ static void s2a_test_incorrect_key_size() {
   grpc_core::Delete<grpc_channel>(channel);
 }
 
-static void s2a_test_deserialize_byte_buffer() {
-  upb::Arena arena;
-  s2a_SessionState* session_state = s2a_SessionState_new(arena.ptr());
-  s2a_SessionState_set_in_key(session_state,
-                              upb_strview_make("kkkkkkkkkkkkkkkk", 17));
-  size_t buf_size;
-  char* buf = s2a_SessionState_serialize(session_state, arena.ptr(), &buf_size);
-  grpc_slice slice = grpc_slice_from_copied_buffer(buf, buf_size);
-
-  /** Valid serialization. **/
-  upb::Arena arena2;
-  grpc_byte_buffer* buffer =
-      grpc_raw_byte_buffer_create(&slice, /** number of slices **/ 1);
-  s2a_SessionState* decoded_session_state = nullptr;
-  char* error_details = nullptr;
-  grpc_status_code deserialize_status = s2a_deserialize_session_state(
-      buffer, arena2.ptr(), &decoded_session_state, &error_details);
-  GPR_ASSERT(deserialize_status == GRPC_STATUS_OK);
-  GPR_ASSERT(strcmp(s2a_SessionState_in_key(decoded_session_state).data,
-                    "kkkkkkkkkkkkkkkk") == 0);
-  grpc_byte_buffer_destroy(buffer);
-
-  /** Invalid serialization. **/
-  grpc_slice bad_slice =
-      grpc_slice_split_head(&slice, GRPC_SLICE_LENGTH(slice) - 1);
-  buffer = grpc_raw_byte_buffer_create(&bad_slice, /** number of slices **/ 1);
-  s2a_SessionState* bad_session_state = nullptr;
-  deserialize_status = s2a_deserialize_session_state(
-      buffer, arena2.ptr(), &bad_session_state, &error_details);
-  GPR_ASSERT(deserialize_status == GRPC_STATUS_INTERNAL);
-  GPR_ASSERT(strcmp(error_details,
-                    "The |s2a_SessionState_parse| method failed.") == 0);
-
-  /** Clean up. **/
-  gpr_free(error_details);
-  grpc_slice_unref(slice);
-  grpc_slice_unref(bad_slice);
-  grpc_byte_buffer_destroy(buffer);
-}
-
 static void s2a_test_create_crypter_success(uint16_t ciphersuite) {
   s2a_crypter* crypter = nullptr;
   grpc_channel* channel = grpc_core::New<grpc_channel>();
@@ -777,7 +737,6 @@ static void s2a_test_random_roundtrips(uint16_t ciphersuite) {
 int main(int argc, char** argv) {
   s2a_test_incorrect_tls_version();
   s2a_test_incorrect_key_size();
-  s2a_test_deserialize_byte_buffer();
   const size_t number_ciphersuites = 3;
   uint16_t ciphersuite[number_ciphersuites] = {
       kTlsAes128GcmSha256, kTlsAes256GcmSha384, kTlsChacha20Poly1305Sha256};

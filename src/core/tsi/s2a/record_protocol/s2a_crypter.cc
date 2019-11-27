@@ -88,6 +88,28 @@ static grpc_status_code s2a_tag_size(const s2a_crypter* crypter,
   return GRPC_STATUS_OK;
 }
 
+/** This method updates the traffic secret in |traffic_secret| based on
+ *  |ciphersuite|. See https://tools.ietf.org/html/rfc8446#section-7.2 for
+ *  details. **/
+static grpc_status_code advance_secret(uint16_t ciphersuite, uint8_t* traffic_secret,
+                                       size_t traffic_secret_size, char** error_details) {
+  GsecHashFunction hash_function;
+  grpc_status_code hash_function_status = s2a_ciphersuite_to_hash_function(
+      ciphersuite, &hash_function, error_details);
+  if (hash_function_status != GRPC_STATUS_OK) {
+    return hash_function_status;
+  }
+
+  const uint8_t suffix[] = "\x11tls13 traffic upd\x00";
+  const size_t suffix_size = 19;
+  uint8_t label[2 + suffix_size];
+  label[0] = traffic_secret_size >> 8;
+  label[1] = traffic_secret_size;
+  memcpy(&label[2], suffix, suffix_size);
+  return hkdf_derive_secret(traffic_secret, traffic_secret_size, hash_function,
+                            traffic_secret, traffic_secret_size, label, sizeof(label));
+}
+
 /** This method write |out_size| bytes of derived secret to |output|, based on
  *  |secret|, |suffix|, and |ciphersuite|. **/
 static grpc_status_code derive_secret(uint16_t ciphersuite, uint8_t* suffix,
@@ -95,19 +117,10 @@ static grpc_status_code derive_secret(uint16_t ciphersuite, uint8_t* suffix,
                                       size_t secret_size, size_t output_size,
                                       uint8_t* output, char** error_details) {
   GsecHashFunction hash_function;
-  switch (ciphersuite) {
-    case kTlsAes128GcmSha256:
-      hash_function = GsecHashFunction::SHA256_hash_function;
-      break;
-    case kTlsAes256GcmSha384:
-      hash_function = GsecHashFunction::SHA384_hash_function;
-      break;
-    case kTlsChacha20Poly1305Sha256:
-      hash_function = GsecHashFunction::SHA256_hash_function;
-      break;
-    default:
-      *error_details = gpr_strdup(kS2AUnsupportedCiphersuite);
-      return GRPC_STATUS_FAILED_PRECONDITION;
+  grpc_status_code hash_function_status = s2a_ciphersuite_to_hash_function(
+      ciphersuite, &hash_function, error_details);
+  if (hash_function_status != GRPC_STATUS_OK) {
+    return hash_function_status;
   }
 
   /** The label buffer consists of 2 pieces: the first 2 bytes encode
@@ -251,7 +264,9 @@ static grpc_status_code assign_crypter(bool in, uint8_t* traffic_secret,
 
 grpc_status_code s2a_crypter_create(
     uint16_t tls_version, uint16_t tls_ciphersuite, uint8_t* in_traffic_secret,
-    size_t in_traffic_secret_size, uint8_t* out_traffic_secret,
+  derive_key(uint16_t ciphersuite, uint8_t* secret,
+                                   size_t secret_size, size_t output_size,
+                                   uint8_t* output, char** error_details)  size_t in_traffic_secret_size, uint8_t* out_traffic_secret,
     size_t out_traffic_secret_size, grpc_channel* channel,
     s2a_crypter** crypter, char** error_details) {
   if (crypter == nullptr || in_traffic_secret == nullptr ||
@@ -694,6 +709,55 @@ s2a_decrypt_status s2a_decrypt_payload(
   return OK;
 }
 
+static grpc_status_code s2a_key_update(uint16_t ciphersuite,
+                                       s2a_half_connection* half_connection,
+                                       gsec_aead_crypter** aead_crypter,
+                                       char** error_details) {
+  GPR_ASSERT(half_connection != nullptr && aead_crypter != nullptr);
+  const size_t key_size;
+  const size_t nonce_size;
+  switch (ciphersuite) {
+    case kTlsAes128GcmSha256:
+      key_size = kTlsAes128GcmSha256KeySize;
+      nonce_size = kTlsAes128GcmSha256NonceSize;
+      break;
+    case kTlsAes256GcmSha384:
+      key_size = kTlsAes256GcmSha384KeySize;
+      nonce_size = kTlsAes256GcmSha384NonceSize;
+      break;
+    case kTlsChacha20Poly1305Sha256:
+      key_size = kTlsChacha20Poly1305Sha256KeySize;
+      nonce_size = kTlsChacha20Poly1305Sha256NonceSize;
+      break;
+    default:
+      *error_details = gpr_strdup(kS2AUnsupportedCiphersuite);
+      return FAILED_PRECONDITION;
+  }
+  uint8_t key_buffer[key_size];
+  uint8_t nonce_buffer[nonce_size];
+
+  grpc_status_code status = advance_secret(ciphersuite,
+                                           half_connection->traffic_secret,
+                                           half_connection->traffic_secret_size,
+                                           error_details);
+  if (status != GRPC_STATUS_OK) {
+    return status;
+  }
+  status = derive_key(ciphersuite, half_connection->traffic_secret,
+                      half_connection->traffic_secret_size, key_size,
+                      key_buffer, error_details);
+  if (status != GRPC_STATUS_OK) {
+    return status;
+  }
+  status = derive_nonce(ciphersuite, half_connection->traffic_secret,
+                        half_connection->traffic_secret_size, nonce_size,
+                        nonce_buffer, error_details);
+  if (status != GRPC_STATUS_OK) {
+    return status;
+  }
+
+}
+
 s2a_decrypt_status s2a_decrypt_record(
     s2a_crypter* crypter, iovec& record_header, const iovec* protected_vec,
     size_t protected_vec_size, iovec& unprotected_vec, size_t* bytes_written,
@@ -789,10 +853,7 @@ s2a_decrypt_status s2a_decrypt_record(
       /** Check whether the plaintext is a key update message. **/
       if (*bytes_written == 5 &&
           memcmp(plaintext, "\x18\x00\x00\x01", 4) == 0 && plaintext[4] < 2) {
-        // TODO(mattstev): update keys. This can only be added once the traffic
-        // secret is stored. To do so, we require that the HKDF_expand function
-        // be added.
-        return UNIMPLEMENTED;
+        // TODO(mattstev) 
       }
       *error_details = gpr_strdup(kS2ARecordInvalidFormat);
       return INVALID_RECORD;
