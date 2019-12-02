@@ -260,7 +260,8 @@ grpc_status_code s2a_write_tls13_record(
 /** This method populates |plaintext_size| with the maximum size (in bytes) of
  *  the plaintext obtained by decrypting |protected_vec| using |crypter|. This
  *  method assumes that |protected_vec| contains a TLS payload of type
- *  "application data".
+ *  "application data"; in particular, |protected_vec| is assumed to not contain
+ *  the record header.
  *  - crypter: an instance of s2a_crypter, which must have been initialized
  *    using the s2a_crypter_create method.
  *  - protected_vec: a pointer to a buffer of iovec's that contain the payload
@@ -293,7 +294,7 @@ grpc_status_code s2a_max_plaintext_size(const s2a_crypter* crypter,
  *    plaintext and specifies the size allocated to that buffer; the caller must
  *    ensure that this size is at least
  *      s2a_max_plaintext_size(crypter, protected_vec, protected_vec_size).
- *  - bytes_written: the size (in bytes) of the plaintext written to
+ *  - plaintext_bytes_written: the size (in bytes) of the plaintext written to
  *    |unprotected_vec| after the method executes successfully; the caller must
  *    not pass in nullptr for this argument.
  *  - error_details: the error details generated when the execution of the
@@ -307,7 +308,7 @@ grpc_status_code s2a_max_plaintext_size(const s2a_crypter* crypter,
  *  to zero. **/
 s2a_decrypt_status s2a_decrypt_record(
     s2a_crypter* crypter, iovec& record_header, const iovec* protected_vec,
-    size_t protected_vec_size, iovec& unprotected_vec, size_t* bytes_written,
-    char** error_details);
+    size_t protected_vec_size, iovec& unprotected_vec,
+    size_t* plaintext_bytes_written, char** error_details);
 
 #endif  //  GRPC_CORE_TSI_S2A_RECORD_PROTOCOL_S2A_CRYPTER_H

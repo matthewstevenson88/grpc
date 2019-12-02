@@ -542,8 +542,8 @@ static uint8_t* s2a_nonce(s2a_crypter* crypter, uint8_t* sequence,
 
 grpc_status_code s2a_write_tls13_record(
     s2a_crypter* crypter, uint8_t record_type, const iovec* unprotected_vec,
-    size_t unprotected_vec_size, iovec protected_record, size_t* bytes_written,
-    char** error_details) {
+    size_t unprotected_vec_size, iovec protected_record,
+    size_t* bytes_written, char** error_details) {
   GPR_ASSERT(crypter != nullptr);
   GPR_ASSERT(crypter->out_connection != nullptr);
   GPR_ASSERT(crypter->out_connection->initialized);
@@ -693,8 +693,8 @@ grpc_status_code s2a_max_plaintext_size(const s2a_crypter* crypter,
 
 s2a_decrypt_status s2a_decrypt_payload(
     s2a_crypter* crypter, iovec& record_header, const iovec* protected_vec,
-    size_t protected_vec_size, iovec& unprotected_vec, size_t* bytes_written,
-    char** error_details) {
+    size_t protected_vec_size, iovec& unprotected_vec,
+    size_t* bytes_written, char** error_details) {
   GPR_ASSERT(crypter != nullptr);
   GPR_ASSERT(bytes_written != nullptr);
   size_t payload_size = get_total_length(protected_vec, protected_vec_size);
@@ -808,10 +808,10 @@ static grpc_status_code s2a_key_update(uint16_t ciphersuite,
 
 s2a_decrypt_status s2a_decrypt_record(
     s2a_crypter* crypter, iovec& record_header, const iovec* protected_vec,
-    size_t protected_vec_size, iovec& unprotected_vec, size_t* bytes_written,
-    char** error_details) {
+    size_t protected_vec_size, iovec& unprotected_vec,
+    size_t* plaintext_bytes_written, char** error_details) {
   GPR_ASSERT(crypter != nullptr);
-  GPR_ASSERT(bytes_written != nullptr);
+  GPR_ASSERT(plaintext_bytes_written != nullptr);
   size_t max_plaintext_size;
   grpc_status_code plaintext_status =
       s2a_max_plaintext_size(crypter, protected_vec, protected_vec_size,
@@ -848,7 +848,7 @@ s2a_decrypt_status s2a_decrypt_record(
 
   s2a_decrypt_status decrypt_status = s2a_decrypt_payload(
       crypter, record_header, protected_vec, protected_vec_size,
-      unprotected_vec, bytes_written, error_details);
+      unprotected_vec, plaintext_bytes_written, error_details);
   if (decrypt_status != OK) {
     return decrypt_status;
   }
@@ -861,8 +861,8 @@ s2a_decrypt_status s2a_decrypt_record(
 
   uint8_t* plaintext = reinterpret_cast<uint8_t*>(unprotected_vec.iov_base);
   /** At this point, the |s2a_decrypt_payload| method has written
-   *  |*bytes_written| bytes to |plaintext|, and these bytes are of the form
-   *    (ciphertext) + (record type byte) + (trailing zeros).
+   *  |*plaintext_bytes_written| bytes to |plaintext|, and these bytes are of the form
+   *    (plaintext) + (record type byte) + (trailing zeros).
    *  These trailing zeros should be ignored, so we will search from one end of
    *  the |plaintext| buffer until we find the first nonzero trailing byte,
    *  which must be the record type.
@@ -885,12 +885,12 @@ s2a_decrypt_status s2a_decrypt_record(
   }
   uint8_t record_type = plaintext[i];
   /** The plaintext only occupies the first i bytes of the |plaintext| buffer,
-   *  so |bytes_written| must be updated accordingly. **/
-  *bytes_written = i;
+   *  so |plaintext_bytes_written| must be updated accordingly. **/
+  *plaintext_bytes_written = i;
 
   switch (record_type) {
     case SSL3_RT_ALERT:
-      if (*bytes_written < 2) {
+      if (*plaintext_bytes_written < 2) {
         *error_details = gpr_strdup(kS2ARecordSmallAlert);
         return INVALID_RECORD;
       }
