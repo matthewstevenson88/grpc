@@ -35,16 +35,16 @@ typedef struct s2a_tsi_handshaker s2a_tsi_handshaker;
 
 /** This method populates |self| with an instance of the s2a_tsi_handshaker,
  *  which is configured using the other arguments.
- * - options: S2A-specific options used to configure the s2a_tsi_handshaker.
- * - target_name: the name of the endpoint to which the channel connects; this
- *   data will be used for a secure naming check.
- * - is_client: a boolean that is true if |client| is used at the client side,
- *   and false if |client| is used at the server side.
- * - interested_parties: set of pollsets interested in this connection.
- * - self: the address of S2A TSI handshaker instance to be populated by the
- *   method; the caller must ensure that |self| is not nullptr.
- * - error_details: an error message for when the creation fails. It is legal
- *   (and expected) to have |error_details| point to a nullptr.
+ *  - options: S2A-specific options used to configure the s2a_tsi_handshaker.
+ *  - target_name: the name of the endpoint to which the channel connects; this
+ *    data will be used for a secure naming check.
+ *  - is_client: a boolean that is true if |client| is used at the client side,
+ *    and false if |client| is used at the server side.
+ *  - interested_parties: set of pollsets interested in this connection.
+ *  - self: the address of S2A TSI handshaker instance to be populated by the
+ *    method; the caller must ensure that |self| is not nullptr.
+ *  - error_details: an error message for when the creation fails. It is legal
+ *    (and expected) to have |error_details| point to a nullptr.
  *
  * It returns TSI_OK on success and an error status code on failure. Note that
  * if interested_parties is nullptr, a dedicated TSI thread will be created and
@@ -66,11 +66,11 @@ tsi_result s2a_tsi_handshaker_result_create(s2a_SessionResp* response,
                                             tsi_handshaker_result** self);
 
 /** This method sets the unused bytes of an S2A TSI handshaker result instance.
- * - self: an S2A TSI handshaker result instance; the caller must not pass in
- *   nullptr for this argument.
- * - recv_bytes: data received from the handshaker service; the caller must not
- *   pass in nullptr for this argument.
- * - bytes_consumed: size of data consumed by the handshaker service. **/
+ *  - self: an S2A TSI handshaker result instance; the caller must not pass in
+ *    nullptr for this argument.
+ *  - recv_bytes: data received from the handshaker service; the caller must not
+ *    pass in nullptr for this argument.
+ *  - bytes_consumed: size of data consumed by the handshaker service. **/
 void s2a_tsi_handshaker_result_set_unused_bytes(tsi_handshaker_result* self,
                                                 grpc_slice* recv_bytes,
                                                 size_t bytes_consumed);

@@ -46,16 +46,6 @@ typedef struct grpc_s2a_credentials_options grpc_s2a_credentials_options;
 typedef grpc_call_error (*s2a_grpc_caller)(grpc_call* call, const grpc_op* ops,
                                            size_t nops, grpc_closure* tag);
 
-/** The vtable for the S2A handshaker client operations. **/
-typedef struct s2a_handshaker_client_vtable {
-  tsi_result (*client_start)(s2a_handshaker_client* client);
-  tsi_result (*server_start)(s2a_handshaker_client* client,
-                             grpc_slice* bytes_received);
-  tsi_result (*next)(s2a_handshaker_client* client, grpc_slice* bytes_received);
-  void (*shutdown)(s2a_handshaker_client* client);
-  void (*destruct)(s2a_handshaker_client* client);
-} s2a_handshaker_client_vtable;
-
 /** This method schedules a client_start handshaker request with the S2A's
  *  handshaker service.
  *  - client: an s2a_handshaker_client instance.
