@@ -26,6 +26,9 @@
 #include <openssl/sha.h>
 #include <openssl/ssl.h>
 #include <openssl/ssl3.h>
+#include <vector>
+
+#include <iostream>
 
 /** The struct that represents the state of an S2A connection in a single
  *  direction. **/
@@ -166,7 +169,7 @@ static grpc_status_code derive_nonce(uint16_t ciphersuite, uint8_t* secret,
  *  the method returns an error code and populates |error_details|, which must
  *  be freed using gpr_free. **/
 static grpc_status_code assign_aead_crypter(uint16_t ciphersuite,
-                                            uint8_t key,
+                                            uint8_t* key,
                                             size_t key_size,
                                             size_t nonce_size,
                                             size_t tag_size,
@@ -174,7 +177,7 @@ static grpc_status_code assign_aead_crypter(uint16_t ciphersuite,
                                             char** error_details) {
   GPR_ASSERT(aead_crypter != nullptr);
   if (*aead_crypter == nullptr) {
-    gsec_aead_crypter_destroy(aead_crypter);
+    gsec_aead_crypter_destroy(*aead_crypter);
   }
 
   grpc_status_code aead_crypter_status;
@@ -196,7 +199,7 @@ static grpc_status_code assign_aead_crypter(uint16_t ciphersuite,
   if (aead_crypter_status != GRPC_STATUS_OK) {
     return aead_crypter_status;
   }
-  return TSI_OK;
+  return GRPC_STATUS_OK;
 }
 
 static grpc_status_code assign_s2a_crypter(bool in, uint8_t* traffic_secret,
@@ -291,9 +294,7 @@ static grpc_status_code assign_s2a_crypter(bool in, uint8_t* traffic_secret,
 
 grpc_status_code s2a_crypter_create(
     uint16_t tls_version, uint16_t tls_ciphersuite, uint8_t* in_traffic_secret,
-  derive_key(uint16_t ciphersuite, uint8_t* secret,
-                                   size_t secret_size, size_t output_size,
-                                   uint8_t* output, char** error_details)  size_t in_traffic_secret_size, uint8_t* out_traffic_secret,
+    size_t in_traffic_secret_size, uint8_t* out_traffic_secret,
     size_t out_traffic_secret_size, grpc_channel* channel,
     s2a_crypter** crypter, char** error_details) {
   if (crypter == nullptr || in_traffic_secret == nullptr ||
@@ -469,8 +470,7 @@ grpc_status_code s2a_max_record_overhead(const s2a_crypter* crypter,
   return GRPC_STATUS_OK;
 }
 
-static grpc_status_code s2a_write_tls13_record_header(uint8_t record_type,
-                                                      size_t header_size,
+static grpc_status_code s2a_write_tls13_record_header(size_t header_size,
                                                       size_t payload_size,
                                                       uint8_t* record_header,
                                                       char** error_details) {
@@ -479,7 +479,11 @@ static grpc_status_code s2a_write_tls13_record_header(uint8_t record_type,
     *error_details = gpr_strdup(kS2AHeaderSizeMismatch);
     return GRPC_STATUS_FAILED_PRECONDITION;
   }
-  record_header[0] = record_type;
+  /** In TLS 1.3, the record header does not encode the record type or the TLS
+   *  version. All record headers are built to look like a TLS 1.2 message of
+   *  type "application data" for compatibility reasons. See
+   *  https://tools.ietf.org/html/rfc8446#section-5.2. **/
+  record_header[0] = SSL3_RT_APPLICATION_DATA;
   const uint16_t wire_version = static_cast<uint16_t>(TLS1_2_VERSION);
   record_header[1] = wire_version >> 8;
   record_header[2] = wire_version & 0xff;
@@ -571,9 +575,7 @@ grpc_status_code s2a_write_tls13_record(
 
   /** Write the record header at the start of |protected_record|. **/
   uint8_t* record_header = static_cast<uint8_t*>(protected_record.iov_base);
-  grpc_status_code header_status =
-      s2a_write_tls13_record_header(record_type, SSL3_RT_HEADER_LENGTH,
-                                    payload_size, record_header, error_details);
+  grpc_status_code header_status = s2a_write_tls13_record_header(SSL3_RT_HEADER_LENGTH, payload_size, record_header, error_details);
   if (header_status != GRPC_STATUS_OK) {
     return header_status;
   }
@@ -742,8 +744,10 @@ static grpc_status_code s2a_key_update(uint16_t ciphersuite,
   GPR_ASSERT(half_connection != nullptr && aead_crypter != nullptr);
   GPR_ASSERT(half_connection->initialized);
 
-  const size_t key_size;
-  const size_t nonce_size;
+  std::cout << "****************Entered key update method" << std::endl;
+
+  size_t key_size;
+  size_t nonce_size;
   switch (ciphersuite) {
     case kTlsAes128GcmSha256:
       key_size = kTlsAes128GcmSha256KeySize;
@@ -759,10 +763,10 @@ static grpc_status_code s2a_key_update(uint16_t ciphersuite,
       break;
     default:
       *error_details = gpr_strdup(kS2AUnsupportedCiphersuite);
-      return FAILED_PRECONDITION;
+      return GRPC_STATUS_FAILED_PRECONDITION;
   }
-  uint8_t key_buffer[key_size];
-  uint8_t nonce_buffer[nonce_size];
+  std::vector<uint8_t> key_buffer(key_size, 0);
+  std::vector<uint8_t> nonce_buffer(nonce_size, 0);
 
   /** Advance the traffic secret and derive the updated key and nonce. **/
   grpc_status_code status = advance_secret(ciphersuite,
@@ -772,19 +776,21 @@ static grpc_status_code s2a_key_update(uint16_t ciphersuite,
   if (status != GRPC_STATUS_OK) {
     return status;
   }
+  std::cout << "***********Advanced secret" << std::endl;
   status = derive_key(ciphersuite, half_connection->traffic_secret,
                       half_connection->traffic_secret_size, key_size,
-                      key_buffer, error_details);
+                      key_buffer.data(), error_details);
   if (status != GRPC_STATUS_OK) {
     return status;
   }
+  std::cout << "************Derived key" << std::endl;
   status = derive_nonce(ciphersuite, half_connection->traffic_secret,
                         half_connection->traffic_secret_size, nonce_size,
-                        nonce_buffer, error_details);
+                        nonce_buffer.data(), error_details);
   if (status != GRPC_STATUS_OK) {
     return status;
   }
-
+  std::cout << "***********Derived nonce" << std::endl;
 
   /** Populate |aead_crypter| with the updated AEAD crypter. **/
   size_t tag_size;
@@ -792,19 +798,19 @@ static grpc_status_code s2a_key_update(uint16_t ciphersuite,
   if (tag_status != GRPC_STATUS_OK) {
     return tag_status;
   }
+  std::cout << "**************Got tag size" << std::endl;
   grpc_status_code aead_crypter_status = assign_aead_crypter(
-      cipheruite, key_buffer, key_size, tag_size, aead_crypter,
-      error_details);
+      ciphersuite, key_buffer.data(), key_size, nonce_size, tag_size, aead_crypter, error_details);
   if (aead_crypter_status != GRPC_STATUS_OK) {
     return aead_crypter_status;
   }
+  std::cout << "****************Assigned aead crypter" << std::endl;
 
   /** Update the relevant fields of |half_connection|. Note that the sequence
    *  number must be reset to zero after a key update; see
    *  https://tools.ietf.org/html/rfc8446#section-5.3. **/
   half_connection->sequence = 0;
-  memcpy(half_connection->traffic_secret, traffic_secret, half_connection->traffic_secret_size);
-  memcpy(half_connection->nonce, nonce, nonce_size);
+  memcpy(half_connection->nonce, nonce_buffer.data(), nonce_size);
 
   return GRPC_STATUS_OK;
 }
@@ -822,7 +828,7 @@ s2a_decrypt_status s2a_decrypt_record(
   if (plaintext_status != GRPC_STATUS_OK) {
     return INTERNAL_ERROR;
   }
-  GPR_ASSERT(static_cast<int>(unprotected_vec.iov_len) >= max_plaintext_size);
+  GPR_ASSERT(unprotected_vec.iov_len >= max_plaintext_size);
   uint8_t* header = reinterpret_cast<uint8_t*>(record_header.iov_base);
   const uint16_t wire_version = static_cast<uint16_t>(TLS1_2_VERSION);
   size_t payload_size = get_total_length(protected_vec, protected_vec_size);
@@ -905,9 +911,23 @@ s2a_decrypt_status s2a_decrypt_record(
       }
     case SSL3_RT_HANDSHAKE:
       /** Check whether the plaintext is a key update message. **/
-      if (*bytes_written == 5 &&
+      if (*bytes_written == 4 &&
           memcmp(plaintext, "\x18\x00\x00\x01", 4) == 0 && plaintext[4] < 2) {
-        return s2a_key_update(crypter->ciphersuite, crypter->in_connection, &(crypter->in_aead_crypter), error_details);
+        std::cout << "**********Entered the correct case." << std::endl;
+        grpc_status_code key_update_status = s2a_key_update(crypter->ciphersuite, crypter->in_connection, &(crypter->in_aead_crypter), error_details);
+        if (key_update_status != GRPC_STATUS_OK) {
+          return INTERNAL_ERROR;
+        }
+        return OK;
+      }
+      if (*bytes_written != 4) {
+        std::cout << "**********Bytes written is " << *bytes_written << std::endl;
+      }
+      if (memcmp(plaintext, "\x18\x00\x00\x01", 4) == 0) {
+        std::cout << "******Plaintext is " << (char*)plaintext << std::endl;
+      }
+      if (plaintext[4] >= 2) {
+        std::cout << "***********plaintext[4]=" << static_cast<unsigned>(plaintext[4]) << std::endl;
       }
       *error_details = gpr_strdup(kS2ARecordInvalidFormat);
       return INVALID_RECORD;

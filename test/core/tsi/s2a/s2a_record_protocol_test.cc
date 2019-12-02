@@ -29,6 +29,8 @@
 #include "test/core/tsi/s2a/s2a_test_data.h"
 #include "test/core/tsi/s2a/s2a_test_util.h"
 
+#include <iostream>
+
 /** Certain tests in this library use randomly-generated initial data. This
  *  parameter determines the number of times such a test runs. **/
 constexpr size_t kS2AIterations = 100;
@@ -734,6 +736,76 @@ static void s2a_test_random_roundtrips(uint16_t ciphersuite) {
   grpc_core::Delete<grpc_channel>(channel);
 }
 
+static void s2a_test_key_update(uint16_t ciphersuite) {
+  s2a_crypter* crypter = nullptr;
+  grpc_channel* channel = grpc_core::New<grpc_channel>();
+  char* error_details = nullptr;
+  grpc_status_code status =
+      setup_crypter(ciphersuite, channel, &crypter, &error_details);
+  if (ciphersuite == kTlsChacha20Poly1305Sha256) {
+    GPR_ASSERT(status == GRPC_STATUS_UNIMPLEMENTED);
+    GPR_ASSERT(strcmp(error_details, kS2AChachaPolyUnimplemented) == 0);
+
+    // Cleanup.
+    s2a_crypter_destroy(crypter);
+    gpr_free(error_details);
+    grpc_core::Delete<grpc_channel>(channel);
+    return;
+  }
+  GPR_ASSERT(status == GRPC_STATUS_OK);
+  GPR_ASSERT(error_details == nullptr);
+
+  /** Setup for encryption of key update message. **/
+  uint8_t key_update_message[] = "\x18\x00\x00\x01";
+  size_t message_size = 4;
+  iovec plaintext_vec = {(void*)key_update_message, message_size};
+
+  size_t max_record_overhead;
+  grpc_status_code overhead_status = s2a_max_record_overhead(
+      crypter, &max_record_overhead, &error_details);
+  GPR_ASSERT(overhead_status == GRPC_STATUS_OK);
+  GPR_ASSERT(error_details == nullptr);
+  size_t record_allocated_size = message_size + max_record_overhead;
+  std::vector<uint8_t> record(record_allocated_size, 0);
+  iovec record_vec = {(void*)record.data(), record.size()};
+  size_t record_bytes_written;
+
+  /** Encrypt key update message. **/
+  grpc_status_code write_key_update_status = s2a_write_tls13_record(
+      crypter, SSL3_RT_HANDSHAKE, &plaintext_vec, /** plaintext_vec length **/ 1,
+      record_vec, &record_bytes_written, &error_details);
+  GPR_ASSERT(write_key_update_status == GRPC_STATUS_OK);
+  GPR_ASSERT(error_details == nullptr);
+  GPR_ASSERT(record_bytes_written == expected_message_size(message_size));
+
+  /** Setup for decryption of key update message. **/
+  iovec record_header_vec = {record_vec.iov_base, SSL3_RT_HEADER_LENGTH};
+  iovec protected_vec = {reinterpret_cast<uint8_t*>(record_vec.iov_base) + SSL3_RT_HEADER_LENGTH, record.size() - SSL3_RT_HEADER_LENGTH};
+  size_t plaintext_size;
+  grpc_status_code plaintext_size_status = s2a_max_plaintext_size(
+      crypter, &protected_vec, /** protected_vec length **/ 1,
+      &plaintext_size, &error_details);
+  GPR_ASSERT(plaintext_size_status == GRPC_STATUS_OK);
+  GPR_ASSERT(error_details == nullptr);
+  std::vector<uint8_t> plaintext(plaintext_size, 0);
+  iovec unprotected_vec = {(void*)plaintext.data(), plaintext.size()};
+  size_t unprotected_bytes_written;
+
+  /** Decrypt key update message. **/
+  s2a_decrypt_status read_key_update_status = s2a_decrypt_record(
+      crypter, record_header_vec, &protected_vec, /** protected_vec length **/ 1,
+      unprotected_vec, &unprotected_bytes_written, &error_details);
+  //GPR_ASSERT(read_key_update_status == OK);
+  if (error_details != nullptr) {
+    std::cout << error_details << std::endl;
+  }
+  GPR_ASSERT(read_key_update_status == INTERNAL_ERROR);
+  GPR_ASSERT(error_details == nullptr);
+  GPR_ASSERT(unprotected_bytes_written == message_size);
+
+  /** Verify correctness. **/
+}
+
 int main(int argc, char** argv) {
   s2a_test_incorrect_tls_version();
   s2a_test_incorrect_key_size();
@@ -755,6 +827,7 @@ int main(int argc, char** argv) {
       s2a_test_decrypt_alert(ciphersuite[i], alert[j]);
     }
     s2a_test_random_roundtrips(ciphersuite[i]);
+    s2a_test_key_update(ciphersuite[i]);
   }
   return 0;
 }

@@ -23,22 +23,22 @@
 #include "src/core/tsi/s2a/s2a_constants.h"
 
 grpc_status_code s2a_ciphersuite_to_hash_function(uint16_t ciphersuite,
-                                                  GSecHashFunction* hash_function,
+                                                  GsecHashFunction* hash_function,
                                                   char** error_details) {
   GPR_ASSERT(hash_function != nullptr);
   switch (ciphersuite) {
     case kTlsAes128GcmSha256:
-      hash_function = GsecHashFunction::SHA256_hash_function;
+      *hash_function = GsecHashFunction::SHA256_hash_function;
       break;
     case kTlsAes256GcmSha384:
-      hash_function = GsecHashFunction::SHA384_hash_function;
+      *hash_function = GsecHashFunction::SHA384_hash_function;
       break;
     case kTlsChacha20Poly1305Sha256:
-      hash_function = GsecHashFunction::SHA256_hash_function;
+      *hash_function = GsecHashFunction::SHA256_hash_function;
       break;
     default:
       *error_details = gpr_strdup(kS2AUnsupportedCiphersuite);
       return GRPC_STATUS_FAILED_PRECONDITION;
   }
-  return TSI_OK;
+  return GRPC_STATUS_OK;
 }
