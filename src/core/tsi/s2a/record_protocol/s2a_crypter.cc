@@ -28,8 +28,6 @@
 #include <openssl/ssl3.h>
 #include <vector>
 
-#include <iostream>
-
 /** The struct that represents the state of an S2A connection in a single
  *  direction. **/
 typedef struct s2a_half_connection {
@@ -176,7 +174,7 @@ static grpc_status_code assign_aead_crypter(uint16_t ciphersuite,
                                             gsec_aead_crypter** aead_crypter,
                                             char** error_details) {
   GPR_ASSERT(aead_crypter != nullptr);
-  if (*aead_crypter == nullptr) {
+  if (*aead_crypter != nullptr) {
     gsec_aead_crypter_destroy(*aead_crypter);
   }
 
@@ -744,8 +742,6 @@ static grpc_status_code s2a_key_update(uint16_t ciphersuite,
   GPR_ASSERT(half_connection != nullptr && aead_crypter != nullptr);
   GPR_ASSERT(half_connection->initialized);
 
-  std::cout << "****************Entered key update method" << std::endl;
-
   size_t key_size;
   size_t nonce_size;
   switch (ciphersuite) {
@@ -776,21 +772,18 @@ static grpc_status_code s2a_key_update(uint16_t ciphersuite,
   if (status != GRPC_STATUS_OK) {
     return status;
   }
-  std::cout << "***********Advanced secret" << std::endl;
   status = derive_key(ciphersuite, half_connection->traffic_secret,
                       half_connection->traffic_secret_size, key_size,
                       key_buffer.data(), error_details);
   if (status != GRPC_STATUS_OK) {
     return status;
   }
-  std::cout << "************Derived key" << std::endl;
   status = derive_nonce(ciphersuite, half_connection->traffic_secret,
                         half_connection->traffic_secret_size, nonce_size,
                         nonce_buffer.data(), error_details);
   if (status != GRPC_STATUS_OK) {
     return status;
   }
-  std::cout << "***********Derived nonce" << std::endl;
 
   /** Populate |aead_crypter| with the updated AEAD crypter. **/
   size_t tag_size;
@@ -798,13 +791,11 @@ static grpc_status_code s2a_key_update(uint16_t ciphersuite,
   if (tag_status != GRPC_STATUS_OK) {
     return tag_status;
   }
-  std::cout << "**************Got tag size" << std::endl;
   grpc_status_code aead_crypter_status = assign_aead_crypter(
       ciphersuite, key_buffer.data(), key_size, nonce_size, tag_size, aead_crypter, error_details);
   if (aead_crypter_status != GRPC_STATUS_OK) {
     return aead_crypter_status;
   }
-  std::cout << "****************Assigned aead crypter" << std::endl;
 
   /** Update the relevant fields of |half_connection|. Note that the sequence
    *  number must be reset to zero after a key update; see
@@ -912,22 +903,12 @@ s2a_decrypt_status s2a_decrypt_record(
     case SSL3_RT_HANDSHAKE:
       /** Check whether the plaintext is a key update message. **/
       if (*bytes_written == 4 &&
-          memcmp(plaintext, "\x18\x00\x00\x01", 4) == 0 && plaintext[4] < 2) {
-        std::cout << "**********Entered the correct case." << std::endl;
+          memcmp(plaintext, "\x18\x00\x00\x01", 4) == 0 && plaintext[3] < 2) {
         grpc_status_code key_update_status = s2a_key_update(crypter->ciphersuite, crypter->in_connection, &(crypter->in_aead_crypter), error_details);
         if (key_update_status != GRPC_STATUS_OK) {
           return INTERNAL_ERROR;
         }
         return OK;
-      }
-      if (*bytes_written != 4) {
-        std::cout << "**********Bytes written is " << *bytes_written << std::endl;
-      }
-      if (memcmp(plaintext, "\x18\x00\x00\x01", 4) == 0) {
-        std::cout << "******Plaintext is " << (char*)plaintext << std::endl;
-      }
-      if (plaintext[4] >= 2) {
-        std::cout << "***********plaintext[4]=" << static_cast<unsigned>(plaintext[4]) << std::endl;
       }
       *error_details = gpr_strdup(kS2ARecordInvalidFormat);
       return INVALID_RECORD;

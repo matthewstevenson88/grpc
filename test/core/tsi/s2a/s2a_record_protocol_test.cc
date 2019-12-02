@@ -29,8 +29,6 @@
 #include "test/core/tsi/s2a/s2a_test_data.h"
 #include "test/core/tsi/s2a/s2a_test_util.h"
 
-#include <iostream>
-
 /** Certain tests in this library use randomly-generated initial data. This
  *  parameter determines the number of times such a test runs. **/
 constexpr size_t kS2AIterations = 100;
@@ -795,15 +793,18 @@ static void s2a_test_key_update(uint16_t ciphersuite) {
   s2a_decrypt_status read_key_update_status = s2a_decrypt_record(
       crypter, record_header_vec, &protected_vec, /** protected_vec length **/ 1,
       unprotected_vec, &unprotected_bytes_written, &error_details);
-  //GPR_ASSERT(read_key_update_status == OK);
-  if (error_details != nullptr) {
-    std::cout << error_details << std::endl;
-  }
-  GPR_ASSERT(read_key_update_status == INTERNAL_ERROR);
+  GPR_ASSERT(read_key_update_status == OK);
   GPR_ASSERT(error_details == nullptr);
   GPR_ASSERT(unprotected_bytes_written == message_size);
 
   /** Verify correctness. **/
+  size_t expected_traffic_secret_size;
+  check_half_connection(crypter, /** in **/ true,
+                        /** expected sequence **/ 0, 
+
+  /** Cleanup. **/
+  s2a_crypter_destroy(crypter);
+  grpc_core::Delete<grpc_channel>(channel);
 }
 
 int main(int argc, char** argv) {
