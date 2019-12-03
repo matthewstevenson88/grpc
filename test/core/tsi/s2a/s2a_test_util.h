@@ -30,15 +30,13 @@
 void verify_half_connections(uint16_t ciphersuite, s2a_crypter* crypter,
                              std::vector<uint8_t>& expected_traffic_secret);
 
-
-grpc_byte_buffer* create_example_session_state(bool admissible_tls_version,
-                                               uint16_t ciphersuite,
-                                               bool has_in_out_key,
-                                               bool correct_key_size,
-                                               bool has_in_out_sequence,
-                                               bool has_in_out_fixed_nonce);
-
+/** This method returns the size of a TLS 1.3 record created by encrypting a
+ *  plaintext of size |plaintext_size|. **/
 size_t expected_message_size(size_t plaintext_size);
+
+/** This method populates the |bytes| buffer with |length| randomly-generated
+ *  bytes. The |bytes| buffer is owned by the caller. **/
+void random_array(uint8_t* bytes, size_t length);
 
 /** This method encrypts |plaintext| using |crypter|, writes the resulting TLs
  *  1.3 record to |record|, and verifies that the TLS 1.3 record has the
@@ -74,5 +72,11 @@ bool check_encrypt_record(uint16_t ciphersuite,
  *  method returns false. **/
 bool check_record_empty_plaintext(uint16_t ciphersuite,
                                   std::vector<uint8_t>& record);
+
+/** This method encrypts |message| using |out_crypter|, decrypts the resulting
+ *  TLS 1.3 record using |in_crypter|, and then verifies that the decrypted
+ *  message coincides with the |message|. **/
+void send_message(std::vector<uint8_t>& message, s2a_crypter* out_crypter,
+                  s2a_crypter* in_crypter);
 
 #endif  //  GRPC_TEST_CORE_TSI_S2A_S2A_TEST_UTIL_H

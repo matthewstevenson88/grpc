@@ -20,9 +20,12 @@
 #include <grpc/support/log.h>
 #include <grpc/support/string_util.h>
 #include <openssl/ssl3.h>
+#include <stdlib.h>
 #include "src/core/tsi/s2a/record_protocol/s2a_crypter.h"
 #include "src/core/tsi/s2a/record_protocol/s2a_crypter_util.h"
 #include "src/core/tsi/s2a/s2a_constants.h"
+
+#include <iostream>
 
 /** The following vectors were generated using a different TLS 1.3
  *  implementation. The keys and nonces are derived from the traffic secret
@@ -137,111 +140,6 @@ void verify_half_connections(uint16_t ciphersuite, s2a_crypter* crypter,
                         expected_nonce, SSL3_RT_HEADER_LENGTH);
 }
 
-grpc_byte_buffer* create_example_session_state(bool admissible_tls_version,
-                                               uint16_t ciphersuite,
-                                               bool has_in_out_key,
-                                               bool correct_key_size,
-                                               bool has_in_out_sequence,
-                                               bool has_in_out_fixed_nonce) {
-  upb::Arena arena;
-  s2a_SessionState* session_state = s2a_SessionState_new(arena.ptr());
-
-  uint16_t tls_version = admissible_tls_version ?
-                                                /** TLS 1.3 **/ 0
-                                                : /** TLS 1.2 **/ 1;
-
-  s2a_SessionState_set_tls_version(session_state, (int32_t)tls_version);
-  s2a_SessionState_set_tls_ciphersuite(session_state, (int32_t)ciphersuite);
-
-  if (has_in_out_sequence) {
-    s2a_SessionState_set_in_sequence(session_state, 0);
-    s2a_SessionState_set_out_sequence(session_state, 0);
-  }
-  if (has_in_out_key) {
-    if (correct_key_size) {
-      switch (ciphersuite) {
-        case kTlsAes128GcmSha256: {
-          s2a_SessionState_set_in_key(
-              session_state, upb_strview_make(reinterpret_cast<char*>(
-                                                  aes_128_gcm_key_bytes.data()),
-                                              /** key size **/ 16));
-          s2a_SessionState_set_out_key(
-              session_state, upb_strview_make(reinterpret_cast<char*>(
-                                                  aes_128_gcm_key_bytes.data()),
-                                              /** key size **/ 16));
-        } break;
-        case kTlsAes256GcmSha384: {
-          s2a_SessionState_set_in_key(
-              session_state, upb_strview_make(reinterpret_cast<char*>(
-                                                  aes_256_gcm_key_bytes.data()),
-                                              /** key size **/ 32));
-          s2a_SessionState_set_out_key(
-              session_state, upb_strview_make(reinterpret_cast<char*>(
-                                                  aes_256_gcm_key_bytes.data()),
-                                              /** key size **/ 32));
-        } break;
-        case kTlsChacha20Poly1305Sha256: {
-          s2a_SessionState_set_in_key(
-              session_state, upb_strview_make(reinterpret_cast<char*>(
-                                                  chacha_poly_key_bytes.data()),
-                                              /** key size **/ 32));
-          s2a_SessionState_set_out_key(
-              session_state, upb_strview_make(reinterpret_cast<char*>(
-                                                  chacha_poly_key_bytes.data()),
-                                              /** key size **/ 32));
-        } break;
-      }
-    } else {
-      const char* key = (ciphersuite == kTlsAes128GcmSha256)
-                            ? "kkkkkkkkkkkkkkkkj"
-                            : "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkj";
-      s2a_SessionState_set_in_key(session_state, upb_strview_makez(key));
-      s2a_SessionState_set_out_key(session_state, upb_strview_makez(key));
-    }
-  }
-  if (has_in_out_fixed_nonce) {
-    switch (ciphersuite) {
-      case kTlsAes128GcmSha256: {
-        s2a_SessionState_set_in_fixed_nonce(
-            session_state, upb_strview_make(reinterpret_cast<char*>(
-                                                aes_128_gcm_nonce_bytes.data()),
-                                            /** nonce size **/ 12));
-        s2a_SessionState_set_out_fixed_nonce(
-            session_state, upb_strview_make(reinterpret_cast<char*>(
-                                                aes_128_gcm_nonce_bytes.data()),
-                                            /** nonce size **/ 12));
-      } break;
-      case kTlsAes256GcmSha384: {
-        s2a_SessionState_set_in_fixed_nonce(
-            session_state, upb_strview_make(reinterpret_cast<char*>(
-                                                aes_256_gcm_nonce_bytes.data()),
-                                            /** nonce size **/ 12));
-        s2a_SessionState_set_out_fixed_nonce(
-            session_state, upb_strview_make(reinterpret_cast<char*>(
-                                                aes_256_gcm_nonce_bytes.data()),
-                                            /** nonce size **/ 12));
-      } break;
-      case kTlsChacha20Poly1305Sha256: {
-        s2a_SessionState_set_in_fixed_nonce(
-            session_state, upb_strview_make(reinterpret_cast<char*>(
-                                                chacha_poly_nonce_bytes.data()),
-                                            /** nonce size **/ 12));
-        s2a_SessionState_set_out_fixed_nonce(
-            session_state, upb_strview_make(reinterpret_cast<char*>(
-                                                chacha_poly_nonce_bytes.data()),
-                                            /** nonce size **/ 12));
-      } break;
-    }
-  }
-  size_t buf_size;
-  char* buf = s2a_SessionState_serialize(session_state, arena.ptr(), &buf_size);
-  grpc_slice slice = gpr_slice_from_copied_buffer(buf, buf_size);
-  grpc_byte_buffer* buffer =
-      grpc_raw_byte_buffer_create(&slice, 1 /* number of slices */);
-  grpc_slice_unref(slice);
-  return buffer;
-}
-
 size_t expected_message_size(size_t plaintext_size) {
   /** This is the expected size of any TLS 1.3 record. It is independent of the
    *  TLS ciphersuite that is used. **/
@@ -322,4 +220,61 @@ bool check_record_empty_plaintext(uint16_t ciphersuite,
       break;
   }
   return true;
+}
+
+void random_array(uint8_t* bytes, size_t length) {
+  if (length == 0) return;
+  GPR_ASSERT(bytes != nullptr);
+  for (size_t i = 0; i < length; i++) {
+    bytes[i] = static_cast<uint8_t>(rand() % 256);
+  }
+}
+
+void send_message(std::vector<uint8_t>& message, s2a_crypter* out_crypter,
+                  s2a_crypter* in_crypter) {
+  GPR_ASSERT(out_crypter != nullptr && in_crypter != nullptr);
+  GPR_ASSERT(out_crypter != in_crypter);
+  size_t max_record_overhead;
+  char* error_details = nullptr;
+  grpc_status_code max_overhead_status = s2a_max_record_overhead(
+      *out_crypter, &max_record_overhead, &error_details);
+  if (max_overhead_status != GRPC_STATUS_OK) {
+    gpr_log(GPR_ERROR, "%s", error_details);
+    gpr_free(error_details);
+  }
+  GPR_ASSERT(max_overhead_status == GRPC_STATUS_OK);
+  GPR_ASSERT(error_details == nullptr);
+  GPR_ASSERT(message.size() <= SSL3_RT_MAX_PLAIN_LENGTH + max_record_overhead);
+
+  size_t record_allocated_size = message.size() + max_record_overhead;
+  std::vector<uint8_t> record(record_allocated_size, 0);
+  size_t record_size;
+
+  grpc_status_code encrypt_status =
+      s2a_encrypt(out_crypter, message.data(), message.size(), record.data(),
+                  record.size(), &record_size, &error_details);
+  GPR_ASSERT(encrypt_status == GRPC_STATUS_OK);
+  GPR_ASSERT(error_details == nullptr);
+  GPR_ASSERT(record_size == expected_message_size(message.size()));
+
+  size_t plaintext_allocated_size;
+  grpc_status_code plaintext_status = s2a_max_plaintext_size(
+      *in_crypter, record_size, &plaintext_allocated_size, &error_details);
+  if (plaintext_status != GRPC_STATUS_OK) {
+    gpr_log(GPR_ERROR, "%s", error_details);
+    gpr_free(error_details);
+  }
+  GPR_ASSERT(plaintext_status == GRPC_STATUS_OK);
+  GPR_ASSERT(error_details == nullptr);
+  std::vector<uint8_t> plaintext(plaintext_allocated_size, 0);
+  size_t plaintext_size;
+  S2ADecryptStatus decrypt_status =
+      s2a_decrypt(in_crypter, record.data(), record_size, plaintext.data(),
+                  plaintext.size(), &plaintext_size, &error_details);
+  GPR_ASSERT(decrypt_status == S2ADecryptStatus::OK);
+  GPR_ASSERT(error_details == nullptr);
+
+  GPR_ASSERT(plaintext_size == message.size());
+  plaintext.resize(plaintext_size);
+  GPR_ASSERT(plaintext == message);
 }
