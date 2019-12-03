@@ -71,6 +71,7 @@ typedef struct s2a_crypter {
 static grpc_status_code s2a_tag_size(const s2a_crypter& crypter,
                                      size_t* tag_size, char** error_details) {
   GPR_ASSERT(tag_size != nullptr);
+  GPR_ASSERT(error_details != nullptr);
   switch (crypter.ciphersuite) {
     case kTlsAes128GcmSha256:
     case kTlsAes256GcmSha384:
@@ -92,6 +93,7 @@ static grpc_status_code derive_secret(uint16_t ciphersuite, uint8_t* suffix,
                                       size_t suffix_size, uint8_t* secret,
                                       size_t secret_size, size_t output_size,
                                       uint8_t* output, char** error_details) {
+  GPR_ASSERT(error_details != nullptr);
   GsecHashFunction hash_function;
   switch (ciphersuite) {
     case kTlsAes128GcmSha256:
@@ -128,6 +130,7 @@ static grpc_status_code derive_secret(uint16_t ciphersuite, uint8_t* suffix,
 static grpc_status_code derive_key(uint16_t ciphersuite, uint8_t* secret,
                                    size_t secret_size, size_t output_size,
                                    uint8_t* output, char** error_details) {
+  GPR_ASSERT(error_details != nullptr);
   uint8_t key_suffix[] = "\x09tls13 key\x00";
   size_t suffix_size = sizeof(key_suffix) - 1;
   return derive_secret(ciphersuite, key_suffix, suffix_size, secret,
@@ -139,6 +142,7 @@ static grpc_status_code derive_key(uint16_t ciphersuite, uint8_t* secret,
 static grpc_status_code derive_nonce(uint16_t ciphersuite, uint8_t* secret,
                                      size_t secret_size, size_t output_size,
                                      uint8_t* output, char** error_details) {
+  GPR_ASSERT(error_details != nullptr);
   uint8_t nonce_suffix[] = "\x08tls13 iv\x00";
   size_t suffix_size = sizeof(nonce_suffix) - 1;
   return derive_secret(ciphersuite, nonce_suffix, suffix_size, secret,
@@ -150,6 +154,7 @@ static grpc_status_code assign_crypter(bool in, uint8_t* traffic_secret,
                                        size_t tag_size, uint64_t sequence,
                                        s2a_crypter** crypter,
                                        char** error_details) {
+  GPR_ASSERT(error_details != nullptr);
   s2a_crypter* rp_crypter = *crypter;
 
   /** Derive the key and nonce from the traffic secret. **/
@@ -252,6 +257,7 @@ grpc_status_code s2a_crypter_create(
     size_t in_traffic_secret_size, uint8_t* out_traffic_secret,
     size_t out_traffic_secret_size, grpc_channel* channel,
     s2a_crypter** crypter, char** error_details) {
+  GPR_ASSERT(error_details != nullptr);
   if (crypter == nullptr || in_traffic_secret == nullptr ||
       out_traffic_secret == nullptr || channel == nullptr) {
     *error_details = gpr_strdup(kS2ACreateNullptr);
@@ -415,6 +421,7 @@ grpc_status_code s2a_max_record_overhead(const s2a_crypter& crypter,
   GPR_ASSERT(crypter.out_connection != nullptr);
   GPR_ASSERT(crypter.out_connection->initialized);
   GPR_ASSERT(max_record_overhead != nullptr);
+  GPR_ASSERT(error_details != nullptr);
   size_t tag_size;
   grpc_status_code status = s2a_tag_size(crypter, &tag_size, error_details);
   if (status != GRPC_STATUS_OK) {
@@ -430,6 +437,7 @@ static grpc_status_code s2a_write_tls13_record_header(uint8_t record_type,
                                                       uint8_t* record_header,
                                                       char** error_details) {
   GPR_ASSERT(record_header != nullptr);
+  GPR_ASSERT(error_details != nullptr);
   if (header_size != SSL3_RT_HEADER_LENGTH) {
     *error_details = gpr_strdup(kS2AHeaderSizeMismatch);
     return GRPC_STATUS_FAILED_PRECONDITION;
@@ -480,6 +488,7 @@ grpc_status_code s2a_write_tls13_record(
   GPR_ASSERT(crypter->out_connection->initialized);
   GPR_ASSERT(protected_record.iov_base != nullptr);
   GPR_ASSERT(bytes_written != nullptr);
+  GPR_ASSERT(error_details != nullptr);
   if (unprotected_vec == nullptr && unprotected_vec_size > 0) {
     *error_details = gpr_strdup(kS2AInvalidUnprotectedVec);
     return GRPC_STATUS_FAILED_PRECONDITION;
@@ -561,6 +570,7 @@ grpc_status_code s2a_encrypt(s2a_crypter* crypter, uint8_t* plaintext,
                              size_t plaintext_size, uint8_t* record,
                              size_t record_allocated_size, size_t* record_size,
                              char** error_details) {
+  GPR_ASSERT(error_details != nullptr);
   if (plaintext == nullptr && plaintext_size > 0) {
     *error_details = gpr_strdup(kS2APlaintextNullptr);
     return GRPC_STATUS_INVALID_ARGUMENT;
@@ -577,6 +587,7 @@ grpc_status_code s2a_max_plaintext_size(const s2a_crypter& crypter,
                                         size_t* plaintext_size,
                                         char** error_details) {
   GPR_ASSERT(plaintext_size != nullptr);
+  GPR_ASSERT(error_details != nullptr);
 
   /** Note that we require this method returns 1 more than the size of the
    *  plaintext that is returned by decrypting a TLS 1.3 record of size
@@ -600,6 +611,7 @@ S2ADecryptStatus s2a_decrypt_payload(s2a_crypter* crypter, iovec& record_header,
                                      char** error_details) {
   GPR_ASSERT(crypter != nullptr);
   GPR_ASSERT(bytes_written != nullptr);
+  GPR_ASSERT(error_details != nullptr);
   size_t payload_size = get_total_length(protected_vec, protected_vec_size);
   size_t tag_size;
   grpc_status_code tag_status =
@@ -643,6 +655,7 @@ S2ADecryptStatus s2a_decrypt_record(s2a_crypter* crypter, iovec& record_header,
                                     char** error_details) {
   GPR_ASSERT(crypter != nullptr);
   GPR_ASSERT(plaintext_bytes_written != nullptr);
+  GPR_ASSERT(error_details != nullptr);
   size_t max_plaintext_size;
   grpc_status_code plaintext_status = s2a_max_plaintext_size(
       *crypter,
@@ -755,6 +768,7 @@ S2ADecryptStatus s2a_decrypt(s2a_crypter* crypter, uint8_t* record,
                              size_t record_size, uint8_t* plaintext,
                              size_t plaintext_allocated_size,
                              size_t* plaintext_size, char** error_details) {
+  GPR_ASSERT(error_details != nullptr);
   size_t max_plaintext_size;
   grpc_status_code plaintext_status = s2a_max_plaintext_size(
       *crypter, record_size, &max_plaintext_size, error_details);

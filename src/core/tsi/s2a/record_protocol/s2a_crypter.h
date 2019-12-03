@@ -31,7 +31,7 @@
 
 /** The S2A record protocol interface. It provides encrypt and decrypt
  *  functionality. The interface is thread-compatible. **/
-typedef struct s2a_crypter s2a_crypter;
+struct s2a_crypter;
 
 /** This status code is used when decrypting TLS 1.3 records using the S2A
  *  record protocol. **/
@@ -57,8 +57,7 @@ enum class S2ADecryptStatus {
  *  - max_record_overhead: the max overhead of a TLS 1.3 record created using
  *    |crypter|; the caller must not pass in nullptr for this argument.
  *  - error_details: the error details generated when the execution of the
- *    function fails; it is legal (and expected) for the caller to have
- *    |error_details| point to a nullptr. **/
+ *    function fails; the caller must not pass in nullptr for this argument. **/
 grpc_status_code s2a_max_record_overhead(const s2a_crypter& crypter,
                                          size_t* max_record_overhead,
                                          char** error_details);
@@ -74,8 +73,7 @@ grpc_status_code s2a_max_record_overhead(const s2a_crypter& crypter,
  *    record of size |record_size|; the caller must not pass in nullptr for this
  *    argument.
  *  - error_details: the error details generated when the execution of the
- *    function fails; it is legal (and expected) for the caller to have
- *    |error_details| point to a nullptr.
+ *    function fails; the caller must not pass in nullptr for this argument.
  *
  *  This method will be used by the caller to determine the size of the buffer
  *  that must be allocated for the plaintext when calling |s2a_decrypt|. **/
@@ -128,8 +126,7 @@ grpc_status_code s2a_max_plaintext_size(const s2a_crypter& crypter,
  *    after the function executes successfully; the caller must not pass in
  *    nullptr for this argument.
  *  - error_details: the error details generated when the execution of the
- *    function fails; it is legal (and expected) for the caller to have
- *    |error_details| point to a nullptr.
+ *    function fails; the caller must not pass in nullptr for this argument.
  *
  *  On success, the function returns GRPC_STATUS_OK; otherwise, |error_details|
  *  is populated with an error message, and it must be freed with gpr_free. **/
@@ -160,8 +157,7 @@ grpc_status_code s2a_encrypt(s2a_crypter* crypter, uint8_t* plaintext,
  *    plaintext after the function executes successfully; the caller must not
  *    pass in nullptr for this argument.
  *  - error_details: the error details generated when the execution of the
- *    function fails; it is legal (and expected) for the caller to set
- *    |error_details| to point to a nullptr.
+ *    function fails; the caller must not pass in nullptr for this argument.
  *
  *  On success, the function returns OK; otherwise, |error_details|
  *  is populated with an error message, and it must be freed with gpr_free. **/
@@ -184,13 +180,12 @@ S2ADecryptStatus s2a_decrypt(s2a_crypter* crypter, uint8_t* record,
  *  - crypter: a pointer to an s2a_crypter, which will be populated by the
  *    s2a_crypter created by the method. It is legal (and expected) to pass in
  *    nullptr as an argument.
- *  - error_details: an error message for when the creation fails. It is legal
- *    (and expected) to have |error_details| point to a nullptr; otherwise,
- *    the argument should be freed with gpr_free.
+ *  - error_details: an error message for when the creation fails; the caller
+ *    must not pass in nullptr for this argument.
  *
  *  When creation succeeds, the method return GRPC_STATUS_OK. Otherwise,
- *  it returns an error status code and details can be found in |error_details|.
- *  **/
+ *  it returns an error status code and details can be found in |error_details|,
+ *  which must be freed with gpr_free. **/
 grpc_status_code s2a_crypter_create(
     uint16_t tls_version, uint16_t tls_ciphersuite, uint8_t* in_traffic_secret,
     size_t in_traffic_secret_size, uint8_t* out_traffic_secret,
@@ -244,8 +239,7 @@ void check_half_connection(s2a_crypter* crypter, bool in_half_connection,
  *    function executes successfully; the caller must not pass in
  *    nullptr for this argument.
  *  - error_details: the error details generated when the execution of the
- *    function fails; it is legal (and expected) for |error_details| to point to
- *    nullptr.
+ *    function fails; the caller must not pass in nullptr for this argument.
  *
  *  On success, the function returns GRPC_STATUS_OK; otherwise, |error_details|
  *  is populated with an error message, and it must be freed with gpr_free. If
@@ -283,8 +277,7 @@ grpc_status_code s2a_write_tls13_record(
  *    |unprotected_vec| after the method executes successfully; the caller must
  *    not pass in nullptr for this argument.
  *  - error_details: the error details generated when the execution of the
- *    function fails; it is legal (and expected) for the caller to set
- *    |error_details| to point to a nullptr.
+ *    function fails; the caller must not pass in nullptr for this argument.
  *
  *  On success, the function returns OK; otherwise, |error_details|
  *  is populated with an error message, and it must be freed with gpr_free. If
