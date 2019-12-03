@@ -237,7 +237,7 @@ void send_message(std::vector<uint8_t>& message, s2a_crypter* out_crypter,
   size_t max_record_overhead;
   char* error_details = nullptr;
   grpc_status_code max_overhead_status = s2a_max_record_overhead(
-      out_crypter, &max_record_overhead, &error_details);
+      *out_crypter, &max_record_overhead, &error_details);
   if (max_overhead_status != GRPC_STATUS_OK) {
     gpr_log(GPR_ERROR, "%s", error_details);
     gpr_free(error_details);
@@ -259,7 +259,7 @@ void send_message(std::vector<uint8_t>& message, s2a_crypter* out_crypter,
 
   size_t plaintext_allocated_size;
   grpc_status_code plaintext_status = s2a_max_plaintext_size(
-      in_crypter, record_size, &plaintext_allocated_size, &error_details);
+      *in_crypter, record_size, &plaintext_allocated_size, &error_details);
   if (plaintext_status != GRPC_STATUS_OK) {
     gpr_log(GPR_ERROR, "%s", error_details);
     gpr_free(error_details);
