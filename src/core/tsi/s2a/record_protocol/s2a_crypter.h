@@ -183,7 +183,7 @@ S2ADecryptStatus s2a_decrypt(s2a_crypter* crypter, uint8_t* record,
  *  - error_details: an error message for when the creation fails; the caller
  *    must not pass in nullptr for this argument.
  *
- *  When creation succeeds, the method return GRPC_STATUS_OK. Otherwise,
+ *  When creation succeeds, the method returns GRPC_STATUS_OK. Otherwise,
  *  it returns an error status code and details can be found in |error_details|,
  *  which must be freed with gpr_free. **/
 grpc_status_code s2a_crypter_create(
@@ -200,18 +200,16 @@ grpc_status_code s2a_crypter_create(
  *  - crypter: an s2a_crypter instance created by s2a_crypter_create(). **/
 void s2a_crypter_destroy(s2a_crypter* crypter);
 
-/** These functions are exposed for testing purposes only. **/
-gsec_aead_crypter* s2a_in_aead_crypter(s2a_crypter* crypter);
+/** The following 3 functions are exposed for testing purposes only. **/
+gsec_aead_crypter* s2a_in_aead_crypter_for_testing(s2a_crypter* crypter);
 
-gsec_aead_crypter* s2a_out_aead_crypter(s2a_crypter* crypter);
+gsec_aead_crypter* s2a_out_aead_crypter_for_testing(s2a_crypter* crypter);
 
-void check_half_connection(s2a_crypter* crypter, bool in_half_connection,
-                           uint64_t expected_sequence,
-                           size_t expected_traffic_secret_size,
-                           uint8_t* expected_traffic_secret,
-                           size_t expected_fixed_nonce_size,
-                           uint8_t* expected_fixed_nonce,
-                           uint8_t expected_additional_data_size);
+void check_half_connection_for_testing(
+    s2a_crypter* crypter, bool in_half_connection, uint64_t expected_sequence,
+    size_t expected_traffic_secret_size, uint8_t* expected_traffic_secret,
+    size_t expected_fixed_nonce_size, uint8_t* expected_fixed_nonce,
+    uint8_t expected_additional_data_size);
 
 /** This function writes a TLS 1.3 record to |protected_record| of type
  *  |record_type|, and with a payload containing the ciphertext obtained by
@@ -257,7 +255,8 @@ grpc_status_code s2a_write_tls13_record(
  *  - crypter: an instance of s2a_crypter, which must have been initialized
  *    using the s2a_crypter_create method.
  *  - record_header: an iovec that points to a buffer containing the record
- *    header and specifies the size of the buffer.
+ *    header and specifies the size of the buffer; the caller must ensure that
+ *    |record_header.iov_base| is not nullptr.
  *  - protected_vec: a pointer to a buffer of iovec's that contain the payload
  *    of the record.
  *  - protected_vec_size: the size of the |protected_vec| buffer.
@@ -271,7 +270,8 @@ grpc_status_code s2a_write_tls13_record(
  *          SSL3_RT_HEADER_LENGTH,
  *        &plaintext_size,
  *        error_details);
- *    Then, |unprotected_vec.iov_len| >= |plaintext_size|.
+ *    Then, |unprotected_vec.iov_len| >= |plaintext_size|. Furthermore, the
+ *    caller must ensure that |unprotected_vec.iov_base| is not nullptr.
  *
  *  - plaintext_bytes_written: the size (in bytes) of the plaintext written to
  *    |unprotected_vec| after the method executes successfully; the caller must
@@ -290,5 +290,58 @@ S2ADecryptStatus s2a_decrypt_record(s2a_crypter* crypter, iovec& record_header,
                                     iovec& unprotected_vec,
                                     size_t* plaintext_bytes_written,
                                     char** error_details);
+
+/** This function writes a TLS 1.3 record to |protected_slices| of type
+ *  |record_type|, and with a payload containing the ciphertext obtained by
+ *  encrypting |unprotected_slices| using the outgoing_aead_crypter of
+ *  |crypter|. The arguments of the encrypt function are detailed below:
+ *  - crypter: an instance of s2a_crypter, which must have been initialized
+ *    using the s2a_crypter_create method; in particular, the caller must not
+ *    pass in nullptr for this argument.
+ *  - record_type: a single byte that indicates the TLS record type, i.e. one
+ *    of handshake, application data, alert, or change cipher spec.
+ *  - unprotected_slices: a pointer to the grpc_slice_buffer containing the
+ *    plaintext to be encrypted. The caller must ensure that
+ *    |unprotected_slices| is not nullptr, and the total size of the plaintext
+ *    is at most SSL3_RT_MAX_PLAIN_LENGTH = 16384, otherwise the method returns
+ *    GRPC_STATUS_FAILED_PRECONDITION.
+ *  - protected_slices: a pointer to the grpc_slice_buffer that will be
+ *    populated by the method with a TLS 1.3 record. The caller must ensure that
+ *    |protected_slices| is not nullptr.
+ *  - error_details: the error details generated when the execution of the
+ *    function fails; the caller must not pass in nullptr for this argument.
+ *
+ *  On success, the function returns GRPC_STATUS_OK; otherwise, |error_details|
+ *  is populated with an error message, and it must be freed with gpr_free. If
+ *  the function returns the error code GRPC_STATUS_OUT_OF_RANGE, the caller
+ *  must close the connection. **/
+grpc_status_code s2a_protect_record(s2a_crypter* crypter, uint8_t record_type,
+                                    grpc_slice_buffer* unprotected_slices,
+                                    grpc_slice_buffer* protected_slices,
+                                    char** error_details);
+
+/** This function parses a TLS 1.3 record in |protected_slices|, decrypts it,
+ *  and writes the plaintext to |unprotected_slices| using the
+ *  incoming_aead_crypter of |crypter|. The arguments of the decrypt function
+ *  are detailed below:
+ *  - crypter: an instance of s2a_crypter, which must have been initialzied
+ *    using the s2a_crypter_create method; in particular, the caller must not
+ *    pass in nullptr for this argument.
+ *  - protected_slices: a pointer to the grpc_slice_buffer containing the TLS
+ *    1.3 record to be decrypted. The caller must not pass in nullptr for this
+ *    argument.
+ *  - unprotected_slices: a pointer to the grpc_slice_buffer that will be
+ *    popoulated by the method with the plaintext that results from decrypting
+ *    the ciphertext in |protected_slices|. The caller must not pass in nullptr
+ *    for ths argument.
+ *  - error_details: the error details generated when the execution of the
+ *    function fails; the caller must not pass in nullptr for this argument.
+ *
+ *  On success, the function returns OK; otherwise, |error_details| is populated
+ *  with an error message, and it must be freed with gpr_free. **/
+S2ADecryptStatus s2a_unprotect_record(s2a_crypter* crypter,
+                                      grpc_slice_buffer* protected_slices,
+                                      grpc_slice_buffer* unprotected_slices,
+                                      char** error_details);
 
 #endif  //  GRPC_CORE_TSI_S2A_RECORD_PROTOCOL_S2A_CRYPTER_H

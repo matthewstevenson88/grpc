@@ -324,27 +324,25 @@ void s2a_crypter_destroy(s2a_crypter* crypter) {
   }
 }
 
-gsec_aead_crypter* s2a_in_aead_crypter(s2a_crypter* crypter) {
+gsec_aead_crypter* s2a_in_aead_crypter_for_testing(s2a_crypter* crypter) {
   if (crypter == nullptr) {
     return nullptr;
   }
   return crypter->in_aead_crypter;
 }
 
-gsec_aead_crypter* s2a_out_aead_crypter(s2a_crypter* crypter) {
+gsec_aead_crypter* s2a_out_aead_crypter_for_testing(s2a_crypter* crypter) {
   if (crypter == nullptr) {
     return nullptr;
   }
   return crypter->out_aead_crypter;
 }
 
-void check_half_connection(s2a_crypter* crypter, bool in_half_connection,
-                           uint64_t expected_sequence,
-                           size_t expected_traffic_secret_size,
-                           uint8_t* expected_traffic_secret,
-                           size_t expected_fixed_nonce_size,
-                           uint8_t* expected_fixed_nonce,
-                           uint8_t expected_additional_data_size) {
+void check_half_connection_for_testing(
+    s2a_crypter* crypter, bool in_half_connection, uint64_t expected_sequence,
+    size_t expected_traffic_secret_size, uint8_t* expected_traffic_secret,
+    size_t expected_fixed_nonce_size, uint8_t* expected_fixed_nonce,
+    uint8_t expected_additional_data_size) {
   s2a_half_connection* half_connection =
       in_half_connection ? crypter->in_connection : crypter->out_connection;
   GPR_ASSERT(half_connection != nullptr);
@@ -654,6 +652,7 @@ S2ADecryptStatus s2a_decrypt_record(s2a_crypter* crypter, iovec& record_header,
                                     size_t* plaintext_bytes_written,
                                     char** error_details) {
   GPR_ASSERT(crypter != nullptr);
+  GPR_ASSERT(protected_vec != nullptr);
   GPR_ASSERT(plaintext_bytes_written != nullptr);
   GPR_ASSERT(error_details != nullptr);
   size_t max_plaintext_size;
@@ -667,6 +666,7 @@ S2ADecryptStatus s2a_decrypt_record(s2a_crypter* crypter, iovec& record_header,
   }
   GPR_ASSERT(unprotected_vec.iov_len >= max_plaintext_size);
   uint8_t* header = reinterpret_cast<uint8_t*>(record_header.iov_base);
+  GPR_ASSERT(header != nullptr);
   const uint16_t wire_version = static_cast<uint16_t>(TLS1_2_VERSION);
   size_t payload_size = get_total_length(protected_vec, protected_vec_size);
   size_t tag_size;
@@ -706,6 +706,7 @@ S2ADecryptStatus s2a_decrypt_record(s2a_crypter* crypter, iovec& record_header,
   }
 
   uint8_t* plaintext = reinterpret_cast<uint8_t*>(unprotected_vec.iov_base);
+  GPR_ASSERT(plaintext != nullptr);
   /** At this point, the |s2a_decrypt_payload| method has written
    *  |*plaintext_bytes_written| bytes to |plaintext|, and these bytes are of
    * the form (plaintext) + (record type byte) + (trailing zeros). These
@@ -790,4 +791,134 @@ S2ADecryptStatus s2a_decrypt(s2a_crypter* crypter, uint8_t* record,
   return s2a_decrypt_record(crypter, record_header, &payload_vec,
                             /* payload_vec length=*/1, plaintext_vec,
                             plaintext_size, error_details);
+}
+
+grpc_status_code s2a_protect_record(s2a_crypter* crypter, uint8_t record_type,
+                                    grpc_slice_buffer* unprotected_slices,
+                                    grpc_slice_buffer* protected_slices,
+                                    char** error_details) {
+  GPR_ASSERT(crypter != nullptr);
+  GPR_ASSERT(unprotected_slices != nullptr);
+  GPR_ASSERT(protected_slices != nullptr);
+  GPR_ASSERT(error_details != nullptr);
+
+  /** Construct an iovec that will contain the encrypted TLS record. **/
+  size_t max_record_overhead;
+  grpc_status_code overhead_status =
+      s2a_max_record_overhead(*crypter, &max_record_overhead, error_details);
+  if (overhead_status != GRPC_STATUS_OK) {
+    return overhead_status;
+  }
+  size_t protected_record_size =
+      unprotected_slices->length + max_record_overhead;
+  grpc_slice protected_record_slice = GRPC_SLICE_MALLOC(protected_record_size);
+  iovec protected_record = {GRPC_SLICE_START_PTR(protected_record_slice),
+                            GRPC_SLICE_LENGTH(protected_record_slice)};
+
+  /** Convert the unprotected slices to an iovec buffer. **/
+  iovec buffer[unprotected_slices->count];
+  for (size_t i = 0; i < unprotected_slices->count; i++) {
+    buffer[i].iov_base = GRPC_SLICE_START_PTR(unprotected_slices->slices[i]);
+    buffer[i].iov_len = GRPC_SLICE_LENGTH(unprotected_slices->slices[i]);
+  }
+
+  /** Write the TLS record in |buffer| to |protected_record|. **/
+  size_t bytes_written = 0;
+  grpc_status_code status = s2a_write_tls13_record(
+      crypter, record_type, buffer, unprotected_slices->count, protected_record,
+      &bytes_written, error_details);
+  if (status != GRPC_STATUS_OK) {
+    return status;
+  }
+  if (bytes_written != protected_record_size) {
+    *error_details = gpr_strdup(kS2AUnexpectedBytesWritten);
+    return GRPC_STATUS_INTERNAL;
+  }
+
+  /** Add the TLS record to the |protected_slices| slice buffer, and free the
+   *  |unprotected_slices| slice buffer. **/
+  grpc_slice_buffer_add(protected_slices, protected_record_slice);
+  grpc_slice_buffer_reset_and_unref_internal(unprotected_slices);
+  return GRPC_STATUS_OK;
+}
+
+S2ADecryptStatus s2a_unprotect_record(s2a_crypter* crypter,
+                                      grpc_slice_buffer* protected_slices,
+                                      grpc_slice_buffer* unprotected_slices,
+                                      char** error_details) {
+  GPR_ASSERT(crypter != nullptr);
+  GPR_ASSERT(protected_slices != nullptr);
+  GPR_ASSERT(unprotected_slices != nullptr);
+  GPR_ASSERT(error_details != nullptr);
+
+  size_t tag_size;
+  grpc_status_code tag_status =
+      s2a_tag_size(*crypter, &tag_size, error_details);
+  if (tag_status != GRPC_STATUS_OK) {
+    return S2ADecryptStatus::INTERNAL_ERROR;
+  }
+
+  if (protected_slices->length <
+      SSL3_RT_HEADER_LENGTH + tag_size + /* record type=*/1) {
+    *error_details = gpr_strdup(kS2ARecordIncomplete);
+    return S2ADecryptStatus::FAILED_PRECONDITION;
+  }
+
+  /** Construct an iovec that will contain the decrypted plaintext. **/
+  size_t unprotected_slice_size =
+      protected_slices->length - SSL3_RT_HEADER_LENGTH - tag_size;
+  grpc_slice unprotected_slice = GRPC_SLICE_MALLOC(unprotected_slice_size);
+  iovec unprotected_iovec = {GRPC_SLICE_START_PTR(unprotected_slice),
+                             GRPC_SLICE_LENGTH(unprotected_slice)};
+
+  /** Construct an iovec that contains the TLS record header. **/
+  grpc_slice_buffer header_buffer;
+  grpc_slice_buffer_init(&header_buffer);
+  grpc_slice_buffer_move_first(protected_slices, SSL3_RT_HEADER_LENGTH,
+                               &header_buffer);
+
+  iovec header_iovec = {nullptr, SSL3_RT_HEADER_LENGTH};
+  bool header_allocation = false;
+  if (header_buffer.count == 1) {
+    header_iovec.iov_base = GRPC_SLICE_START_PTR(header_buffer.slices[0]);
+  } else {
+    header_iovec.iov_base = static_cast<uint8_t*>(
+        gpr_malloc(SSL3_RT_HEADER_LENGTH * sizeof(uint8_t)));
+    header_allocation = true;
+    uint8_t* header_ptr = reinterpret_cast<uint8_t*>(header_iovec.iov_base);
+    for (size_t i = 0; i < header_buffer.count; i++) {
+      size_t slice_length = GRPC_SLICE_LENGTH(header_buffer.slices[i]);
+      memcpy(header_ptr, GRPC_SLICE_START_PTR(header_buffer.slices[i]),
+             slice_length);
+      header_ptr += slice_length;
+    }
+  }
+
+  /** Convert the remaining protected slices to an iovec buffer. **/
+  iovec buffer[protected_slices->count];
+  for (size_t i = 0; i < protected_slices->count; i++) {
+    buffer[i].iov_base = GRPC_SLICE_START_PTR(protected_slices->slices[i]);
+    buffer[i].iov_len = GRPC_SLICE_LENGTH(protected_slices->slices[i]);
+  }
+
+  /** Write the decrypted plaintext to |unprotected_iovec|. **/
+  size_t bytes_written = 0;
+  S2ADecryptStatus status =
+      s2a_decrypt_record(crypter, header_iovec, buffer, protected_slices->count,
+                         unprotected_iovec, &bytes_written, error_details);
+  if (status != S2ADecryptStatus::OK) {
+    return status;
+  }
+  GRPC_SLICE_SET_LENGTH(unprotected_slice, bytes_written);
+
+  /** Add the decrypted plaintext to the |unprotected_slices| slice buffer, free
+   *  the |header_buffer| and |protected_slices| slice buffers, and free
+   *  |header_iovec| if any memory was allocated. **/
+  if (header_allocation) {
+    gpr_free(header_iovec.iov_base);
+  }
+  grpc_slice_buffer_reset_and_unref_internal(&header_buffer);
+  grpc_slice_buffer_reset_and_unref_internal(protected_slices);
+  grpc_slice_buffer_add(unprotected_slices, unprotected_slice);
+  return S2ADecryptStatus::OK;
 }

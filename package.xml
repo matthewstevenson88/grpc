@@ -840,6 +840,8 @@
     <file baseinstalldir="/" name="src/core/tsi/grpc_shadow_boringssl.h" role="src" />
     <file baseinstalldir="/" name="src/core/tsi/local_transport_security.cc" role="src" />
     <file baseinstalldir="/" name="src/core/tsi/local_transport_security.h" role="src" />
+    <file baseinstalldir="/" name="src/core/tsi/s2a/frame_protector/s2a_frame_protector.cc" role="src" />
+    <file baseinstalldir="/" name="src/core/tsi/s2a/frame_protector/s2a_frame_protector.h" role="src" />
     <file baseinstalldir="/" name="src/core/tsi/s2a/handshaker/s2a_handshaker_client.cc" role="src" />
     <file baseinstalldir="/" name="src/core/tsi/s2a/handshaker/s2a_handshaker_client.h" role="src" />
     <file baseinstalldir="/" name="src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.cc" role="src" />

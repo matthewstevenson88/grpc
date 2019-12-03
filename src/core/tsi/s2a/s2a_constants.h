@@ -44,10 +44,13 @@ constexpr size_t kTlsChacha20Poly1305Sha256NonceSize = 12;
 
 /** The size of the additional data bytes buffer used for encrypting and
  *  decrypting TLS 1.3 records. **/
-constexpr size_t kTlsAdditionalDataBytesSize = 13;
+constexpr size_t kTlsAdditionalDataBytesSize = 5;
 
 /** The size of the sequence buffer used for parsing TLS 1.3 records. **/
 constexpr size_t kTlsSequenceSize = 8;
+
+/** The maximum size of a frame expected by the S2A frame protector. **/
+constexpr size_t kS2AMaxFrameSize = 16 * 1024 * 1024;
 
 /** S2A error messages. **/
 constexpr char kS2AUnsupportedTlsVersion[] =
@@ -87,5 +90,19 @@ constexpr char kS2ARecordSmallAlert[] =
     "The TLS 1.3 alert record is too small.";
 constexpr char kS2ARecordNullptr[] =
     "If |record| is nullptr, then |record_size| must be set to zero.";
+constexpr char kS2ARecordIncomplete[] = "The TLS 1.3 record is incomplete.";
+constexpr char kS2AFrameExceededMaxSize[] =
+    "The frame size is larger than the maximum frame size.";
+constexpr char kS2AUnprotectNullptr[] =
+    "There is an unexpected nullptr argument to "
+    "|s2a_zero_copy_grpc_protector_unprotect|.";
+constexpr char kS2AProtectNullptr[] =
+    "There is an unexpected nullptr argument to "
+    "|s2a_zero_copy_grpc_protector_protect|.";
+constexpr char kS2AUnexpectedBytesWritten[] =
+    "There were an unexpected number of bytes written to the TLS 1.3 record.";
+constexpr char kS2AProtectorCreateNullptr[] =
+    "There is an unexpected nullptr argument to "
+    "|s2a_zero_copy_grpc_protector_create|.";
 
 #endif  // GRPC_CORE_TSI_S2A_S2A_CONSTANTS_H
