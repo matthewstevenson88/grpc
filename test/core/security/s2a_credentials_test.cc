@@ -22,7 +22,10 @@
 
 #include "src/core/lib/security/credentials/s2a/s2a_credentials.h"
 
-static void test_s2a_credentials() { return; }
+static void test_s2a_credentials() {
+  // TODO(mattstev): implement.
+  return;
+}
 
 int main(int /*argc*/, char** /*argv*/) {
   test_s2a_credentials();

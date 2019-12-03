@@ -22,7 +22,10 @@
 
 #include "src/core/lib/security/security_connector/s2a/s2a_security_connector.h"
 
-static void test_s2a_security_connector() { return; }
+static void test_s2a_security_connector() {
+  // TODO(mattstev): implement.
+  return;
+}
 
 int main(int /*argc*/, char** /*argv*/) {
   test_s2a_security_connector();

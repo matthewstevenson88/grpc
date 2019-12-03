@@ -33,10 +33,18 @@ struct grpc_s2a_credentials_options {
   /** Setter methods. They do not take ownership of the arguments, nor do they
    * remove a duplicate ciphersuite or target service account from the
    * appropriate vector, if a duplicate exists. **/
+  /** The setter method for |handshaker_service_url_|. This does not take
+   *  ownership of the argument. **/
   void set_handshaker_service_url(const char* handshaker_service_url);
+  /** This methods add |ciphersuite| to the vector |supported_ciphersuites_|; it
+   *  does not remove duplicates from the vector, if they exist. See
+   *  src/core/tsi/s2a/s2a_constants.h for the ciphersuite constants. **/
   void add_supported_ciphersuite(uint16_t ciphersuite);
-  /** This API should only be called at the client-side. Any target service
-   *  accounts that are added on the server-side will be ignored. **/
+  /** This API should only be called at the client-side, and any target service
+   *  accounts that are added on the server-side will be ignored. This method adds a
+   *  target service account to the vector |target_service_account_list_|; it
+   *  does not remove duplicates from the vector, nor does it take ownership of
+   *  the argument. **/
   void add_target_service_account(const char* target_service_account);
 
   /** Create a deep copy of this grpc_s2a_credentials_options instance. **/
