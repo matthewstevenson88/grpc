@@ -1282,6 +1282,7 @@ filegroups:
   - src/core/lib/security/credentials/local/local_credentials.h
   - src/core/lib/security/credentials/oauth2/oauth2_credentials.h
   - src/core/lib/security/credentials/plugin/plugin_credentials.h
+  - src/core/lib/security/credentials/s2a/s2a_credentials.h
   - src/core/lib/security/credentials/ssl/ssl_credentials.h
   - src/core/lib/security/credentials/tls/grpc_tls_credentials_options.h
   - src/core/lib/security/credentials/tls/spiffe_credentials.h
@@ -1290,6 +1291,7 @@ filegroups:
   - src/core/lib/security/security_connector/load_system_roots.h
   - src/core/lib/security/security_connector/load_system_roots_linux.h
   - src/core/lib/security/security_connector/local/local_security_connector.h
+  - src/core/lib/security/security_connector/s2a/s2a_security_connector.h
   - src/core/lib/security/security_connector/security_connector.h
   - src/core/lib/security/security_connector/ssl/ssl_security_connector.h
   - src/core/lib/security/security_connector/ssl_utils.h
@@ -1318,6 +1320,7 @@ filegroups:
   - src/core/lib/security/credentials/local/local_credentials.cc
   - src/core/lib/security/credentials/oauth2/oauth2_credentials.cc
   - src/core/lib/security/credentials/plugin/plugin_credentials.cc
+  - src/core/lib/security/credentials/s2a/s2a_credentials.cc
   - src/core/lib/security/credentials/ssl/ssl_credentials.cc
   - src/core/lib/security/credentials/tls/grpc_tls_credentials_options.cc
   - src/core/lib/security/credentials/tls/spiffe_credentials.cc
@@ -1326,6 +1329,7 @@ filegroups:
   - src/core/lib/security/security_connector/load_system_roots_fallback.cc
   - src/core/lib/security/security_connector/load_system_roots_linux.cc
   - src/core/lib/security/security_connector/local/local_security_connector.cc
+  - src/core/lib/security/security_connector/s2a/s2a_security_connector.cc
   - src/core/lib/security/security_connector/security_connector.cc
   - src/core/lib/security/security_connector/ssl/ssl_security_connector.cc
   - src/core/lib/security/security_connector/ssl_utils.cc
@@ -1345,6 +1349,7 @@ filegroups:
   - grpc_base
   - grpc_transport_chttp2_alpn
   - tsi
+  - s2a_util
   - grpc_shadow_boringssl
 - name: grpc_server_backward_compatibility
   headers:
@@ -1643,6 +1648,15 @@ filegroups:
   - src/core/ext/upb-generated/src/proto/grpc/gcp/s2a.upb.c
   deps:
   - upb
+- name: s2a_util
+  public_headers:
+  - include/grpc/grpc_security.h
+  headers:
+  - src/core/lib/security/credentials/s2a/grpc_s2a_credentials_options.h
+  src:
+  - src/core/lib/security/credentials/s2a/grpc_s2a_credentials_options.cc
+  uses:
+  - grpc_base
 - name: transport_security_test_lib
   headers:
   - test/core/tsi/transport_security_test_lib.h
@@ -5140,6 +5154,14 @@ targets:
   deps:
   - grpc_plugin_support
   secure: false
+- name: grpc_s2a_credentials_options_test
+  build: test
+  language: c++
+  src:
+  - test/core/security/grpc_s2a_credentials_options_test.cc
+  deps:
+  - grpc
+  - gpr
 - name: grpc_spiffe_security_connector_test
   gtest: true
   build: test
@@ -5652,6 +5674,14 @@ targets:
   - grpc
   - gpr
   uses_polling: false
+- name: s2a_credentials_test
+  build: test
+  language: c++
+  src:
+  - test/core/security/s2a_credentials_test.cc
+  deps:
+  - gpr
+  - grpc
 - name: s2a_record_protocol_test
   build: test
   language: c++
@@ -5660,6 +5690,13 @@ targets:
   deps:
   - grpc_test_util
   - grpc
+- name: s2a_security_connector_test
+  build: test
+  language: c++
+  src:
+  - test/core/security/s2a_security_connector_test.cc
+  deps:
+  - gpr
 - name: secure_auth_context_test
   gtest: true
   build: test
