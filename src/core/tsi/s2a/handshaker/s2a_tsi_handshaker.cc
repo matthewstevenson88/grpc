@@ -40,11 +40,13 @@ struct s2a_tsi_handshaker {
   bool is_client;
   bool has_sent_start_message;
   bool has_created_handshaker_client;
-  char* handshaker_service_url;
   grpc_pollset_set* interested_parties;
   grpc_s2a_credentials_options* options;
-  s2a_handshaker_client_vtable* client_vtable_for_testing;
   grpc_channel* channel;
+  /** The mutex |mu| synchronizes the fields |client| and |shutdown|. These are
+   *  the only fields of the s2a_tsi_handshaker that could be accessed concurrently
+   *  (due to the potential concurrency of the |tsi_handshaker_shutdown| and
+   *  |tsi_handshaker_next| methods). **/
   gpr_mu mu;
   s2a_handshaker_client* client;
   bool shutdown;
@@ -53,15 +55,27 @@ struct s2a_tsi_handshaker {
 /** The main struct for the S2A TSI handshaker result. **/
 typedef struct s2a_tsi_handshaker_result {
   tsi_handshaker_result base;
+  /** The TLS version negotiated during the handshake. **/
   uint16_t tls_version;
+  /** The TLS ciphersuite negotiated during the handshake. **/
   uint16_t tls_ciphersuite;
+  /** The in and out traffic secrets produced from the handshake. They will be
+   *  populated using the |in_key| and |out_key| fields from a |SessionState|
+   *  message; see s2a.proto for the message definitions. **/
   uint8_t* in_traffic_secret;
   uint8_t* out_traffic_secret;
   size_t traffic_secret_size;
+  /** The SPIFFE ID or hostname of the peer. Only one of these two fields will
+   *  be populated, namely whichever is populated in the |SessionResult| message
+   *  received from the S2A service. **/
   char* spiffe_id;
   char* hostname;
+  /** A buffer used to store any unused bytes of the |SessionResp| message
+   *  received from the S2A service. **/
   unsigned char* unused_bytes;
   size_t unused_bytes_size;
+  /** The |is_client| variable is true iff the handshaker result is on the
+   *  client-side, and false iff the handshaker result is on the server-side. **/
   bool is_client;
 } s2a_tsi_handshaker_result;
 
@@ -99,7 +113,6 @@ static void handshaker_destroy(tsi_handshaker* self) {
   if (handshaker->channel != nullptr) {
     grpc_channel_destroy_internal(handshaker->channel);
   }
-  gpr_free(handshaker->handshaker_service_url);
   gpr_mu_destroy(&(handshaker->mu));
   gpr_free(handshaker);
 }
@@ -112,11 +125,10 @@ static const tsi_handshaker_vtable handshaker_vtable = {
 
 tsi_result s2a_tsi_handshaker_create(
     const grpc_s2a_credentials_options* options, const char* target_name,
-    const char* handshaker_service_url, bool is_client,
+    bool is_client,
     grpc_pollset_set* interested_parties, tsi_handshaker** self,
     char** error_details) {
-  if (options == nullptr || (is_client && target_name == nullptr) ||
-      handshaker_service_url == nullptr || self == nullptr) {
+  if (options == nullptr || (is_client && target_name == nullptr) || self == nullptr) {
     gpr_log(GPR_ERROR, kS2ATsiHandshakerNullptrArguments);
     return TSI_INVALID_ARGUMENT;
   }
@@ -131,7 +143,6 @@ tsi_result s2a_tsi_handshaker_create(
                                 : grpc_slice_from_static_string(target_name);
   handshaker->interested_parties = interested_parties;
   handshaker->has_created_handshaker_client = false;
-  handshaker->handshaker_service_url = gpr_strdup(handshaker_service_url);
   // TODO(mattstev): this API is exposed in a PR that is not yet merged.
   // handshaker->options = grpc_s2a_credentials_options_copy(options);
   handshaker->base.vtable = &handshaker_vtable;
@@ -175,7 +186,6 @@ static void s2a_handshaker_result_destroy(tsi_handshaker_result* self) {
   }
   s2a_tsi_handshaker_result* result =
       reinterpret_cast<s2a_tsi_handshaker_result*>(self);
-  // TODO(mattstev): do I need to add nullptr checks?
   gpr_free(result->in_traffic_secret);
   gpr_free(result->out_traffic_secret);
   gpr_free(result->spiffe_id);
@@ -225,13 +235,7 @@ tsi_result s2a_tsi_handshaker_result_create(s2a_SessionResp* response,
   /** Instantiate S2A TSI handshaker result. **/
   s2a_tsi_handshaker_result* tsi_result =
       static_cast<s2a_tsi_handshaker_result*>(
-          gpr_malloc(sizeof(s2a_tsi_handshaker_result)));
-  tsi_result->in_traffic_secret = nullptr;
-  tsi_result->out_traffic_secret = nullptr;
-  tsi_result->spiffe_id = nullptr;
-  tsi_result->hostname = nullptr;
-  tsi_result->unused_bytes = nullptr;
-  tsi_result->unused_bytes_size = 0;
+          gpr_zalloc(sizeof(s2a_tsi_handshaker_result)));
   tsi_result->is_client = is_client;
   tsi_result->base.vtable = &s2a_result_vtable;
   *self = &(tsi_result->base);
@@ -240,13 +244,13 @@ tsi_result s2a_tsi_handshaker_result_create(s2a_SessionResp* response,
   if (s2a_Identity_has_spiffe_id(peer_identity)) {
     upb_strview spiffe_id = s2a_Identity_spiffe_id(peer_identity);
     tsi_result->spiffe_id =
-        static_cast<char*>(gpr_malloc(spiffe_id.size * sizeof(char)));
+        static_cast<char*>(gpr_zalloc(spiffe_id.size * sizeof(char)));
     memcpy(tsi_result->spiffe_id, spiffe_id.data, spiffe_id.size);
   }
   if (s2a_Identity_has_hostname(peer_identity)) {
     upb_strview hostname = s2a_Identity_hostname(peer_identity);
     tsi_result->hostname =
-        static_cast<char*>(gpr_malloc(hostname.size * sizeof(char)));
+        static_cast<char*>(gpr_zalloc(hostname.size * sizeof(char)));
     memcpy(tsi_result->hostname, hostname.data, hostname.size);
   }
 
@@ -256,11 +260,11 @@ tsi_result s2a_tsi_handshaker_result_create(s2a_SessionResp* response,
       s2a_SessionState_tls_ciphersuite(handshake_state);
   tsi_result->traffic_secret_size = in_traffic_secret.size;
   tsi_result->in_traffic_secret = static_cast<uint8_t*>(
-      gpr_malloc(in_traffic_secret.size * sizeof(uint8_t)));
+      gpr_zalloc(in_traffic_secret.size * sizeof(uint8_t)));
   memcpy(tsi_result->in_traffic_secret, in_traffic_secret.data,
          in_traffic_secret.size);
   tsi_result->out_traffic_secret = static_cast<uint8_t*>(
-      gpr_malloc(out_traffic_secret.size * sizeof(uint8_t)));
+      gpr_zalloc(out_traffic_secret.size * sizeof(uint8_t)));
   memcpy(tsi_result->out_traffic_secret, out_traffic_secret.data,
          out_traffic_secret.size);
   return TSI_OK;
@@ -292,7 +296,7 @@ bool s2a_tsi_handshaker_has_shutdown(s2a_tsi_handshaker* handshaker) {
 void s2a_check_tsi_handshaker(tsi_handshaker* base, grpc_slice target_name,
                               bool is_client, bool has_sent_start_message,
                               bool has_created_handshaker_client,
-                              char* handshaker_service_url, bool shutdown) {
+                              bool shutdown) {
   // TODO(mattstev): expand this implementation once more fields of
   // s2a_tsi_handshaker are populated.
   s2a_tsi_handshaker* handshaker = reinterpret_cast<s2a_tsi_handshaker*>(base);
@@ -301,8 +305,6 @@ void s2a_check_tsi_handshaker(tsi_handshaker* base, grpc_slice target_name,
   GPR_ASSERT(has_sent_start_message == handshaker->has_sent_start_message);
   GPR_ASSERT(has_created_handshaker_client ==
              handshaker->has_created_handshaker_client);
-  GPR_ASSERT(
-      strcmp(handshaker_service_url, handshaker->handshaker_service_url) == 0);
   GPR_ASSERT(shutdown == handshaker->shutdown);
 }
 
