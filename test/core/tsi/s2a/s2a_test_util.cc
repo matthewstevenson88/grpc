@@ -25,8 +25,6 @@
 #include "src/core/tsi/s2a/record_protocol/s2a_crypter_util.h"
 #include "src/core/tsi/s2a/s2a_constants.h"
 
-#include <iostream>
-
 /** The following vectors were generated using a different TLS 1.3
  *  implementation. The keys and nonces are derived from the traffic secret
  *  "kkkk...k", with the length determined by the ciphersuite. **/
