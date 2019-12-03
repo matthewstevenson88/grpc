@@ -1399,6 +1399,7 @@ Pod::Spec.new do |s|
                       'test/core/iomgr/endpoint_tests.h',
                       'test/core/security/oauth2_utils.cc',
                       'test/core/security/oauth2_utils.h',
+                      'test/core/tsi/s2a/s2a_test_data.h',
                       'test/core/tsi/s2a/s2a_test_util.cc',
                       'test/core/tsi/s2a/s2a_test_util.h',
                       'test/core/util/cmdline.cc',
