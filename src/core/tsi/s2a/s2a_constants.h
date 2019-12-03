@@ -102,7 +102,9 @@ constexpr char kS2AHandshakerClientNullptrArguments[] =
     "|s2a_grpc_handshaker_client_create|.";
 constexpr char kS2AGetSerializedStartClientFailed[] =
     "The |s2a_get_serialized_start_client| method failed.";
-constexpr char kS2AMakeGrpcCallFailed[] =
-    "The |make_grpc_call| member function failed.";
+constexpr char kS2AGetSerializedStartServerFailed[] =
+    "The |s2a_get_serialized_start_server| method failed.";
+constexpr char kS2AGetSerializedNextFailed[] = "The |s2a_get_serialized_next| method failed.";
+constexpr char kS2AMakeGrpcCallFailed[] = "The |make_grpc_call| member function failed.";
 
 #endif  // GRPC_CORE_TSI_S2A_S2A_CONSTANTS_H

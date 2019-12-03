@@ -72,13 +72,15 @@ struct s2a_handshaker_client {
    *  handshaker service. It returns TSI_OK on success and an error code on
    *  failure.
    *  - bytes_received: the bytes from the out_bytes field of the message
-   *    received from the peer. **/
+   *    received from the peer; the caller must ensure that this argument is not
+   *    nullptr. **/
   tsi_result server_start(grpc_slice* bytes_received);
 
   /** This method schedules a next handshaker request with the S2A's handshaker
    *  service. It returns TSI_OK on success and an error code on failure.
    *  - bytes_received: the bytes from the out_bytes field of the SessionResp
-   *    message that the client peer received from its S2A. **/
+   *    message that the client peer received from its S2A; the caller must
+   *    ensure that this argument is not nullptr.  **/
   tsi_result next(grpc_slice* bytes_received);
 
   /** This method cancels previously scheduled, but not yet executed, handshaker
@@ -92,6 +94,14 @@ struct s2a_handshaker_client {
 
   /** This method prepares a serialized version of a client start message. **/
   grpc_byte_buffer* s2a_get_serialized_start_client();
+
+  /** This method prepares a serialized version of a server start message. The
+   *  caller must ensure that |bytes_received| is not nullptr. **/
+  grpc_byte_buffer* s2a_get_serialized_start_server(grpc_slice* bytes_received);
+
+  /** This method prepares a serialized version of a next message. The caller
+   *  must ensure that |bytes_received| is not nullptr. **/
+  grpc_byte_buffer* s2a_get_serialized_next(grpc_slice* bytes_received);
 
   /** One ref is held by the entity that created this handshaker_client, and
    *  another ref is held by the pending RECEIVE_STATUS_ON_CLIENT op. **/
