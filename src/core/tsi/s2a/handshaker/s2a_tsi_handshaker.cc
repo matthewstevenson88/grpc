@@ -135,14 +135,11 @@ tsi_result s2a_tsi_handshaker_create(
   s2a_tsi_handshaker* handshaker =
       static_cast<s2a_tsi_handshaker*>(gpr_zalloc(sizeof(s2a_tsi_handshaker)));
   gpr_mu_init(&(handshaker->mu));
-  handshaker->client = nullptr;
   handshaker->is_client = is_client;
-  handshaker->has_sent_start_message = false;
   handshaker->target_name = (target_name == nullptr)
                                 ? grpc_empty_slice()
                                 : grpc_slice_from_static_string(target_name);
   handshaker->interested_parties = interested_parties;
-  handshaker->has_created_handshaker_client = false;
   // TODO(mattstev): this API is exposed in a PR that is not yet merged.
   // handshaker->options = grpc_s2a_credentials_options_copy(options);
   handshaker->base.vtable = &handshaker_vtable;
@@ -199,8 +196,6 @@ static const tsi_handshaker_result_vtable s2a_result_vtable = {
     s2a_handshaker_result_create_zero_copy_grpc_protector, nullptr,
     s2a_handshaker_result_get_unused_bytes, s2a_handshaker_result_destroy};
 
-// TODO(mattstev): I don't use the application protocol and local identity
-// fields from |response|, or the attributes field from the peer identity.
 tsi_result s2a_tsi_handshaker_result_create(s2a_SessionResp* response,
                                             bool is_client,
                                             tsi_handshaker_result** self) {
@@ -243,15 +238,11 @@ tsi_result s2a_tsi_handshaker_result_create(s2a_SessionResp* response,
   /** Populate fields of |tsi_result| using |peer_identity|. **/
   if (s2a_Identity_has_spiffe_id(peer_identity)) {
     upb_strview spiffe_id = s2a_Identity_spiffe_id(peer_identity);
-    tsi_result->spiffe_id =
-        static_cast<char*>(gpr_zalloc(spiffe_id.size * sizeof(char)));
-    memcpy(tsi_result->spiffe_id, spiffe_id.data, spiffe_id.size);
+    tsi_result->spiffe_id = gpr_strdup(spiffe_id.data);
   }
   if (s2a_Identity_has_hostname(peer_identity)) {
     upb_strview hostname = s2a_Identity_hostname(peer_identity);
-    tsi_result->hostname =
-        static_cast<char*>(gpr_zalloc(hostname.size * sizeof(char)));
-    memcpy(tsi_result->hostname, hostname.data, hostname.size);
+    tsi_result->hostname = gpr_strdup(hostname.data);
   }
 
   /** Populate fields of |tsi_result| using |handshake_state|. **/
@@ -293,7 +284,7 @@ bool s2a_tsi_handshaker_has_shutdown(s2a_tsi_handshaker* handshaker) {
   return handshaker->shutdown;
 }
 
-void s2a_check_tsi_handshaker(tsi_handshaker* base, grpc_slice target_name,
+void s2a_check_tsi_handshaker_for_testing(tsi_handshaker* base, grpc_slice target_name,
                               bool is_client, bool has_sent_start_message,
                               bool has_created_handshaker_client,
                               bool shutdown) {
@@ -308,7 +299,7 @@ void s2a_check_tsi_handshaker(tsi_handshaker* base, grpc_slice target_name,
   GPR_ASSERT(shutdown == handshaker->shutdown);
 }
 
-void s2a_check_tsi_handshaker_result(
+void s2a_check_tsi_handshaker_result_for_testing(
     tsi_handshaker_result* base, uint16_t tls_version, uint16_t tls_ciphersuite,
     uint8_t* in_traffic_secret, uint8_t* out_traffic_secret,
     size_t traffic_secret_size, char* spiffe_id, size_t spiffe_id_size,
