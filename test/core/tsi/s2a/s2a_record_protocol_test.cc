@@ -102,6 +102,10 @@ std::vector<uint8_t> chacha_poly_traffic_secret = {
     0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b,
     0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b};
 
+/** The following vectors are the new traffic secret obtaing from "kkkk...k"
+ *  after advancing once. **/
+//std::vector<uint8_t> aes_128_gcm_advanced_traffic_secret = {
+
 static grpc_status_code setup_crypter(uint16_t ciphersuite,
                                       grpc_channel* channel,
                                       s2a_crypter** crypter,
@@ -790,8 +794,8 @@ static void s2a_test_key_update(uint16_t ciphersuite) {
 
   /** Verify correctness. **/
   size_t expected_traffic_secret_size;
-  check_half_connection(crypter, /** in **/ true,
-                        /** expected sequence **/ 0, 
+//  check_half_connection(crypter, /** in **/ true,
+//                        /** expected sequence **/ 0, 
 
   /** Cleanup. **/
   s2a_crypter_destroy(crypter);

@@ -28,6 +28,8 @@
 #include <openssl/ssl3.h>
 #include <vector>
 
+#include <iostream>
+
 /** The struct that represents the state of an S2A connection in a single
  *  direction. **/
 typedef struct s2a_half_connection {
@@ -319,15 +321,15 @@ grpc_status_code s2a_crypter_create(
   }
 
   grpc_status_code in_crypter_status = assign_s2a_crypter(
-      /** in **/ true, in_traffic_secret, in_traffic_secret_size, tag_size,
-      /** sequence **/ 0, crypter, error_details);
+      /* in=*/ true, in_traffic_secret, in_traffic_secret_size, tag_size,
+      /* sequence=*/ 0, crypter, error_details);
   if (in_crypter_status != GRPC_STATUS_OK) {
     return in_crypter_status;
   }
 
   grpc_status_code out_crypter_status = assign_s2a_crypter(
-      /** in **/ false, out_traffic_secret, out_traffic_secret_size, tag_size,
-      /** sequence **/ 0, crypter, error_details);
+      /* in=*/ false, out_traffic_secret, out_traffic_secret_size, tag_size,
+      /* sequence=*/ 0, crypter, error_details);
   if (out_crypter_status != GRPC_STATUS_OK) {
     return out_crypter_status;
   }
@@ -464,7 +466,7 @@ grpc_status_code s2a_max_record_overhead(const s2a_crypter* crypter,
     return status;
   }
   *max_record_overhead =
-      SSL3_RT_HEADER_LENGTH + tag_size + /** record type **/ 1;
+      SSL3_RT_HEADER_LENGTH + tag_size + /* record type=*/ 1;
   return GRPC_STATUS_OK;
 }
 
@@ -613,7 +615,7 @@ grpc_status_code s2a_write_tls13_record(
 
   grpc_status_code encrypt_status = gsec_aead_crypter_encrypt_iovec(
       crypter->out_aead_crypter, nonce, nonce_size, &aad_vec,
-      /** aad_vec length **/ 1, data_for_processing_vec,
+      /* aad_vec length=*/ 1, data_for_processing_vec,
       unprotected_vec_size + 1, ciphertext, &ciphertext_and_tag_size,
       error_details);
 
@@ -643,7 +645,7 @@ grpc_status_code s2a_encrypt(s2a_crypter* crypter, uint8_t* plaintext,
   iovec plaintext_vec = {(void*)plaintext, plaintext_size};
   iovec record_vec = {(void*)record, record_allocated_size};
   return s2a_write_tls13_record(crypter, SSL3_RT_APPLICATION_DATA,
-                                &plaintext_vec, /** plaintext_vec length **/ 1,
+                                &plaintext_vec, /* plaintext_vec length=*/ 1,
                                 record_vec, record_size, error_details);
 }
 
@@ -706,21 +708,21 @@ s2a_decrypt_status s2a_decrypt_payload(
   GPR_ASSERT(tag_size <= payload_size);
   size_t expected_plaintext_and_record_byte_size = payload_size - tag_size;
   GPR_ASSERT(expected_plaintext_and_record_byte_size <=
-             SSL3_RT_MAX_PLAIN_LENGTH + /** record byte **/ 1);
+             SSL3_RT_MAX_PLAIN_LENGTH + /* record byte=*/ 1);
 
   uint8_t sequence[kTlsSequenceSize];
   sequence_to_bytes(crypter->in_connection, sequence);
   size_t nonce_size;
   uint8_t* nonce = s2a_nonce(crypter, sequence, kTlsSequenceSize, &nonce_size);
   uint8_t* additional_data = s2a_additional_data(
-      sequence, /** sequence size **/ 8, (uint8_t*)record_header.iov_base,
+      sequence, kTlsSequenceSize, (uint8_t*)record_header.iov_base,
       record_header.iov_len, payload_size);
   iovec aad_vec = {(void*)(additional_data + kTlsSequenceSize),
                    record_header.iov_len};
 
   grpc_status_code decrypt_status = gsec_aead_crypter_decrypt_iovec(
       crypter->in_aead_crypter, nonce, nonce_size, &aad_vec,
-      /** aad_vec length **/ 1, protected_vec, protected_vec_size,
+      /* aad_vec length=*/ 1, protected_vec, protected_vec_size,
       unprotected_vec, bytes_written, error_details);
 
   // Cleanup of auxiliary data.
@@ -803,6 +805,11 @@ static grpc_status_code s2a_key_update(uint16_t ciphersuite,
   half_connection->sequence = 0;
   memcpy(half_connection->nonce, nonce_buffer.data(), nonce_size);
 
+  std::cout << "******Ciphersuite: " << static_cast<unsigned>(ciphersuite) << std::endl;
+  for (size_t j = 0; j < half_connection->traffic_secret_size; j++) {
+    std::cout << static_cast<unsigned>(half_connection->traffic_secret[j]) << std::endl;
+  }
+  GPR_ASSERT(0 == 1);
   return GRPC_STATUS_OK;
 }
 
@@ -871,7 +878,7 @@ s2a_decrypt_status s2a_decrypt_record(
    *  constructing a TLS 1.3 record; nonetheless, |s2a_decrypt_payload| must be
    *  able to parse a TLS 1.3 record that does have padding by zeros. **/
   unsigned i;
-  for (i = *bytes_written - 1; i < *bytes_written; i--) {
+  for (i = *plaintext_bytes_written - 1; i < *plaintext_bytes_written; i--) {
     if (plaintext[i] != 0) {
       break;
     }
@@ -879,7 +886,7 @@ s2a_decrypt_status s2a_decrypt_record(
   /** Since |i| is unsigned, it is possible that the above for loop causes it to
    *  overflow; this case is captured by the if statement below. In particular,
    *  if i < *bytes_written at this stage, then i >= 0. **/
-  if (i >= *bytes_written) {
+  if (i >= *plaintext_bytes_written) {
     *error_details = gpr_strdup(kS2ARecordInvalidFormat);
     return INVALID_RECORD;
   }
@@ -902,7 +909,7 @@ s2a_decrypt_status s2a_decrypt_record(
       }
     case SSL3_RT_HANDSHAKE:
       /** Check whether the plaintext is a key update message. **/
-      if (*bytes_written == 4 &&
+      if (*plaintext_bytes_written == 4 &&
           memcmp(plaintext, "\x18\x00\x00\x01", 4) == 0 && plaintext[3] < 2) {
         grpc_status_code key_update_status = s2a_key_update(crypter->ciphersuite, crypter->in_connection, &(crypter->in_aead_crypter), error_details);
         if (key_update_status != GRPC_STATUS_OK) {
