@@ -42,7 +42,7 @@
  *    for this argument.
  *
  *  When creation succeeds, the method returns TSI_OK; otherwise, it returns an
- *  error code. **/
+ *  error code.  **/
 tsi_result s2a_zero_copy_grpc_protector_create(
     uint16_t tls_version, uint16_t tls_ciphersuite, uint8_t* in_traffic_secret,
     size_t in_traffic_secret_size, uint8_t* out_traffic_secret,
