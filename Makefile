@@ -1240,6 +1240,7 @@ grpc_objective_c_plugin: $(BINDIR)/$(CONFIG)/grpc_objective_c_plugin
 grpc_php_plugin: $(BINDIR)/$(CONFIG)/grpc_php_plugin
 grpc_python_plugin: $(BINDIR)/$(CONFIG)/grpc_python_plugin
 grpc_ruby_plugin: $(BINDIR)/$(CONFIG)/grpc_ruby_plugin
+grpc_s2a_credentials_options_test: $(BINDIR)/$(CONFIG)/grpc_s2a_credentials_options_test
 grpc_spiffe_security_connector_test: $(BINDIR)/$(CONFIG)/grpc_spiffe_security_connector_test
 grpc_tool_test: $(BINDIR)/$(CONFIG)/grpc_tool_test
 grpclb_api_test: $(BINDIR)/$(CONFIG)/grpclb_api_test
@@ -1276,7 +1277,9 @@ reconnect_interop_server: $(BINDIR)/$(CONFIG)/reconnect_interop_server
 ref_counted_ptr_test: $(BINDIR)/$(CONFIG)/ref_counted_ptr_test
 ref_counted_test: $(BINDIR)/$(CONFIG)/ref_counted_test
 retry_throttle_test: $(BINDIR)/$(CONFIG)/retry_throttle_test
+s2a_credentials_test: $(BINDIR)/$(CONFIG)/s2a_credentials_test
 s2a_record_protocol_test: $(BINDIR)/$(CONFIG)/s2a_record_protocol_test
+s2a_security_connector_test: $(BINDIR)/$(CONFIG)/s2a_security_connector_test
 s2a_tsi_handshaker_test: $(BINDIR)/$(CONFIG)/s2a_tsi_handshaker_test
 secure_auth_context_test: $(BINDIR)/$(CONFIG)/secure_auth_context_test
 secure_sync_unary_ping_pong_test: $(BINDIR)/$(CONFIG)/secure_sync_unary_ping_pong_test
@@ -1711,6 +1714,7 @@ buildtests_cxx: privatelibs_cxx \
   $(BINDIR)/$(CONFIG)/grpc_cli \
   $(BINDIR)/$(CONFIG)/grpc_fetch_oauth2 \
   $(BINDIR)/$(CONFIG)/grpc_linux_system_roots_test \
+  $(BINDIR)/$(CONFIG)/grpc_s2a_credentials_options_test \
   $(BINDIR)/$(CONFIG)/grpc_spiffe_security_connector_test \
   $(BINDIR)/$(CONFIG)/grpc_tool_test \
   $(BINDIR)/$(CONFIG)/grpclb_api_test \
@@ -1747,7 +1751,9 @@ buildtests_cxx: privatelibs_cxx \
   $(BINDIR)/$(CONFIG)/ref_counted_ptr_test \
   $(BINDIR)/$(CONFIG)/ref_counted_test \
   $(BINDIR)/$(CONFIG)/retry_throttle_test \
+  $(BINDIR)/$(CONFIG)/s2a_credentials_test \
   $(BINDIR)/$(CONFIG)/s2a_record_protocol_test \
+  $(BINDIR)/$(CONFIG)/s2a_security_connector_test \
   $(BINDIR)/$(CONFIG)/s2a_tsi_handshaker_test \
   $(BINDIR)/$(CONFIG)/secure_auth_context_test \
   $(BINDIR)/$(CONFIG)/secure_sync_unary_ping_pong_test \
@@ -1884,6 +1890,7 @@ buildtests_cxx: privatelibs_cxx \
   $(BINDIR)/$(CONFIG)/grpc_cli \
   $(BINDIR)/$(CONFIG)/grpc_fetch_oauth2 \
   $(BINDIR)/$(CONFIG)/grpc_linux_system_roots_test \
+  $(BINDIR)/$(CONFIG)/grpc_s2a_credentials_options_test \
   $(BINDIR)/$(CONFIG)/grpc_spiffe_security_connector_test \
   $(BINDIR)/$(CONFIG)/grpc_tool_test \
   $(BINDIR)/$(CONFIG)/grpclb_api_test \
@@ -1920,7 +1927,9 @@ buildtests_cxx: privatelibs_cxx \
   $(BINDIR)/$(CONFIG)/ref_counted_ptr_test \
   $(BINDIR)/$(CONFIG)/ref_counted_test \
   $(BINDIR)/$(CONFIG)/retry_throttle_test \
+  $(BINDIR)/$(CONFIG)/s2a_credentials_test \
   $(BINDIR)/$(CONFIG)/s2a_record_protocol_test \
+  $(BINDIR)/$(CONFIG)/s2a_security_connector_test \
   $(BINDIR)/$(CONFIG)/s2a_tsi_handshaker_test \
   $(BINDIR)/$(CONFIG)/secure_auth_context_test \
   $(BINDIR)/$(CONFIG)/secure_sync_unary_ping_pong_test \
@@ -2393,6 +2402,8 @@ test_cxx: buildtests_cxx
 	$(Q) $(BINDIR)/$(CONFIG)/grpc_alts_credentials_options_test || ( echo test grpc_alts_credentials_options_test failed ; exit 1 )
 	$(E) "[RUN]     Testing grpc_linux_system_roots_test"
 	$(Q) $(BINDIR)/$(CONFIG)/grpc_linux_system_roots_test || ( echo test grpc_linux_system_roots_test failed ; exit 1 )
+	$(E) "[RUN]     Testing grpc_s2a_credentials_options_test"
+	$(Q) $(BINDIR)/$(CONFIG)/grpc_s2a_credentials_options_test || ( echo test grpc_s2a_credentials_options_test failed ; exit 1 )
 	$(E) "[RUN]     Testing grpc_spiffe_security_connector_test"
 	$(Q) $(BINDIR)/$(CONFIG)/grpc_spiffe_security_connector_test || ( echo test grpc_spiffe_security_connector_test failed ; exit 1 )
 	$(E) "[RUN]     Testing grpc_tool_test"
@@ -2441,8 +2452,12 @@ test_cxx: buildtests_cxx
 	$(Q) $(BINDIR)/$(CONFIG)/ref_counted_test || ( echo test ref_counted_test failed ; exit 1 )
 	$(E) "[RUN]     Testing retry_throttle_test"
 	$(Q) $(BINDIR)/$(CONFIG)/retry_throttle_test || ( echo test retry_throttle_test failed ; exit 1 )
+	$(E) "[RUN]     Testing s2a_credentials_test"
+	$(Q) $(BINDIR)/$(CONFIG)/s2a_credentials_test || ( echo test s2a_credentials_test failed ; exit 1 )
 	$(E) "[RUN]     Testing s2a_record_protocol_test"
 	$(Q) $(BINDIR)/$(CONFIG)/s2a_record_protocol_test || ( echo test s2a_record_protocol_test failed ; exit 1 )
+	$(E) "[RUN]     Testing s2a_security_connector_test"
+	$(Q) $(BINDIR)/$(CONFIG)/s2a_security_connector_test || ( echo test s2a_security_connector_test failed ; exit 1 )
 	$(E) "[RUN]     Testing s2a_tsi_handshaker_test"
 	$(Q) $(BINDIR)/$(CONFIG)/s2a_tsi_handshaker_test || ( echo test s2a_tsi_handshaker_test failed ; exit 1 )
 	$(E) "[RUN]     Testing secure_auth_context_test"
@@ -3796,6 +3811,7 @@ LIBGRPC_SRC = \
     src/core/lib/security/credentials/local/local_credentials.cc \
     src/core/lib/security/credentials/oauth2/oauth2_credentials.cc \
     src/core/lib/security/credentials/plugin/plugin_credentials.cc \
+    src/core/lib/security/credentials/s2a/s2a_credentials.cc \
     src/core/lib/security/credentials/ssl/ssl_credentials.cc \
     src/core/lib/security/credentials/tls/grpc_tls_credentials_options.cc \
     src/core/lib/security/credentials/tls/spiffe_credentials.cc \
@@ -3804,6 +3820,7 @@ LIBGRPC_SRC = \
     src/core/lib/security/security_connector/load_system_roots_fallback.cc \
     src/core/lib/security/security_connector/load_system_roots_linux.cc \
     src/core/lib/security/security_connector/local/local_security_connector.cc \
+    src/core/lib/security/security_connector/s2a/s2a_security_connector.cc \
     src/core/lib/security/security_connector/security_connector.cc \
     src/core/lib/security/security_connector/ssl/ssl_security_connector.cc \
     src/core/lib/security/security_connector/ssl_utils.cc \
@@ -3906,6 +3923,7 @@ LIBGRPC_SRC = \
     src/core/tsi/s2a/record_protocol/s2a_crypter.cc \
     src/core/tsi/s2a/record_protocol/s2a_crypter_util.cc \
     src/core/ext/upb-generated/src/proto/grpc/gcp/s2a.upb.c \
+    src/core/lib/security/credentials/s2a/grpc_s2a_credentials_options.cc \
     src/core/ext/transport/chttp2/server/chttp2_server.cc \
     src/core/ext/transport/chttp2/client/secure/secure_channel_create.cc \
     src/core/ext/transport/chttp2/server/insecure/server_chttp2.cc \
@@ -4313,6 +4331,7 @@ LIBGRPC_CRONET_SRC = \
     src/core/lib/security/credentials/local/local_credentials.cc \
     src/core/lib/security/credentials/oauth2/oauth2_credentials.cc \
     src/core/lib/security/credentials/plugin/plugin_credentials.cc \
+    src/core/lib/security/credentials/s2a/s2a_credentials.cc \
     src/core/lib/security/credentials/ssl/ssl_credentials.cc \
     src/core/lib/security/credentials/tls/grpc_tls_credentials_options.cc \
     src/core/lib/security/credentials/tls/spiffe_credentials.cc \
@@ -4321,6 +4340,7 @@ LIBGRPC_CRONET_SRC = \
     src/core/lib/security/security_connector/load_system_roots_fallback.cc \
     src/core/lib/security/security_connector/load_system_roots_linux.cc \
     src/core/lib/security/security_connector/local/local_security_connector.cc \
+    src/core/lib/security/security_connector/s2a/s2a_security_connector.cc \
     src/core/lib/security/security_connector/security_connector.cc \
     src/core/lib/security/security_connector/ssl/ssl_security_connector.cc \
     src/core/lib/security/security_connector/ssl_utils.cc \
@@ -4381,6 +4401,7 @@ LIBGRPC_CRONET_SRC = \
     src/core/tsi/s2a/record_protocol/s2a_crypter.cc \
     src/core/tsi/s2a/record_protocol/s2a_crypter_util.cc \
     src/core/ext/upb-generated/src/proto/grpc/gcp/s2a.upb.c \
+    src/core/lib/security/credentials/s2a/grpc_s2a_credentials_options.cc \
 
 PUBLIC_HEADERS_C += \
     include/grpc/impl/codegen/byte_buffer.h \
@@ -17550,6 +17571,49 @@ ifneq ($(NO_DEPS),true)
 endif
 
 
+GRPC_S2A_CREDENTIALS_OPTIONS_TEST_SRC = \
+    test/core/security/grpc_s2a_credentials_options_test.cc \
+
+GRPC_S2A_CREDENTIALS_OPTIONS_TEST_OBJS = $(addprefix $(OBJDIR)/$(CONFIG)/, $(addsuffix .o, $(basename $(GRPC_S2A_CREDENTIALS_OPTIONS_TEST_SRC))))
+ifeq ($(NO_SECURE),true)
+
+# You can't build secure targets if you don't have OpenSSL.
+
+$(BINDIR)/$(CONFIG)/grpc_s2a_credentials_options_test: openssl_dep_error
+
+else
+
+
+
+
+ifeq ($(NO_PROTOBUF),true)
+
+# You can't build the protoc plugins or protobuf-enabled targets if you don't have protobuf 3.5.0+.
+
+$(BINDIR)/$(CONFIG)/grpc_s2a_credentials_options_test: protobuf_dep_error
+
+else
+
+$(BINDIR)/$(CONFIG)/grpc_s2a_credentials_options_test: $(PROTOBUF_DEP) $(GRPC_S2A_CREDENTIALS_OPTIONS_TEST_OBJS) $(LIBDIR)/$(CONFIG)/libgrpc.a $(LIBDIR)/$(CONFIG)/libgpr.a
+	$(E) "[LD]      Linking $@"
+	$(Q) mkdir -p `dirname $@`
+	$(Q) $(LDXX) $(LDFLAGS) $(GRPC_S2A_CREDENTIALS_OPTIONS_TEST_OBJS) $(LIBDIR)/$(CONFIG)/libgrpc.a $(LIBDIR)/$(CONFIG)/libgpr.a $(LDLIBSXX) $(LDLIBS_PROTOBUF) $(LDLIBS) $(LDLIBS_SECURE) $(GTEST_LIB) -o $(BINDIR)/$(CONFIG)/grpc_s2a_credentials_options_test
+
+endif
+
+endif
+
+$(OBJDIR)/$(CONFIG)/test/core/security/grpc_s2a_credentials_options_test.o:  $(LIBDIR)/$(CONFIG)/libgrpc.a $(LIBDIR)/$(CONFIG)/libgpr.a
+
+deps_grpc_s2a_credentials_options_test: $(GRPC_S2A_CREDENTIALS_OPTIONS_TEST_OBJS:.o=.dep)
+
+ifneq ($(NO_SECURE),true)
+ifneq ($(NO_DEPS),true)
+-include $(GRPC_S2A_CREDENTIALS_OPTIONS_TEST_OBJS:.o=.dep)
+endif
+endif
+
+
 GRPC_SPIFFE_SECURITY_CONNECTOR_TEST_SRC = \
     test/core/security/spiffe_security_connector_test.cc \
 
@@ -19112,6 +19176,49 @@ endif
 endif
 
 
+S2A_CREDENTIALS_TEST_SRC = \
+    test/core/security/s2a_credentials_test.cc \
+
+S2A_CREDENTIALS_TEST_OBJS = $(addprefix $(OBJDIR)/$(CONFIG)/, $(addsuffix .o, $(basename $(S2A_CREDENTIALS_TEST_SRC))))
+ifeq ($(NO_SECURE),true)
+
+# You can't build secure targets if you don't have OpenSSL.
+
+$(BINDIR)/$(CONFIG)/s2a_credentials_test: openssl_dep_error
+
+else
+
+
+
+
+ifeq ($(NO_PROTOBUF),true)
+
+# You can't build the protoc plugins or protobuf-enabled targets if you don't have protobuf 3.5.0+.
+
+$(BINDIR)/$(CONFIG)/s2a_credentials_test: protobuf_dep_error
+
+else
+
+$(BINDIR)/$(CONFIG)/s2a_credentials_test: $(PROTOBUF_DEP) $(S2A_CREDENTIALS_TEST_OBJS) $(LIBDIR)/$(CONFIG)/libgpr.a $(LIBDIR)/$(CONFIG)/libgrpc.a
+	$(E) "[LD]      Linking $@"
+	$(Q) mkdir -p `dirname $@`
+	$(Q) $(LDXX) $(LDFLAGS) $(S2A_CREDENTIALS_TEST_OBJS) $(LIBDIR)/$(CONFIG)/libgpr.a $(LIBDIR)/$(CONFIG)/libgrpc.a $(LDLIBSXX) $(LDLIBS_PROTOBUF) $(LDLIBS) $(LDLIBS_SECURE) $(GTEST_LIB) -o $(BINDIR)/$(CONFIG)/s2a_credentials_test
+
+endif
+
+endif
+
+$(OBJDIR)/$(CONFIG)/test/core/security/s2a_credentials_test.o:  $(LIBDIR)/$(CONFIG)/libgpr.a $(LIBDIR)/$(CONFIG)/libgrpc.a
+
+deps_s2a_credentials_test: $(S2A_CREDENTIALS_TEST_OBJS:.o=.dep)
+
+ifneq ($(NO_SECURE),true)
+ifneq ($(NO_DEPS),true)
+-include $(S2A_CREDENTIALS_TEST_OBJS:.o=.dep)
+endif
+endif
+
+
 S2A_RECORD_PROTOCOL_TEST_SRC = \
     test/core/tsi/s2a/s2a_record_protocol_test.cc \
 
@@ -19151,6 +19258,49 @@ deps_s2a_record_protocol_test: $(S2A_RECORD_PROTOCOL_TEST_OBJS:.o=.dep)
 ifneq ($(NO_SECURE),true)
 ifneq ($(NO_DEPS),true)
 -include $(S2A_RECORD_PROTOCOL_TEST_OBJS:.o=.dep)
+endif
+endif
+
+
+S2A_SECURITY_CONNECTOR_TEST_SRC = \
+    test/core/security/s2a_security_connector_test.cc \
+
+S2A_SECURITY_CONNECTOR_TEST_OBJS = $(addprefix $(OBJDIR)/$(CONFIG)/, $(addsuffix .o, $(basename $(S2A_SECURITY_CONNECTOR_TEST_SRC))))
+ifeq ($(NO_SECURE),true)
+
+# You can't build secure targets if you don't have OpenSSL.
+
+$(BINDIR)/$(CONFIG)/s2a_security_connector_test: openssl_dep_error
+
+else
+
+
+
+
+ifeq ($(NO_PROTOBUF),true)
+
+# You can't build the protoc plugins or protobuf-enabled targets if you don't have protobuf 3.5.0+.
+
+$(BINDIR)/$(CONFIG)/s2a_security_connector_test: protobuf_dep_error
+
+else
+
+$(BINDIR)/$(CONFIG)/s2a_security_connector_test: $(PROTOBUF_DEP) $(S2A_SECURITY_CONNECTOR_TEST_OBJS) $(LIBDIR)/$(CONFIG)/libgpr.a
+	$(E) "[LD]      Linking $@"
+	$(Q) mkdir -p `dirname $@`
+	$(Q) $(LDXX) $(LDFLAGS) $(S2A_SECURITY_CONNECTOR_TEST_OBJS) $(LIBDIR)/$(CONFIG)/libgpr.a $(LDLIBSXX) $(LDLIBS_PROTOBUF) $(LDLIBS) $(LDLIBS_SECURE) $(GTEST_LIB) -o $(BINDIR)/$(CONFIG)/s2a_security_connector_test
+
+endif
+
+endif
+
+$(OBJDIR)/$(CONFIG)/test/core/security/s2a_security_connector_test.o:  $(LIBDIR)/$(CONFIG)/libgpr.a
+
+deps_s2a_security_connector_test: $(S2A_SECURITY_CONNECTOR_TEST_OBJS:.o=.dep)
+
+ifneq ($(NO_SECURE),true)
+ifneq ($(NO_DEPS),true)
+-include $(S2A_SECURITY_CONNECTOR_TEST_OBJS:.o=.dep)
 endif
 endif
 
@@ -23238,6 +23388,8 @@ src/core/lib/security/credentials/jwt/jwt_verifier.cc: $(OPENSSL_DEP)
 src/core/lib/security/credentials/local/local_credentials.cc: $(OPENSSL_DEP)
 src/core/lib/security/credentials/oauth2/oauth2_credentials.cc: $(OPENSSL_DEP)
 src/core/lib/security/credentials/plugin/plugin_credentials.cc: $(OPENSSL_DEP)
+src/core/lib/security/credentials/s2a/grpc_s2a_credentials_options.cc: $(OPENSSL_DEP)
+src/core/lib/security/credentials/s2a/s2a_credentials.cc: $(OPENSSL_DEP)
 src/core/lib/security/credentials/ssl/ssl_credentials.cc: $(OPENSSL_DEP)
 src/core/lib/security/credentials/tls/grpc_tls_credentials_options.cc: $(OPENSSL_DEP)
 src/core/lib/security/credentials/tls/spiffe_credentials.cc: $(OPENSSL_DEP)
@@ -23246,6 +23398,7 @@ src/core/lib/security/security_connector/fake/fake_security_connector.cc: $(OPEN
 src/core/lib/security/security_connector/load_system_roots_fallback.cc: $(OPENSSL_DEP)
 src/core/lib/security/security_connector/load_system_roots_linux.cc: $(OPENSSL_DEP)
 src/core/lib/security/security_connector/local/local_security_connector.cc: $(OPENSSL_DEP)
+src/core/lib/security/security_connector/s2a/s2a_security_connector.cc: $(OPENSSL_DEP)
 src/core/lib/security/security_connector/security_connector.cc: $(OPENSSL_DEP)
 src/core/lib/security/security_connector/ssl/ssl_security_connector.cc: $(OPENSSL_DEP)
 src/core/lib/security/security_connector/ssl_utils.cc: $(OPENSSL_DEP)
