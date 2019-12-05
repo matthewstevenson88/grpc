@@ -20,6 +20,7 @@
 
 #include "src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.h"
 
+#include <grpc/grpc_security.h>
 #include <grpc/support/alloc.h>
 #include <grpc/support/log.h>
 #include <grpc/support/string_util.h>
@@ -84,8 +85,48 @@ static tsi_result handshaker_next(
     size_t received_bytes_size, const unsigned char** /** bytes_to_send **/,
     size_t* /** bytes_to_send_size **/, tsi_handshaker_result** /** result **/,
     tsi_handshaker_on_next_done_cb cb, void* user_data) {
-  // TODO(mattstev): implement.
-  return TSI_UNIMPLEMENTED;
+  if (self == nullptr || cb == nullptr) {
+    gpr_log(GPR_ERROR, "Invalid nullptr arguments to |handshaker_next|.");
+    return TSI_INVALID_ARGUMENT;
+  }
+  s2a_tsi_handshaker* handshaker = reinterpret_cast<s2a_tsi_handshaker*>(self);
+  {
+    grpc_core::MutexLock lock(&handshaker->mu);
+    if (handshaker->shutdown) {
+      gpr_log(GPR_ERROR, "TSI handshake shutdown.");
+      return TSI_HANDSHAKE_SHUTDOWN;
+    }
+  }
+  if (handshaker->channel == nullptr) {
+    s2a_tsi_handshaker_continue_handshaker_next_args* args =
+  new s2a_tsi_handshaker_continue_handshaker_next_args();
+    args->handshaker = handshaker;
+    args->received_bytes = nullptr;
+    args->received_bytes_size = received_bytes_size;
+    if (received_bytes_size > 0) {
+      args->received_bytes = std::unique_ptr<unsigned char>(
+          static_cast<unsigned char*>(gpr_zalloc(received_bytes_size)));
+      memcpy(args->received_bytes.get(), received_bytes, received_bytes_size);
+    }
+    args->cb = cb;
+    args->user_data = user_data;
+    GRPC_CLOSURE_INIT(&args->closure, s2a_tsi_handshaker_create_channel, args,
+                      grpc_schedule_on_exec_ctx);
+    // We continue this handshaker_next call at the bottom of the ExecCtx just
+    // so that we can invoke grpc_channel_create at the bottom of the call
+    // stack. Doing so avoids potential lock cycles between g_init_mu and other
+    // mutexes within core that might be held on the current call stack
+    // (note that g_init_mu gets acquired during channel creation).
+    grpc_core::ExecCtx::Run(DEBUG_LOCATION, &args->closure, GRPC_ERROR_NONE);
+  } else {
+    tsi_result ok = s2a_tsi_handshaker_continue_handshaker_next(
+        handshaker, received_bytes, received_bytes_size, cb, user_data);
+    if (ok != TSI_OK) {
+      gpr_log(GPR_ERROR, "Failed to schedule S2A handshaker requests.");
+      return ok;
+    }
+  }
+  return TSI_ASYNC;
 }
 
 static void handshaker_shutdown(tsi_handshaker* self) {
@@ -108,8 +149,7 @@ static void handshaker_destroy(tsi_handshaker* self) {
   s2a_tsi_handshaker* handshaker = reinterpret_cast<s2a_tsi_handshaker*>(self);
   s2a_handshaker_client_destroy(handshaker->client);
   grpc_slice_unref_internal(handshaker->target_name);
-  // TODO(mattstev): this API is exposed in a PR that is not yet merged.
-  // grpc_s2a_credentials_options_destroy(handshaker->options);
+  grpc_s2a_credentials_options_destroy(handshaker->options);
   if (handshaker->channel != nullptr) {
     grpc_channel_destroy_internal(handshaker->channel);
   }
@@ -140,8 +180,7 @@ tsi_result s2a_tsi_handshaker_create(
                                 ? grpc_empty_slice()
                                 : grpc_slice_from_static_string(target_name);
   handshaker->interested_parties = interested_parties;
-  // TODO(mattstev): this API is exposed in a PR that is not yet merged.
-  // handshaker->options = grpc_s2a_credentials_options_copy(options);
+  handshaker->options = grpc_s2a_credentials_options_copy(options);
   handshaker->base.vtable = &handshaker_vtable;
 
   *self = &(handshaker->base);
@@ -150,8 +189,52 @@ tsi_result s2a_tsi_handshaker_create(
 
 static tsi_result s2a_handshaker_result_extract_peer(
     const tsi_handshaker_result* self, tsi_peer* peer) {
-  // TODO(mattstev): implement.
-  return TSI_UNIMPLEMENTED;
+  if (self == nullptr || peer == nullptr) {
+    gpr_log(GPR_ERROR, "Invalid argument to |s2a_handshaker_result_extract_peer|.");
+    return TSI_INVALID_ARGUMENT;
+  }
+  s2a_tsi_handshaker_result* result = reinterpret_cast<s2a_tsi_handshaker_result*>(const_cast<tsi_handshaker_result*>(self));
+  GPR_ASSERT(kTsiS2ANumOfPeerProperties == 3);
+  tsi_result ok = tsi_construct_peer(kTsiS2ANumOfPeerProperties, peer);
+  int index = 0;
+  if (ok != TSI_OK) {
+    gpr_log(GPR_ERROR, "Failed to construct TSI peer.");
+    return ok;
+  }
+  GPR_ASSERT(&peer->properties[index] != nullptr);
+  ok = tsi_construct_string_peer_property_from_cstring(
+      TSI_CERTIFICATE_TYPE_PEER_PROPERTY, kTsiS2ACertificateType,
+      &peer->properties[index]);
+  if (ok != TSI_OK) {
+    tsi_peer_destruct(peer);
+    gpr_log(GPR_ERROR, "Failed to set TSI peer property.");
+    return ok;
+  }
+  index++;
+  GPR_ASSERT(&peer->properties[index] != nullptr);
+
+  /** The peer identity will be either in the form of a SPIFFE id or a hostname.
+   *  Exactly one of the two fields will always by populated. **/
+  char* peer_identity = (result->spiffe_id == nullptr) ? result->hostname : result->spiffe_id;
+  ok = tsi_construct_string_peer_property_from_cstring(
+      kTsiS2AServiceAccountPeerProperty, peer_identity,
+      &peer->properties[index]);
+  if (ok != TSI_OK) {
+    tsi_peer_destruct(peer);
+    gpr_log(GPR_ERROR, "Failed to set TSI peer property.");
+  }
+  index++;
+  GPR_ASSERT(&peer->properties[index] != nullptr);
+  ok = tsi_construct_string_peer_property(
+      kTlsS2AContext,
+      reinterpret_cast<char*>(GRPC_SLICE_START_PTR(result->serialized_context)),
+      GRPC_SLICE_LENGTH(result->serialized_context), &peer->properties[index]);
+  if (ok != TSI_OK) {
+    tsi_peer_destruct(peer);
+    gpr_log(GPR_ERROR, "Failed to set TSI peer property.");
+  }
+  GPR_ASSERT(++index == kTsiS2ANumOfPeerProperties);
+  return ok;
 }
 
 static tsi_result s2a_handshaker_result_create_zero_copy_grpc_protector(
