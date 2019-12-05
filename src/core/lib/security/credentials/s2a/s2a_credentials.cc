@@ -24,13 +24,10 @@ namespace experimental {
 
 grpc_s2a_credentials::grpc_s2a_credentials(
     const grpc_s2a_credentials_options* options)
-    : grpc_channel_credentials(kGrpcS2ACredentialsType) {
-  // TODO(mattstev): implement.
-}
+    : grpc_channel_credentials(kGrpcS2ACredentialsType) {}
 
 grpc_s2a_credentials::~grpc_s2a_credentials() {
-  // TODO(mattstev): implement.
-  return;
+  grpc_s2a_credentials_options_destroy(options_);
 }
 
 grpc_core::RefCountedPtr<grpc_channel_security_connector>
@@ -44,13 +41,10 @@ grpc_s2a_credentials::create_security_connector(
 
 grpc_s2a_server_credentials::grpc_s2a_server_credentials(
     const grpc_s2a_credentials_options* options)
-    : grpc_server_credentials(kGrpcS2ACredentialsType) {
-  // TODO(mattstev): implement.
-}
+    : grpc_server_credentials(kGrpcS2ACredentialsType) {}
 
 grpc_s2a_server_credentials::~grpc_s2a_server_credentials() {
-  // TODO(mattstev): implement.
-  return;
+  grpc_s2a_credentials_options_destroy(options_);
 }
 
 grpc_core::RefCountedPtr<grpc_server_security_connector>

@@ -31,7 +31,7 @@ namespace experimental {
 
 grpc_s2a_credentials_options::~grpc_s2a_credentials_options() {
   if (handshaker_service_url_ != nullptr) {
-    gpr_free(handshaker_service_url_);
+    gpr_free(const_cast<char*>(handshaker_service_url_));
   }
   for (auto service_account : target_service_account_list_) {
     gpr_free(service_account);
@@ -44,7 +44,7 @@ void grpc_s2a_credentials_options::set_handshaker_service_url(
     return;
   }
   if (handshaker_service_url_ != nullptr) {
-    gpr_free(handshaker_service_url_);
+    gpr_free(const_cast<char*>(handshaker_service_url_));
   }
   handshaker_service_url_ = gpr_strdup(handshaker_service_url);
 }

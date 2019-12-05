@@ -719,6 +719,8 @@ Gem::Specification.new do |s|
   s.files += %w( src/core/lib/security/security_connector/load_system_roots_linux.h )
   s.files += %w( src/core/lib/security/security_connector/local/local_security_connector.cc )
   s.files += %w( src/core/lib/security/security_connector/local/local_security_connector.h )
+  s.files += %w( src/core/lib/security/security_connector/s2a/s2a_auth_context.cc )
+  s.files += %w( src/core/lib/security/security_connector/s2a/s2a_auth_context.h )
   s.files += %w( src/core/lib/security/security_connector/s2a/s2a_security_connector.cc )
   s.files += %w( src/core/lib/security/security_connector/s2a/s2a_security_connector.h )
   s.files += %w( src/core/lib/security/security_connector/security_connector.cc )

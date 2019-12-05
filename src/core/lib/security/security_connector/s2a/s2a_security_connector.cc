@@ -27,14 +27,27 @@
 
 #include "src/core/lib/gprpp/ref_counted_ptr.h"
 #include "src/core/lib/security/credentials/s2a/s2a_credentials.h"
+#include "src/core/lib/security/security_connector/s2a/s2a_auth_context.h"
 #include "src/core/lib/security/transport/security_handshaker.h"
 #include "src/core/lib/slice/slice_internal.h"
 #include "src/core/lib/transport/transport.h"
 #include "src/core/tsi/transport_security.h"
 
 namespace experimental {
-
 namespace {
+
+void s2a_check_peer(tsi_peer peer,
+                    grpc_core::RefCountedPtr<grpc_auth_context>* auth_context,
+                    grpc_closure* on_peer_checked) {
+  *auth_context = internal::grpc_s2a_auth_context_from_tsi_peer(&peer);
+  tsi_peer_destruct(&peer);
+  grpc_error* error =
+      *auth_context != nullptr
+          ? GRPC_ERROR_NONE
+          : GRPC_ERROR_CREATE_FROM_STATIC_STRING(
+                "Unable to get S2A auth context from TSI peer.");
+  grpc_core::ExecCtx::Run(DEBUG_LOCATION, on_peer_checked, error);
+}
 
 /** The S2A channel security connector. **/
 class grpc_s2a_channel_security_connector final
@@ -44,46 +57,52 @@ class grpc_s2a_channel_security_connector final
       grpc_core::RefCountedPtr<grpc_channel_credentials> channel_creds,
       grpc_core::RefCountedPtr<grpc_call_credentials> request_metadata_creds,
       const char* target_name)
-      : grpc_channel_security_connector(/** url_scheme= **/ nullptr,
+      : grpc_channel_security_connector(/* url_scheme=*/nullptr,
                                         std::move(channel_creds),
                                         std::move(request_metadata_creds)),
-        target_name_(gpr_strdup(target_name)) {
-    // TODO(mattstev): implement.
-  }
+        target_name_(gpr_strdup(target_name)) {}
 
   ~grpc_s2a_channel_security_connector() override { gpr_free(target_name_); }
 
   void add_handshakers(
       const grpc_channel_args* args, grpc_pollset_set* interested_parties,
       grpc_core::HandshakeManager* handshake_manager) override {
-    // TODO(mattstev): implement.
+    // TODO(mattstev): implement. This is blocked by the implementation of the
+    // S2A TSI handshaker.
     return;
   }
 
   void check_peer(tsi_peer peer, grpc_endpoint* ep,
                   grpc_core::RefCountedPtr<grpc_auth_context>* auth_context,
                   grpc_closure* on_peer_checked) override {
-    // TODO(mattstev): implement.
-    return;
+    s2a_check_peer(peer, auth_context, on_peer_checked);
   }
 
   int cmp(const grpc_security_connector* other_sc) const override {
-    // TODO(mattstev): implement.
-    return 0;
+    auto* other =
+        reinterpret_cast<const grpc_s2a_channel_security_connector*>(other_sc);
+    int c = channel_security_connector_cmp(other);
+    if (c != 0) {
+      return c;
+    }
+    return strcmp(target_name_, other->target_name_);
   }
 
   bool check_call_host(grpc_core::StringView host,
                        grpc_auth_context* auth_context,
                        grpc_closure* on_call_host_checked,
                        grpc_error** error) override {
-    // TODO(mattstev): implement.
-    return false;
+    GPR_ASSERT(error != nullptr);
+    if (host.empty() || host != target_name_) {
+      *error = GRPC_ERROR_CREATE_FROM_STATIC_STRING(
+          "The S2A call host does not match the target name.");
+    }
+    return true;
   }
 
   void cancel_check_call_host(grpc_closure* on_call_host_checked,
                               grpc_error* error) override {
-    // TODO(mattstev): implement.
-    return;
+    GRPC_ERROR_UNREF(error);
   }
 
  private:
@@ -96,29 +115,28 @@ class grpc_s2a_server_security_connector final
  public:
   grpc_s2a_server_security_connector(
       grpc_core::RefCountedPtr<grpc_server_credentials> server_creds)
-      : grpc_server_security_connector(/** url_scheme= **/ nullptr,
-                                       std::move(server_creds)) {
-    // TODO(mattstev): implement.
-  }
+      : grpc_server_security_connector(/* url_scheme=*/nullptr,
+                                       std::move(server_creds)) {}
+
   ~grpc_s2a_server_security_connector() override = default;
 
   void add_handshakers(
       const grpc_channel_args* args, grpc_pollset_set* interested_parties,
       grpc_core::HandshakeManager* handshake_manager) override {
-    // TODO(mattstev): implement.
+    // TODO(mattstev): implement. This is blocked by the implementation of the
+    // S2A TSI handshaker.
     return;
   }
 
   void check_peer(tsi_peer peer, grpc_endpoint* ep,
                   grpc_core::RefCountedPtr<grpc_auth_context>* auth_context,
                   grpc_closure* on_peer_checked) override {
-    // TODO(mattstev): implement.
-    return;
+    s2a_check_peer(peer, auth_context, on_peer_checked);
   }
 
   int cmp(const grpc_security_connector* other) const override {
-    // TODO(mattstev): implement.
-    return 0;
+    return server_security_connector_cmp(
+        static_cast<const grpc_server_security_connector*>(other));
   }
 };
 }  // namespace
@@ -131,7 +149,7 @@ grpc_s2a_channel_security_connector_create(
   if (channel_creds == nullptr || target_name == nullptr) {
     gpr_log(
         GPR_ERROR,
-        "Invalid arguments to grpc_s2a_channel_security_connector_create()");
+        "Invalid arguments to |grpc_s2a_channel_security_connector_create|.");
     return nullptr;
   }
   return grpc_core::MakeRefCounted<grpc_s2a_channel_security_connector>(
@@ -142,8 +160,9 @@ grpc_core::RefCountedPtr<grpc_server_security_connector>
 grpc_s2a_server_security_connector_create(
     grpc_core::RefCountedPtr<grpc_server_credentials> server_creds) {
   if (server_creds == nullptr) {
-    gpr_log(GPR_ERROR,
-            "Invalid arguments to grpc_s2a_server_security_connector_create()");
+    gpr_log(
+        GPR_ERROR,
+        "Invalid arguments to |grpc_s2a_server_security_connector_create|.");
     return nullptr;
   }
   return grpc_core::MakeRefCounted<grpc_s2a_server_security_connector>(

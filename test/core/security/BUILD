@@ -56,6 +56,15 @@ grpc_cc_library(
     deps = ["//:grpc"],
 )
 
+grpc_cc_library(
+    name = "tsi_auth_context_util",
+    srcs = ["tsi_auth_context_util.cc"],
+    hdrs = ["tsi_auth_context_util.h"],
+    language = "C++",
+    visibility = ["//test/cpp:__subpackages__"],
+    deps = ["//:grpc"],
+)
+
 grpc_cc_test(
     name = "auth_context_test",
     srcs = ["auth_context_test.cc"],
@@ -265,6 +274,7 @@ grpc_cc_test(
         "//:tsi",
         "//:tsi_interface",
         "//test/core/util:grpc_test_util",
+        ":tsi_auth_context_util",
     ],
 )
 
@@ -280,6 +290,22 @@ grpc_cc_test(
         "//:tsi",
         "//:tsi_interface",
         "//test/core/util:grpc_test_util",
+    ],
+)
+
+grpc_cc_test(
+    name = "s2a_auth_context_test",
+    srcs = ["s2a_auth_context_test.cc"],
+    language = "C++",
+    deps = [
+        "//:gpr",
+        "//:grpc",
+        "//:grpc_base_c",
+        "//:grpc_secure",
+        "//:tsi",
+        "//:tsi_interface",
+        "//test/core/util:grpc_test_util",
+        ":tsi_auth_context_util",
     ],
 )
 

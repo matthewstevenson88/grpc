@@ -1,6 +1,6 @@
 /*
  *
- * Copyright 2018 gRPC authors.
+ * Copyright 2019 gRPC authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,19 +16,14 @@
  *
  */
 
-#include <grpc/grpc.h>
-#include <grpc/support/alloc.h>
-#include <grpc/support/log.h>
+#ifndef GRPC_TEST_CORE_SECURITY_TSI_AUTH_CONTEXT_UTIL_H
+#define GRPC_TEST_CORE_SECURITY_TSI_AUTH_CONTEXT_UTIL_H
 
-#include "src/core/lib/security/security_connector/s2a/s2a_security_connector.h"
+#include <grpc/grpc_security.h>
+#include <grpc/support/port_platform.h>
 
-static void s2a_security_connector_test() {
-  // TODO(mattstev): implement. Add integration tests when implementation of TSI
-  // layer and below is complete.
-  return;
-}
+bool test_identity(const grpc_auth_context* ctx,
+                   const char* expected_property_name,
+                   const char* expected_identity);
 
-int main(int /*argc*/, char** /*argv*/) {
-  s2a_security_connector_test();
-  return 0;
-}
+#endif  // GRPC_TEST_CORE_SECURITY_TSI_AUTH_CONTEXT_UTIL_H

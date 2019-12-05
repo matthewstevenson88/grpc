@@ -22,12 +22,13 @@
 
 #include "src/core/lib/security/credentials/s2a/s2a_credentials.h"
 
-static void test_s2a_credentials() {
-  // TODO(mattstev): implement.
+static void s2a_credentials_test() {
+  // TODO(mattstev): implement. Add integration tests when implementation of TSI
+  // layer and below is complete.
   return;
 }
 
 int main(int /*argc*/, char** /*argv*/) {
-  test_s2a_credentials();
+  s2a_credentials_test();
   return 0;
 }

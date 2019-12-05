@@ -19,6 +19,13 @@
 #ifndef GRPC_CORE_TSI_S2A_S2A_CONSTANTS_H
 #define GRPC_CORE_TSI_S2A_S2A_CONSTANTS_H
 
+/** The constants used for the TSI peer properties. **/
+constexpr char kGrpcS2ATransportSecurityType[] = "S2A";
+constexpr size_t kTsiS2ANumOfPeerProperties = 3;
+constexpr char kTsiS2ACertificateType[] = "S2A";
+constexpr char kTsiS2AContext[] = "s2a_context";
+constexpr char kTsiS2AServiceAccountPeerProperty[] = "service_account";
+
 /** The following constants are ciphersuite-specific data. **/
 constexpr size_t kEvpAeadAesGcmTagLength = 16;
 constexpr size_t kEvpAeadMaxKeyLength = 80;
@@ -26,11 +33,6 @@ constexpr size_t kEvpAeadMaxNonceLength = 24;
 constexpr size_t kPoly1305TagLength = 16;
 constexpr size_t kSha256DigestLength = 32;
 constexpr size_t kSha384DigestLength = 48;
-
-/** The uint16_t's for the supported TLS 1.3 ciphersuites. **/
-constexpr uint16_t kTlsAes128GcmSha256 = 0x009c;
-constexpr uint16_t kTlsAes256GcmSha384 = 0x1302;
-constexpr uint16_t kTlsChacha20Poly1305Sha256 = 0xcca8;
 
 /** The uint16_t's for the supported TLS 1.3 ciphersuites. **/
 constexpr uint16_t kTlsAes128GcmSha256 = 0x009c;

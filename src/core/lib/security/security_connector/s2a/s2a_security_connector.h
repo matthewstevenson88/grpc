@@ -24,8 +24,6 @@
 
 namespace experimental {
 
-#define GRPC_S2A_TRANSPORT_SECURITY_TYPE "s2a"
-
 /** This method creates an S2A channel security connector on success; otherwise,
  *  the method returns nullptr.
  *  - channel_creds: an instance of channel credentials; the caller must not
