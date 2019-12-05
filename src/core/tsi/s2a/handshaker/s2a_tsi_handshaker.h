@@ -46,9 +46,7 @@ typedef struct s2a_tsi_handshaker s2a_tsi_handshaker;
  *  - error_details: an error message for when the creation fails. It is legal
  *    (and expected) to have |error_details| point to a nullptr.
  *
- * It returns TSI_OK on success and an error status code on failure. Note that
- * if interested_parties is nullptr, a dedicated TSI thread will be created and
- * used. **/
+ * It returns TSI_OK on success and an error status code on failure. **/
 tsi_result s2a_tsi_handshaker_create(
     const grpc_s2a_credentials_options* options, const char* target_name,
     bool is_client,
@@ -80,12 +78,12 @@ void s2a_tsi_handshaker_result_set_unused_bytes(tsi_handshaker_result* self,
 bool s2a_tsi_handshaker_has_shutdown(s2a_tsi_handshaker* handshaker);
 
 /** The following two methods are exposed for testing purposes only. **/
-void s2a_check_tsi_handshaker(tsi_handshaker* base, grpc_slice target_name,
+void s2a_check_tsi_handshaker_for_testing(tsi_handshaker* base, grpc_slice target_name,
                               bool is_client, bool has_sent_start_message,
                               bool has_created_handshaker_client,
                               bool shutdown);
 
-void s2a_check_tsi_handshaker_result(
+void s2a_check_tsi_handshaker_result_for_testing(
     tsi_handshaker_result* base, uint16_t tls_version, uint16_t tls_ciphersuite,
     uint8_t* in_traffic_secret, uint8_t* out_traffic_secret,
     size_t traffic_secret_size, char* spiffe_id, size_t spiffe_id_size,

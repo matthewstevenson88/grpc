@@ -55,6 +55,9 @@ constexpr char kS2AServiceMethod[] = "/s2a.S2AService/SetUpSession";
 /** The application protocol used by S2A. **/
 constexpr char kS2AApplicationProtocol[] = "grpc";
 
+/** The size of the sequence buffer used for parsing TLS 1.3 records. **/
+constexpr size_t kTlsSequenceSize = 8;
+
 /** S2A error messages. **/
 constexpr char kS2AUnsupportedTlsVersion[] =
     "S2A does not support the desired TLS version.";
@@ -106,5 +109,15 @@ constexpr char kS2AGetSerializedStartServerFailed[] =
     "The |s2a_get_serialized_start_server| method failed.";
 constexpr char kS2AGetSerializedNextFailed[] = "The |s2a_get_serialized_next| method failed.";
 constexpr char kS2AMakeGrpcCallFailed[] = "The |make_grpc_call| member function failed.";
+constexpr char kS2ARecordExceedMaxSize[] =
+    "The TLS 1.3 payload exceeds the maximum size.";
+constexpr char kS2AHeaderIncorrectFormat[] =
+    "The TLS 1.3 record header does not have the correct format.";
+constexpr char kS2ARecordInvalidFormat[] =
+    "The format of the TLS 1.3 record is invalid.";
+constexpr char kS2ARecordSmallAlert[] =
+    "The TLS 1.3 alert record is too small.";
+constexpr char kS2ARecordNullptr[] =
+    "If |record| is nullptr, then |record_size| must be set to zero.";
 
 #endif  // GRPC_CORE_TSI_S2A_S2A_CONSTANTS_H

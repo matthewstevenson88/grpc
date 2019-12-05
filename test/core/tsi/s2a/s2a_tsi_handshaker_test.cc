@@ -41,7 +41,7 @@ static void s2a_test_tsi_handshaker_create_and_destroy() {
   GPR_ASSERT(error_details == nullptr);
   GPR_ASSERT(handshaker != nullptr);
 
-  s2a_check_tsi_handshaker(
+  s2a_check_tsi_handshaker_for_testing(
       handshaker, grpc_slice_from_static_string("target_name"),
       /** is_client **/ true,
       /** has_send_start_message **/ false,
@@ -118,7 +118,6 @@ static void s2a_test_tsi_handshaker_result_create_and_destroy() {
   GPR_ASSERT(handshaker_result == nullptr);
 
   s2a_SessionResult_set_peer_identity(session_result, peer_identity);
-  // s2a_SessionResp_set_result(session_response, session_result);
 
   /** Successfully create handshaker result, set unused bytes, and check that
    *  the result is correct.  **/
@@ -133,7 +132,7 @@ static void s2a_test_tsi_handshaker_result_create_and_destroy() {
   size_t recv_size = GRPC_SLICE_LENGTH(recv_slice);
   s2a_tsi_handshaker_result_set_unused_bytes(handshaker_result, &recv_slice,
                                              /** bytes_consumed **/ 0);
-  s2a_check_tsi_handshaker_result(
+  s2a_check_tsi_handshaker_result_for_testing(
       handshaker_result, /** TLS 1.3 **/ 0, kTlsAes128GcmSha256,
       reinterpret_cast<uint8_t*>(traffic_secret.data()),
       reinterpret_cast<uint8_t*>(traffic_secret.data()), traffic_secret.size(),
