@@ -2080,6 +2080,7 @@ grpc_cc_library(
         "grpc_base",
         "grpc_shadow_boringssl",
         "grpc_transport_chttp2_client_insecure",
+        "s2a_upb",
         "tsi_interface",
     ],
 )

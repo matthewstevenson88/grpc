@@ -1635,6 +1635,8 @@ filegroups:
   - src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.cc
   - src/core/tsi/s2a/record_protocol/s2a_crypter.cc
   - src/core/tsi/s2a/record_protocol/s2a_crypter_util.cc
+  deps:
+  - upb
   uses:
   - alts_tsi
   - grpc_base
@@ -5697,6 +5699,14 @@ targets:
   - test/core/security/s2a_security_connector_test.cc
   deps:
   - gpr
+- name: s2a_tsi_handshaker_test
+  build: test
+  language: c++
+  src:
+  - test/core/tsi/s2a/s2a_tsi_handshaker_test.cc
+  deps:
+  - grpc_test_util
+  - grpc
 - name: secure_auth_context_test
   gtest: true
   build: test

@@ -26,7 +26,7 @@
 #include "src/core/lib/iomgr/pollset_set.h"
 #include "src/core/tsi/transport_security_interface.h"
 
-namespace grpc {
+namespace grpc_core {
 namespace experimental {
 
 typedef struct s2a_tsi_handshaker s2a_tsi_handshaker;
@@ -117,5 +117,6 @@ tsi_result s2a_handshaker_client_create(
 void s2a_handshaker_client_destroy(s2a_handshaker_client* client);
 
 }  // namespace experimental
-}  // namespace grpc
+}  // namespace grpc_core
+
 #endif  // GRPC_CORE_TSI_S2A_HANDSHAKER_S2A_HANDSHAKER_CLIENT_H
