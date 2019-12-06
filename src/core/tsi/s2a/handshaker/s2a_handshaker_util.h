@@ -32,7 +32,8 @@ int32_t s2a_convert_ciphersuite_to_enum(uint16_t ciphersuite);
 
 /** This method serializes |request| into a buffer, and returns a newly created
  *  grpc_byte_buffer that holds this buffer. **/
-grpc_byte_buffer* s2a_get_serialized_session_req(s2a_SessionReq* request, upb_arena* arena);
+grpc_byte_buffer* s2a_get_serialized_session_req(s2a_SessionReq* request,
+                                                 upb_arena* arena);
 
 }  // namespace experimental
 }  // namespace grpc_core

@@ -17,6 +17,7 @@
  */
 
 #include "src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.h"
+#include <grpc/grpc_security.h>
 #include <grpc/support/alloc.h>
 #include <grpc/support/log.h>
 #include <vector>
@@ -24,18 +25,19 @@
 #include "src/core/tsi/transport_security_grpc.h"
 #include "src/core/tsi/transport_security_interface.h"
 
+using ::experimental::grpc_s2a_credentials_options;
+using ::experimental::grpc_s2a_credentials_options_create;
+using ::experimental::grpc_s2a_credentials_options_destroy;
+
 namespace grpc_core {
 namespace experimental {
 
-// TODO(mattstev): remove this declaration once PR #2 is merged.
-struct grpc_s2a_credentials_options {};
-
 static void s2a_test_tsi_handshaker_create_and_destroy() {
-  grpc_s2a_credentials_options options;
+  grpc_s2a_credentials_options* options = grpc_s2a_credentials_options_create();
   tsi_handshaker* handshaker = nullptr;
   char* error_details = nullptr;
   tsi_result create_result = s2a_tsi_handshaker_create(
-      &options, "target_name", /** is_client **/ true,
+      options, "target_name", /** is_client **/ true,
       /** interested_parties **/ nullptr, &handshaker, &error_details);
   GPR_ASSERT(create_result == TSI_OK);
   GPR_ASSERT(error_details == nullptr);
@@ -53,14 +55,15 @@ static void s2a_test_tsi_handshaker_create_and_destroy() {
       reinterpret_cast<s2a_tsi_handshaker*>(handshaker);
   GPR_ASSERT(s2a_tsi_handshaker_has_shutdown(s2a_handshaker));
   tsi_handshaker_destroy(handshaker);
+  grpc_s2a_credentials_options_destroy(options);
 }
 
 static void s2a_test_tsi_handshaker_next() {
-  grpc_s2a_credentials_options options;
+  grpc_s2a_credentials_options* options = grpc_s2a_credentials_options_create();
   tsi_handshaker* handshaker = nullptr;
   char* error_details = nullptr;
   tsi_result create_result = s2a_tsi_handshaker_create(
-      &options, "target_name", /** is_client **/ true,
+      options, "target_name", /** is_client **/ true,
       /** interested_parties **/ nullptr, &handshaker, &error_details);
   GPR_ASSERT(create_result == TSI_OK);
   GPR_ASSERT(error_details == nullptr);
@@ -73,6 +76,7 @@ static void s2a_test_tsi_handshaker_next() {
       /** result **/ nullptr, /** cb **/ nullptr, /** user_data **/ nullptr);
   GPR_ASSERT(result == TSI_UNIMPLEMENTED);
   tsi_handshaker_destroy(handshaker);
+  grpc_s2a_credentials_options_destroy(options);
 }
 
 static void s2a_test_tsi_handshaker_result_create_and_destroy() {

@@ -107,8 +107,10 @@ constexpr char kS2AGetSerializedStartClientFailed[] =
     "The |s2a_get_serialized_start_client| method failed.";
 constexpr char kS2AGetSerializedStartServerFailed[] =
     "The |s2a_get_serialized_start_server| method failed.";
-constexpr char kS2AGetSerializedNextFailed[] = "The |s2a_get_serialized_next| method failed.";
-constexpr char kS2AMakeGrpcCallFailed[] = "The |make_grpc_call| member function failed.";
+constexpr char kS2AGetSerializedNextFailed[] =
+    "The |s2a_get_serialized_next| method failed.";
+constexpr char kS2AMakeGrpcCallFailed[] =
+    "The |make_grpc_call| member function failed.";
 constexpr char kS2ARecordExceedMaxSize[] =
     "The TLS 1.3 payload exceeds the maximum size.";
 constexpr char kS2AHeaderIncorrectFormat[] =

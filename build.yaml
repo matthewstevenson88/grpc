@@ -5687,6 +5687,14 @@ targets:
   deps:
   - gpr
   - grpc
+- name: s2a_handshaker_client_test
+  build: test
+  language: c++
+  src:
+  - test/core/tsi/s2a/s2a_handshaker_client_test.cc
+  deps:
+  - grpc_test_util
+  - grpc
 - name: s2a_record_protocol_test
   build: test
   language: c++

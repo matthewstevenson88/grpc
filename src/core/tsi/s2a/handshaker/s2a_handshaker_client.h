@@ -27,19 +27,28 @@
 
 #include "src/core/lib/iomgr/closure.h"
 #include "src/core/lib/iomgr/pollset_set.h"
+#include "src/core/lib/security/credentials/s2a/grpc_s2a_credentials_options.h"
 #include "src/core/tsi/transport_security_interface.h"
+
+using ::experimental::grpc_s2a_credentials_options;
 
 namespace grpc_core {
 namespace experimental {
 
-typedef struct s2a_tsi_handshaker s2a_tsi_handshaker;
-
-typedef struct grpc_s2a_credentials_options grpc_s2a_credentials_options;
+struct s2a_tsi_handshaker;
 
 /** A function that makes a gRPC call to the S2A. The default caller option
  *  is the grpc_call_start_batch_and_execute caller. **/
 typedef grpc_call_error (*s2a_grpc_caller)(grpc_call* call, const grpc_op* ops,
                                            size_t nops, grpc_closure* tag);
+
+/** A struct that stores the handshake result sent by the S2A service. **/
+struct s2a_recv_message_result {
+  tsi_result status;
+  const uint8_t* bytes_to_send;
+  size_t bytes_to_send_size;
+  tsi_handshaker_result* result;
+};
 
 /** The Secure Session Agent (S2A) handshaker client interface. It facilitates
  *  establishing a secure channel with the peer by interacting with the
@@ -89,8 +98,15 @@ struct s2a_handshaker_client {
   void shutdown();
 
  private:
-  /** TODO(mattstev): comments. **/
+  /** This method makes a call to the S2A service. **/
   tsi_result make_grpc_call(bool is_start);
+
+  void maybe_complete_tsi_next(
+      bool receive_status_finished,
+      s2a_recv_message_result* pending_recv_message_result);
+
+  /** This method parses a response from the S2A service. **/
+  void handle_response(bool is_ok);
 
   /** This method prepares a serialized version of a client start message. **/
   grpc_byte_buffer* s2a_get_serialized_start_client();
@@ -108,7 +124,6 @@ struct s2a_handshaker_client {
   gpr_refcount refs_;
   /** The S2A TSI handshaker that instantiates this S2A handshaker client. **/
   s2a_tsi_handshaker* handshaker_;
-  /** TODO(mattstev): comments. **/
   grpc_call* call_;
   s2a_grpc_caller grpc_caller_;
   /** A gRPC closure to be scheduled when the response from handshaker service
@@ -119,16 +134,17 @@ struct s2a_handshaker_client {
    *  handshaker service. **/
   grpc_byte_buffer* send_buffer_;
   grpc_byte_buffer* recv_buffer_;
-  /** TODO(mattstev): comment. **/
+  /** This status indicates to the |handle_response_done| method whether or not
+   *  an error occurred during a previous portion of the handshake. **/
   grpc_status_code status_;
   /** Initial metadata to be received from handshaker service. **/
   grpc_metadata_array recv_initial_metadata_;
   /** A callback function provided by an application to be invoked when response
    *  is received from handshaker service. **/
   tsi_handshaker_on_next_done_cb cb_;
-  void* user_data_;
+  void* user_data_ = nullptr;
   /** The S2A credential options passed in from the caller. **/
-  grpc_s2a_credentials_options* options_;
+  grpc_s2a_credentials_options* options_ = nullptr;
   /** The target name information to be passed to handshaker service for server
    *  authorization check. **/
   grpc_slice target_name_;
@@ -156,7 +172,7 @@ struct s2a_handshaker_client {
   bool receive_status_finished_;
   /** If this field is not nullptr, then it contains arguments needed to
    *  complete a TSI next callback. **/
-  recv_message_result* pending_recv_message_result_;
+  s2a_recv_message_result* pending_recv_message_result_;
 };
 
 /** This method populates |client| with an instance of the

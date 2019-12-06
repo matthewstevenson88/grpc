@@ -16,31 +16,25 @@
  *
  */
 
-#include <grpc/support/port_platform.h>
-
 #include "src/core/tsi/s2a/handshaker/s2a_handshaker_client.h"
-
 #include <grpc/support/alloc.h>
 #include <grpc/support/log.h>
+#include "src/core/tsi/s2a/s2a_constants.h"
+#include "src/core/tsi/transport_security_grpc.h"
+#include "src/core/tsi/transport_security_interface.h"
 
 namespace grpc_core {
 namespace experimental {
 
-/** This file contains the implementation details of the |make_grpc_call| member
- *  function of the |s2a_handshaker_client| struct. This method enables the S2A
- *  handshaker client to make a gRPC call to the S2A service. **/
-
-tsi_result s2a_handshaker_client::make_grpc_call(bool is_start) {
-  // TODO(mattstev): implement.
-  return TSI_UNIMPLEMENTED;
-}
-
-void s2a_handshaker_client::maybe_complete_tsi_next(
-    bool receive_status_finished,
-    s2a_recv_message_result* pending_recv_message_result) {
+static void s2a_handshaker_client_test() {
   // TODO(mattstev): implement.
   return;
 }
 
 }  // namespace experimental
 }  // namespace grpc_core
+
+int main(int argc, char** argv) {
+  grpc_core::experimental::s2a_handshaker_client_test();
+  return 0;
+}
