@@ -48,21 +48,6 @@ enum class S2ADecryptStatus {
   UNIMPLEMENTED,        // An unimplemented operation was called.
 };
 
-/** This status code is used when decrypting TLS 1.3 records using the S2A
- *  record protocol. **/
-typedef enum {
-  OK,
-  INCOMPLETE_RECORD,      // No complete record found.
-  INVALID_RECORD,         // The record does not meet the TLS 1.3 format.
-  RENEGOTIATION_ATTEMPT,  // The peer attempted to renegotiate the handshake.
-  ALERT_CLOSE_NOTIFY,     // The record was a close-notify alert record.
-  ALERT_RECORD_OVERFLOW,  // The record size is too large.
-  ALERT_OTHER,     // The record was an alert record other than close-notify.
-  INTERNAL_ERROR,  // An unexpected error occured during decryption.
-  FAILED_PRECONDITION,  // A requirement for calling a method was not met.
-  UNIMPLEMENTED,        // An unimplemented operation was called.
-} s2a_decrypt_status;
-
 /** This function populates |max_record_overhead| with the max number of bytes
  *  that |crypter| requires to create a TLS 1.3 record, beyond the size of the
  *  plaintext. It returns GRPC_STATUS_OK on success; otherwise, it populates

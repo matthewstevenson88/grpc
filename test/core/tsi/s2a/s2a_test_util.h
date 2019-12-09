@@ -34,10 +34,6 @@ void verify_half_connections(uint16_t ciphersuite, s2a_crypter* crypter,
  *  plaintext of size |plaintext_size|. **/
 size_t expected_message_size(size_t plaintext_size);
 
-/** This method populates the |bytes| buffer with |length| randomly-generated
- *  bytes. The |bytes| buffer is owned by the caller. **/
-void random_array(uint8_t* bytes, size_t length);
-
 /** This method encrypts |plaintext| using |crypter|, writes the resulting TLs
  *  1.3 record to |record|, and verifies that the TLS 1.3 record has the
  *  expected size. **/

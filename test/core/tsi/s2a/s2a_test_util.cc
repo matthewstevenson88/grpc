@@ -222,14 +222,6 @@ bool check_record_empty_plaintext(uint16_t ciphersuite,
   return true;
 }
 
-void random_array(uint8_t* bytes, size_t length) {
-  if (length == 0) return;
-  GPR_ASSERT(bytes != nullptr);
-  for (size_t i = 0; i < length; i++) {
-    bytes[i] = static_cast<uint8_t>(rand() % 256);
-  }
-}
-
 void send_message(std::vector<uint8_t>& message, s2a_crypter* out_crypter,
                   s2a_crypter* in_crypter) {
   GPR_ASSERT(out_crypter != nullptr && in_crypter != nullptr);
