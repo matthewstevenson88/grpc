@@ -42,12 +42,18 @@ grpc_byte_buffer* s2a_handshaker_client::s2a_get_serialized_start_client() {
       s2a_SessionReq_mutable_client_start(request, arena.ptr());
   s2a_ClientSessionStartReq_add_application_protocols(
       start_client, upb_strview_makez(kS2AApplicationProtocol), arena.ptr());
-  s2a_ClientSessionStartReq_add_tls_versions(start_client, /* TLS 1.3=*/0,
-                                             arena.ptr());
+  int32_t* tls_versions = s2a_ClientSessionStartReq_resize_tls_versions(
+      start_client, /* len=*/1, arena.ptr());
+  GPR_ASSERT(tls_versions != nullptr);
+  tls_versions[0] = s2a_TLS1_3;
+  int32_t* tls_ciphersuites = s2a_ClientSessionStartReq_resize_tls_ciphersuites(
+      start_client, /* len=*/options_->supported_ciphersuites().size(),
+      arena.ptr());
+  GPR_ASSERT(tls_ciphersuites != nullptr);
+  size_t counter = 0;
   for (auto ciphersuite : options_->supported_ciphersuites()) {
-    s2a_ClientSessionStartReq_add_tls_ciphersuites(
-        start_client, s2a_convert_ciphersuite_to_enum(ciphersuite),
-        arena.ptr());
+    tls_ciphersuites[counter] = ciphersuite;
+    counter += 1;
   }
   for (auto service_account : options_->target_service_account_list()) {
     if (service_account == nullptr) {
@@ -84,7 +90,7 @@ tsi_result s2a_handshaker_client::client_start() {
 /** ------------ Preparation of server start messages. --------------- **/
 
 grpc_byte_buffer* s2a_handshaker_client::s2a_get_serialized_start_server(
-    grpc_slice* bytes_received) {
+    uint16_t ciphersuite, grpc_slice* bytes_received) {
   GPR_ASSERT(bytes_received != nullptr);
   upb::Arena arena;
   s2a_SessionReq* request = s2a_SessionReq_new(arena.ptr());
@@ -92,8 +98,14 @@ grpc_byte_buffer* s2a_handshaker_client::s2a_get_serialized_start_server(
       s2a_SessionReq_mutable_server_start(request, arena.ptr());
   s2a_ServerSessionStartReq_add_application_protocols(
       start_server, upb_strview_makez(kS2AApplicationProtocol), arena.ptr());
-  s2a_ServerSessionStartReq_add_tls_versions(start_server, /* TLS 1.3=*/0,
-                                             arena.ptr());
+  int32_t* tls_versions = s2a_ServerSessionStartReq_resize_tls_versions(
+      start_server, /* len=*/1, arena.ptr());
+  GPR_ASSERT(tls_versions != nullptr);
+  tls_versions[0] = s2a_TLS1_3;
+  int32_t* tls_ciphersuites = s2a_ServerSessionStartReq_resize_tls_ciphersuites(
+      start_server, /* len=*/1, arena.ptr());
+  GPR_ASSERT(tls_ciphersuites != nullptr);
+  tls_ciphersuites[0] = static_cast<int32_t>(ciphersuite);
   s2a_ServerSessionStartReq_set_in_bytes(
       start_server, upb_strview_make(reinterpret_cast<const char*>(
                                          GRPC_SLICE_START_PTR(*bytes_received)),
@@ -101,9 +113,11 @@ grpc_byte_buffer* s2a_handshaker_client::s2a_get_serialized_start_server(
   return s2a_get_serialized_session_req(request, arena.ptr());
 }
 
-tsi_result s2a_handshaker_client::server_start(grpc_slice* bytes_received) {
+tsi_result s2a_handshaker_client::server_start(uint16_t ciphersuite,
+                                               grpc_slice* bytes_received) {
   GPR_ASSERT(bytes_received != nullptr);
-  grpc_byte_buffer* buffer = s2a_get_serialized_start_server(bytes_received);
+  grpc_byte_buffer* buffer =
+      s2a_get_serialized_start_server(ciphersuite, bytes_received);
   if (buffer == nullptr) {
     gpr_log(GPR_ERROR, kS2AGetSerializedStartServerFailed);
     return TSI_INTERNAL_ERROR;
@@ -182,10 +196,14 @@ s2a_handshaker_client::s2a_handshaker_client(
   handshake_status_details_ = grpc_empty_slice();
   grpc_slice slice =
       grpc_slice_from_copied_string(options->handshaker_service_url());
-  call_ = (strcmp(options->handshaker_service_url(), kS2AHandshakerServiceUrlForTesting) == 0) ? nullptr : grpc_channel_create_pollset_set_call(
-      channel, /* parent_call=*/nullptr, GRPC_PROPAGATE_DEFAULTS,
-      interested_parties, grpc_slice_from_static_string(kS2AServiceMethod),
-      &slice, GRPC_MILLIS_INF_FUTURE, /* reserved=*/nullptr);
+  call_ = (strcmp(options->handshaker_service_url(),
+                  kS2AHandshakerServiceUrlForTesting) == 0)
+              ? nullptr
+              : grpc_channel_create_pollset_set_call(
+                    channel, /* parent_call=*/nullptr, GRPC_PROPAGATE_DEFAULTS,
+                    interested_parties,
+                    grpc_slice_from_static_string(kS2AServiceMethod), &slice,
+                    GRPC_MILLIS_INF_FUTURE, /* reserved=*/nullptr);
   GRPC_CLOSURE_INIT(&on_handshaker_service_resp_recv_, grpc_cb, this,
                     grpc_schedule_on_exec_ctx);
   GRPC_CLOSURE_INIT(&on_status_received_, s2a_on_status_received, this,

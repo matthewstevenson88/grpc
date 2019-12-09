@@ -24,14 +24,14 @@
 namespace grpc_core {
 namespace experimental {
 
-int32_t s2a_convert_ciphersuite_to_enum(uint16_t ciphersuite) {
+s2a_Ciphersuite s2a_convert_ciphersuite_to_enum(uint16_t ciphersuite) {
   switch (ciphersuite) {
     case kTlsAes128GcmSha256:
-      return 0;
+      return s2a_AES_128_GCM_SHA256;
     case kTlsAes256GcmSha384:
-      return 1;
+      return s2a_AES_256_GCM_SHA384;
     case kTlsChacha20Poly1305Sha256:
-      return 2;
+      return s2a_CHACHA20_POLY1305_SHA256;
   }
 }
 
@@ -48,7 +48,8 @@ grpc_byte_buffer* s2a_get_serialized_session_req(s2a_SessionReq* request,
   return byte_buffer;
 }
 
-s2a_SessionReq* s2a_deserialize_session_req(upb_arena* arena, grpc_byte_buffer* buffer) {
+s2a_SessionReq* s2a_deserialize_session_req(upb_arena* arena,
+                                            grpc_byte_buffer* buffer) {
   GPR_ASSERT(arena != nullptr);
   GPR_ASSERT(buffer != nullptr);
   grpc_byte_buffer_reader reader;
@@ -56,8 +57,10 @@ s2a_SessionReq* s2a_deserialize_session_req(upb_arena* arena, grpc_byte_buffer* 
   grpc_slice slice = grpc_byte_buffer_reader_readall(&reader);
   size_t buf_size = GPR_SLICE_LENGTH(slice);
   void* buf = upb_arena_malloc(arena, buf_size);
-  memcpy(buf, reinterpret_cast<const char*>(GPR_SLICE_START_PTR(slice)), buf_size);
-  s2a_SessionReq* request = s2a_SessionReq_parse(reinterpret_cast<char*>(buf), buf_size, arena);
+  memcpy(buf, reinterpret_cast<const char*>(GPR_SLICE_START_PTR(slice)),
+         buf_size);
+  s2a_SessionReq* request =
+      s2a_SessionReq_parse(reinterpret_cast<char*>(buf), buf_size, arena);
   GPR_ASSERT(request != nullptr);
   grpc_slice_unref(slice);
   grpc_byte_buffer_reader_destroy(&reader);
