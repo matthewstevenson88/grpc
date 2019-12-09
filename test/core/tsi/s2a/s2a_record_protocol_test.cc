@@ -104,7 +104,17 @@ std::vector<uint8_t> chacha_poly_traffic_secret = {
 
 /** The following vectors are the new traffic secret obtaing from "kkkk...k"
  *  after advancing once. **/
-// TODO(mattstev): add.
+std::vector<uint8_t> aes_128_gcm_advanced_traffic_secret = {
+    243, 139, 148, 85,  234, 88, 113, 35, 90,  105, 252, 55, 97,  12, 108, 161,
+    33,  87,  121, 230, 107, 69, 160, 71, 215, 57,  1,   17, 224, 0,  129, 196};
+std::vector<uint8_t> aes_256_gcm_advanced_traffic_secret = {
+    1,   108, 131, 93,  182, 100, 190, 181, 82,  106, 155, 179,
+    217, 164, 251, 166, 62,  103, 37,  93,  207, 164, 96,  161,
+    20,  217, 241, 239, 154, 154, 31,  104, 90,  81,  135, 57,
+    245, 87,  208, 230, 111, 219, 137, 189, 175, 162, 98,  87};
+std::vector<uint8_t> chacha_poly_advanced_traffic_secret = {
+    243, 139, 148, 85,  234, 88, 113, 35, 90,  105, 252, 55, 97,  12, 108, 161,
+    33,  87,  121, 230, 107, 69, 160, 71, 215, 57,  1,   17, 224, 0,  129, 196};
 
 static grpc_status_code setup_crypter(uint16_t ciphersuite,
                                       grpc_channel* channel,
@@ -722,6 +732,8 @@ static void s2a_test_roundtrips(uint16_t ciphersuite) {
   send_message(s2a_test_data::test_message_1, in_crypter, out_crypter);
   send_message(s2a_test_data::test_message_2, out_crypter, in_crypter);
   send_message(s2a_test_data::test_message_3, out_crypter, in_crypter);
+  send_message(s2a_test_data::test_message_4, in_crypter, out_crypter);
+  send_message(s2a_test_data::test_message_5, out_crypter, in_crypter);
 
   // Cleanup.
   s2a_crypter_destroy(in_crypter);
@@ -749,53 +761,76 @@ static void s2a_test_key_update(uint16_t ciphersuite) {
   GPR_ASSERT(error_details == nullptr);
 
   /** Setup for encryption of key update message. **/
-  uint8_t key_update_message[] = "\x18\x00\x00\x01";
-  size_t message_size = 4;
-  iovec plaintext_vec = {(void*)key_update_message, message_size};
+  iovec plaintext_vec = {
+      reinterpret_cast<void*>(s2a_test_data::key_update_message.data()),
+      s2a_test_data::key_update_message.size()};
 
   size_t max_record_overhead;
-  grpc_status_code overhead_status = s2a_max_record_overhead(
-      crypter, &max_record_overhead, &error_details);
+  grpc_status_code overhead_status =
+      s2a_max_record_overhead(*crypter, &max_record_overhead, &error_details);
   GPR_ASSERT(overhead_status == GRPC_STATUS_OK);
   GPR_ASSERT(error_details == nullptr);
-  size_t record_allocated_size = message_size + max_record_overhead;
+  size_t record_allocated_size =
+      s2a_test_data::key_update_message.size() + max_record_overhead;
   std::vector<uint8_t> record(record_allocated_size, 0);
   iovec record_vec = {(void*)record.data(), record.size()};
   size_t record_bytes_written;
 
   /** Encrypt key update message. **/
   grpc_status_code write_key_update_status = s2a_write_tls13_record(
-      crypter, SSL3_RT_HANDSHAKE, &plaintext_vec, /** plaintext_vec length **/ 1,
+      crypter, SSL3_RT_HANDSHAKE, &plaintext_vec, /* plaintext_vec length=*/1,
       record_vec, &record_bytes_written, &error_details);
   GPR_ASSERT(write_key_update_status == GRPC_STATUS_OK);
   GPR_ASSERT(error_details == nullptr);
-  GPR_ASSERT(record_bytes_written == expected_message_size(message_size));
+  GPR_ASSERT(record_bytes_written ==
+             expected_message_size(s2a_test_data::key_update_message.size()));
 
   /** Setup for decryption of key update message. **/
   iovec record_header_vec = {record_vec.iov_base, SSL3_RT_HEADER_LENGTH};
-  iovec protected_vec = {reinterpret_cast<uint8_t*>(record_vec.iov_base) + SSL3_RT_HEADER_LENGTH, record.size() - SSL3_RT_HEADER_LENGTH};
+  iovec protected_vec = {
+      reinterpret_cast<uint8_t*>(record_vec.iov_base) + SSL3_RT_HEADER_LENGTH,
+      record.size() - SSL3_RT_HEADER_LENGTH};
   size_t plaintext_size;
-  grpc_status_code plaintext_size_status = s2a_max_plaintext_size(
-      crypter, &protected_vec, /** protected_vec length **/ 1,
-      &plaintext_size, &error_details);
-  GPR_ASSERT(plaintext_size_status == GRPC_STATUS_OK);
+  grpc_status_code plaintext_status = s2a_max_plaintext_size(
+      *crypter, record_bytes_written, &plaintext_size, &error_details);
+  GPR_ASSERT(plaintext_status == GRPC_STATUS_OK);
   GPR_ASSERT(error_details == nullptr);
   std::vector<uint8_t> plaintext(plaintext_size, 0);
   iovec unprotected_vec = {(void*)plaintext.data(), plaintext.size()};
   size_t unprotected_bytes_written;
 
   /** Decrypt key update message. **/
-  s2a_decrypt_status read_key_update_status = s2a_decrypt_record(
-      crypter, record_header_vec, &protected_vec, /** protected_vec length **/ 1,
+  S2ADecryptStatus read_key_update_status = s2a_decrypt_record(
+      crypter, record_header_vec, &protected_vec, /* protected_vec length=*/1,
       unprotected_vec, &unprotected_bytes_written, &error_details);
-  GPR_ASSERT(read_key_update_status == OK);
+  GPR_ASSERT(read_key_update_status == S2ADecryptStatus::OK);
   GPR_ASSERT(error_details == nullptr);
-  GPR_ASSERT(unprotected_bytes_written == message_size);
+  GPR_ASSERT(unprotected_bytes_written ==
+             s2a_test_data::key_update_message.size());
 
   /** Verify correctness. **/
+  uint8_t* expected_traffic_secret;
   size_t expected_traffic_secret_size;
-//  check_half_connection(crypter, /** in **/ true,
-//                        /** expected sequence **/ 0, 
+  switch (ciphersuite) {
+    case kTlsAes128GcmSha256:
+      expected_traffic_secret = aes_128_gcm_advanced_traffic_secret.data();
+      expected_traffic_secret_size = aes_128_gcm_advanced_traffic_secret.size();
+      break;
+    case kTlsAes256GcmSha384:
+      expected_traffic_secret = aes_256_gcm_advanced_traffic_secret.data();
+      expected_traffic_secret_size = aes_256_gcm_advanced_traffic_secret.size();
+      break;
+    case kTlsChacha20Poly1305Sha256:
+      expected_traffic_secret = chacha_poly_advanced_traffic_secret.data();
+      expected_traffic_secret_size = chacha_poly_advanced_traffic_secret.size();
+      break;
+  }
+  check_half_connection(crypter, /* in=*/true, /* expected sequence=*/0,
+                        expected_traffic_secret_size, expected_traffic_secret,
+                        /* verify_nonce=*/false, /* expected_nonce_size=*/0,
+                        /* expected_nonce=*/nullptr, SSL3_RT_HEADER_LENGTH);
+  plaintext.resize(unprotected_bytes_written);
+  GPR_ASSERT(plaintext == s2a_test_data::key_update_message);
 
   /** Cleanup. **/
   s2a_crypter_destroy(crypter);

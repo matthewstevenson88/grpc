@@ -26,8 +26,8 @@
  *  TSI_OK; otherwise, it returns an error code and populates |error_details|
  *  with further info, and this must be freed using gpr_free. The caller must
  *  not pass in nullptr for |hash_function|. **/
-grpc_status_code s2a_ciphersuite_to_hash_function(uint16_t ciphersuite,
-                                                  GsecHashFunction* hash_function,
-                                                  char** error_details);
+grpc_status_code s2a_ciphersuite_to_hash_function(
+    uint16_t ciphersuite, GsecHashFunction* hash_function,
+    char** error_details);
 
 #endif  // GRPC_CORE_TSI_S2A_RECORD_PROTOCOL_S2A_CRYPTER_UTIL_H

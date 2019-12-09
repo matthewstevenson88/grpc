@@ -22,9 +22,9 @@
 #include <grpc/support/string_util.h>
 #include "src/core/tsi/s2a/s2a_constants.h"
 
-grpc_status_code s2a_ciphersuite_to_hash_function(uint16_t ciphersuite,
-                                                  GsecHashFunction* hash_function,
-                                                  char** error_details) {
+grpc_status_code s2a_ciphersuite_to_hash_function(
+    uint16_t ciphersuite, GsecHashFunction* hash_function,
+    char** error_details) {
   GPR_ASSERT(hash_function != nullptr);
   switch (ciphersuite) {
     case kTlsAes128GcmSha256:

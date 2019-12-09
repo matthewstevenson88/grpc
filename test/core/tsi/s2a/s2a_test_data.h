@@ -24,12 +24,18 @@
 
 namespace s2a_test_data {
 
+std::vector<uint8_t> key_update_message = {24, 0, 0, 1, 0};
+
 std::vector<uint8_t> test_message_1 = {};
 
 std::vector<uint8_t> test_message_2 = {8};
 
 std::vector<uint8_t> test_message_3 = {46,  98, 101, 255, 213, 156, 15,  100,
                                        126, 45, 130, 239, 209, 13,  156, 89};
+
+std::vector<uint8_t> test_message_4(1500, 'm');
+
+std::vector<uint8_t> test_message_5(16384, 's');
 
 }  // namespace s2a_test_data
 
