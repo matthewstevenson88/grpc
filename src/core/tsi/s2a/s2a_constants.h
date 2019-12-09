@@ -58,6 +58,9 @@ constexpr char kS2AApplicationProtocol[] = "grpc";
 /** The size of the sequence buffer used for parsing TLS 1.3 records. **/
 constexpr size_t kTlsSequenceSize = 8;
 
+/** The URL of the S2A handshaker service for testing purposes. **/
+constexpr char kS2AHandshakerServiceUrlForTesting[] = "testing";
+
 /** S2A error messages. **/
 constexpr char kS2AUnsupportedTlsVersion[] =
     "S2A does not support the desired TLS version.";

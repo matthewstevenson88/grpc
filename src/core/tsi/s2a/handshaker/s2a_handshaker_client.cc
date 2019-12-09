@@ -179,9 +179,10 @@ s2a_handshaker_client::s2a_handshaker_client(
   is_client_ = is_client;
   buffer_size_ = kS2AInitialBufferSize;
   buffer_ = static_cast<uint8_t*>(gpr_zalloc(buffer_size_));
+  handshake_status_details_ = grpc_empty_slice();
   grpc_slice slice =
       grpc_slice_from_copied_string(options->handshaker_service_url());
-  call_ = grpc_channel_create_pollset_set_call(
+  call_ = (strcmp(options->handshaker_service_url(), kS2AHandshakerServiceUrlForTesting) == 0) ? nullptr : grpc_channel_create_pollset_set_call(
       channel, /* parent_call=*/nullptr, GRPC_PROPAGATE_DEFAULTS,
       interested_parties, grpc_slice_from_static_string(kS2AServiceMethod),
       &slice, GRPC_MILLIS_INF_FUTURE, /* reserved=*/nullptr);
@@ -198,7 +199,8 @@ tsi_result s2a_handshaker_client_create(
     const grpc_slice& target_name, grpc_iomgr_cb_func grpc_cb,
     tsi_handshaker_on_next_done_cb cb, void* user_data, bool is_client,
     s2a_handshaker_client** client) {
-  if (channel == nullptr || client == nullptr || options == nullptr) {
+  if (channel == nullptr || client == nullptr || options == nullptr ||
+      options->handshaker_service_url() == nullptr) {
     gpr_log(GPR_ERROR, kS2AHandshakerClientNullptrArguments);
     return TSI_INVALID_ARGUMENT;
   }
@@ -248,6 +250,12 @@ void s2a_handshaker_client_destroy(s2a_handshaker_client* client) {
     return;
   }
   delete client;
+}
+
+/** ------------------- Testing methods. -------------------------- **/
+
+grpc_byte_buffer* s2a_handshaker_client::get_send_buffer_for_testing() {
+  return send_buffer_;
 }
 
 }  // namespace experimental

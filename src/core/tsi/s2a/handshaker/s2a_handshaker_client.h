@@ -97,6 +97,9 @@ struct s2a_handshaker_client {
    *  no further handshaker requests will be scheduled with the S2A. **/
   void shutdown();
 
+  /** This method is exposed for testing purposes only. **/
+  grpc_byte_buffer* get_send_buffer_for_testing();
+
  private:
   /** This method makes a call to the S2A service. **/
   tsi_result make_grpc_call(bool is_start);

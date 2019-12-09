@@ -48,5 +48,21 @@ grpc_byte_buffer* s2a_get_serialized_session_req(s2a_SessionReq* request,
   return byte_buffer;
 }
 
+s2a_SessionReq* s2a_deserialize_session_req(upb_arena* arena, grpc_byte_buffer* buffer) {
+  GPR_ASSERT(arena != nullptr);
+  GPR_ASSERT(buffer != nullptr);
+  grpc_byte_buffer_reader reader;
+  GPR_ASSERT(grpc_byte_buffer_reader_init(&reader, buffer));
+  grpc_slice slice = grpc_byte_buffer_reader_readall(&reader);
+  size_t buf_size = GPR_SLICE_LENGTH(slice);
+  void* buf = upb_arena_malloc(arena, buf_size);
+  memcpy(buf, reinterpret_cast<const char*>(GPR_SLICE_START_PTR(slice)), buf_size);
+  s2a_SessionReq* request = s2a_SessionReq_parse(reinterpret_cast<char*>(buf), buf_size, arena);
+  GPR_ASSERT(request != nullptr);
+  grpc_slice_unref(slice);
+  grpc_byte_buffer_reader_destroy(&reader);
+  return request;
+}
+
 }  // namespace experimental
 }  // namespace grpc_core

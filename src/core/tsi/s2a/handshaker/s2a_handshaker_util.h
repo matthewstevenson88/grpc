@@ -20,6 +20,7 @@
 #define GRPC_CORE_TSI_S2A_HANDSHAKER_S2A_HANDSHAKER_UTIL_H
 
 #include <grpc/byte_buffer.h>
+#include <grpc/byte_buffer_reader.h>
 #include <grpc/support/port_platform.h>
 #include "src/proto/grpc/gcp/s2a.upb.h"
 
@@ -34,6 +35,11 @@ int32_t s2a_convert_ciphersuite_to_enum(uint16_t ciphersuite);
  *  grpc_byte_buffer that holds this buffer. **/
 grpc_byte_buffer* s2a_get_serialized_session_req(s2a_SessionReq* request,
                                                  upb_arena* arena);
+
+/** This method deserializes |buffer| and produces a SessionReq message that is
+ *  valid within |arena|. The caller must not pass in nullptr for |arena| or
+ *  |buffer|. **/
+s2a_SessionReq* s2a_deserialize_session_req(upb_arena* arena, grpc_byte_buffer* buffer);
 
 }  // namespace experimental
 }  // namespace grpc_core
