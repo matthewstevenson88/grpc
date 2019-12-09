@@ -774,6 +774,12 @@ static grpc_status_code s2a_key_update(uint16_t ciphersuite,
   if (status != GRPC_STATUS_OK) {
     return status;
   }
+  std::cout << "*************Advanced traffic secret" << std::endl;
+  for (size_t i = 0; i < half_connection->traffic_secret_size; i++) {
+    std::cout << static_cast<unsigned>(half_connection->traffic_secret[i]) << ",";
+  }
+  std::cout << "." << std::endl;
+
   status = derive_key(ciphersuite, half_connection->traffic_secret,
                       half_connection->traffic_secret_size, key_size,
                       key_buffer.data(), error_details);
