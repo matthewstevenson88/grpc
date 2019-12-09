@@ -77,6 +77,20 @@ constexpr char kS2AHeaderSizeMismatch[] =
     "The header size does not match the size of a TLS 1.3 record header.";
 constexpr char kS2AInvalidUnprotectedVec[] =
     "Ensure |unprotected_vec| is nullptr iff |unprotected_vec_size| = 0.";
+constexpr char kS2ATsiHandshakerNullptrArguments[] =
+    "There is an unexpected nullptr argument to |s2a_tsi_handshaker_create|.";
+constexpr char kS2ATsiHandshakerResultNullptrArguments[] =
+    "There is an unexpected nullptr argument to "
+    "|s2a_tsi_handshaker_result_create|.";
+constexpr char kS2ATsiHandshakerResultEmpty[] =
+    "The result field of |resp| is nullptr.";
+constexpr char kS2ATsiHandshakerResultInvalidPeerIdentity[] =
+    "The peer_identity field of |resp| is nullptr.";
+constexpr char kS2ATsiHandshakerResultInvalidSessionState[] =
+    "The session_state field of |resp| is nullptr.";
+constexpr char kS2ATsiHandshakerResultUnusedBytesNullptr[] =
+    "There is an unexpected nullptr argument to "
+    "|s2a_handshaker_result_get_unused_bytes|.";
 constexpr char kS2ARecordExceedMaxSize[] =
     "The TLS 1.3 payload exceeds the maximum size.";
 constexpr char kS2AHeaderIncorrectFormat[] =

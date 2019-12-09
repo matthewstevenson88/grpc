@@ -25,8 +25,6 @@
 #include "src/core/tsi/s2a/record_protocol/s2a_crypter_util.h"
 #include "src/core/tsi/s2a/s2a_constants.h"
 
-#include <iostream>
-
 /** The following vectors were generated using a different TLS 1.3
  *  implementation. The keys and nonces are derived from the traffic secret
  *  "kkkk...k", with the length determined by the ciphersuite. **/
@@ -237,7 +235,7 @@ void send_message(std::vector<uint8_t>& message, s2a_crypter* out_crypter,
   size_t max_record_overhead;
   char* error_details = nullptr;
   grpc_status_code max_overhead_status = s2a_max_record_overhead(
-      out_crypter, &max_record_overhead, &error_details);
+      *out_crypter, &max_record_overhead, &error_details);
   if (max_overhead_status != GRPC_STATUS_OK) {
     gpr_log(GPR_ERROR, "%s", error_details);
     gpr_free(error_details);
@@ -259,7 +257,7 @@ void send_message(std::vector<uint8_t>& message, s2a_crypter* out_crypter,
 
   size_t plaintext_allocated_size;
   grpc_status_code plaintext_status = s2a_max_plaintext_size(
-      in_crypter, record_size, &plaintext_allocated_size, &error_details);
+      *in_crypter, record_size, &plaintext_allocated_size, &error_details);
   if (plaintext_status != GRPC_STATUS_OK) {
     gpr_log(GPR_ERROR, "%s", error_details);
     gpr_free(error_details);
@@ -268,54 +266,13 @@ void send_message(std::vector<uint8_t>& message, s2a_crypter* out_crypter,
   GPR_ASSERT(error_details == nullptr);
   std::vector<uint8_t> plaintext(plaintext_allocated_size, 0);
   size_t plaintext_size;
-  s2a_decrypt_status decrypt_status =
+  S2ADecryptStatus decrypt_status =
       s2a_decrypt(in_crypter, record.data(), record_size, plaintext.data(),
                   plaintext.size(), &plaintext_size, &error_details);
-  GPR_ASSERT(decrypt_status == OK);
+  GPR_ASSERT(decrypt_status == S2ADecryptStatus::OK);
   GPR_ASSERT(error_details == nullptr);
 
   GPR_ASSERT(plaintext_size == message.size());
   plaintext.resize(plaintext_size);
   GPR_ASSERT(plaintext == message);
-}
-
-grpc_status_code create_random_crypter_pair(uint16_t ciphersuite,
-                                            s2a_crypter** crypter_one,
-                                            s2a_crypter** crypter_two,
-                                            grpc_channel* channel) {
-  if (ciphersuite == kTlsChacha20Poly1305Sha256) {
-    return GRPC_STATUS_UNIMPLEMENTED;
-  }
-
-  size_t traffic_secret_size;
-  switch (ciphersuite) {
-    case kTlsAes128GcmSha256:
-      traffic_secret_size = kSha256DigestLength;
-      break;
-    case kTlsAes256GcmSha384:
-      traffic_secret_size = kSha384DigestLength;
-      break;
-    case kTlsChacha20Poly1305Sha256:
-      traffic_secret_size = kSha256DigestLength;
-      break;
-    default:
-      return GRPC_STATUS_INVALID_ARGUMENT;
-  }
-  std::vector<uint8_t> traffic_secret(traffic_secret_size, 0);
-  GPR_ASSERT(traffic_secret.data() != nullptr);
-  random_array(traffic_secret.data(), traffic_secret_size);
-
-  char* error_details = nullptr;
-  grpc_status_code status_one = s2a_crypter_create(
-      /** tls_version **/ 0, ciphersuite, traffic_secret.data(),
-      traffic_secret_size, traffic_secret.data(), traffic_secret_size, channel,
-      crypter_one, &error_details);
-  GPR_ASSERT(status_one == GRPC_STATUS_OK);
-
-  grpc_status_code status_two = s2a_crypter_create(
-      /** tls_version **/ 0, ciphersuite, traffic_secret.data(),
-      traffic_secret_size, traffic_secret.data(), traffic_secret_size, channel,
-      crypter_two, &error_details);
-  GPR_ASSERT(status_two == GRPC_STATUS_OK);
-  return GRPC_STATUS_OK;
 }

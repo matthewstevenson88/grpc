@@ -104,7 +104,7 @@ std::vector<uint8_t> chacha_poly_traffic_secret = {
 
 /** The following vectors are the new traffic secret obtaing from "kkkk...k"
  *  after advancing once. **/
-//std::vector<uint8_t> aes_128_gcm_advanced_traffic_secret = {
+// TODO(mattstev): add.
 
 static grpc_status_code setup_crypter(uint16_t ciphersuite,
                                       grpc_channel* channel,
@@ -290,7 +290,7 @@ static void s2a_test_encrypt_record_bad_size(uint16_t ciphersuite) {
   std::vector<uint8_t> test_plaintext = {'1', '2', '3', '4', '5', '6'};
   size_t max_record_overhead;
   grpc_status_code overhead_status =
-      s2a_max_record_overhead(crypter, &max_record_overhead, &error_details);
+      s2a_max_record_overhead(*crypter, &max_record_overhead, &error_details);
   GPR_ASSERT(overhead_status == GRPC_STATUS_OK);
   size_t record_allocated_size =
       test_plaintext.size() - 2 + max_record_overhead;
@@ -342,7 +342,7 @@ static void s2a_test_encrypt_record_success(uint16_t ciphersuite) {
 
   size_t max_record_overhead;
   grpc_status_code overhead_status =
-      s2a_max_record_overhead(crypter, &max_record_overhead, &error_details);
+      s2a_max_record_overhead(*crypter, &max_record_overhead, &error_details);
   GPR_ASSERT(overhead_status == GRPC_STATUS_OK);
 
   std::vector<uint8_t> test_plaintext = {'1', '2', '3', '4', '5', '6'};
@@ -388,7 +388,7 @@ static void s2a_test_encrypt_three_records(uint16_t ciphersuite) {
 
   size_t max_record_overhead;
   grpc_status_code overhead_status =
-      s2a_max_record_overhead(crypter, &max_record_overhead, &error_details);
+      s2a_max_record_overhead(*crypter, &max_record_overhead, &error_details);
   GPR_ASSERT(overhead_status == GRPC_STATUS_OK);
 
   std::vector<uint8_t> test_plaintext_1 = {'1', '2', '3', '4', '5', '6'};
@@ -447,7 +447,7 @@ static void s2a_test_encrypt_empty_plaintext(uint16_t ciphersuite) {
 
   size_t max_record_overhead;
   grpc_status_code overhead_status =
-      s2a_max_record_overhead(crypter, &max_record_overhead, &error_details);
+      s2a_max_record_overhead(*crypter, &max_record_overhead, &error_details);
   GPR_ASSERT(overhead_status == GRPC_STATUS_OK);
 
   std::vector<uint8_t> test_plaintext = {};
@@ -512,7 +512,7 @@ static void s2a_test_decrypt_record_success(uint16_t ciphersuite) {
 
   size_t plaintext_allocated_size;
   grpc_status_code plaintext_status = s2a_max_plaintext_size(
-      crypter, record.size(), &plaintext_allocated_size, &error_details);
+      *crypter, record.size(), &plaintext_allocated_size, &error_details);
   if (plaintext_status != GRPC_STATUS_OK) {
     gpr_log(GPR_ERROR, "%s", error_details);
     gpr_free(error_details);
@@ -521,10 +521,10 @@ static void s2a_test_decrypt_record_success(uint16_t ciphersuite) {
   GPR_ASSERT(error_details == nullptr);
   size_t plaintext_size;
   std::vector<uint8_t> plaintext(plaintext_allocated_size, 0);
-  s2a_decrypt_status decrypt_status =
+  S2ADecryptStatus decrypt_status =
       s2a_decrypt(crypter, record.data(), record.size(), plaintext.data(),
                   plaintext.size(), &plaintext_size, &error_details);
-  GPR_ASSERT(decrypt_status == OK);
+  GPR_ASSERT(decrypt_status == S2ADecryptStatus::OK);
   GPR_ASSERT(error_details == nullptr);
   GPR_ASSERT(plaintext_size == 6);
   plaintext.resize(plaintext_size);
@@ -573,7 +573,7 @@ static void s2a_test_decrypt_large_record(uint16_t ciphersuite) {
   /** Attempt to decrypt the TLS record with oversized plaintext. **/
   size_t plaintext_allocated_size;
   grpc_status_code plaintext_status =
-      s2a_max_plaintext_size(crypter, oversize_record.size(),
+      s2a_max_plaintext_size(*crypter, oversize_record.size(),
                              &plaintext_allocated_size, &error_details);
   if (plaintext_status != GRPC_STATUS_OK) {
     gpr_log(GPR_ERROR, "%s", error_details);
@@ -583,10 +583,10 @@ static void s2a_test_decrypt_large_record(uint16_t ciphersuite) {
   GPR_ASSERT(error_details == nullptr);
   std::vector<uint8_t> plaintext(plaintext_allocated_size, 0);
   size_t plaintext_size;
-  s2a_decrypt_status decrypt_status = s2a_decrypt(
+  S2ADecryptStatus decrypt_status = s2a_decrypt(
       crypter, oversize_record.data(), oversize_record.size(), plaintext.data(),
       plaintext.size(), &plaintext_size, &error_details);
-  GPR_ASSERT(decrypt_status == ALERT_RECORD_OVERFLOW);
+  GPR_ASSERT(decrypt_status == S2ADecryptStatus::ALERT_RECORD_OVERFLOW);
   GPR_ASSERT(strcmp(error_details, kS2ARecordExceedMaxSize) == 0);
 
   // Cleanup.
@@ -666,7 +666,7 @@ static void s2a_test_decrypt_alert(uint16_t ciphersuite,
 
   size_t plaintext_allocated_size;
   grpc_status_code plaintext_status = s2a_max_plaintext_size(
-      crypter, record.size(), &plaintext_allocated_size, &error_details);
+      *crypter, record.size(), &plaintext_allocated_size, &error_details);
   if (plaintext_status != GRPC_STATUS_OK) {
     gpr_log(GPR_ERROR, "%s", error_details);
     gpr_free(error_details);
@@ -675,18 +675,18 @@ static void s2a_test_decrypt_alert(uint16_t ciphersuite,
   GPR_ASSERT(error_details == nullptr);
   size_t plaintext_size;
   std::vector<uint8_t> plaintext(plaintext_allocated_size, 0);
-  s2a_decrypt_status decrypt_status =
+  S2ADecryptStatus decrypt_status =
       s2a_decrypt(crypter, record.data(), record.size(), plaintext.data(),
                   plaintext.size(), &plaintext_size, &error_details);
   switch (alert_type) {
     case TlsAlertType::close_notify:
-      GPR_ASSERT(decrypt_status == ALERT_CLOSE_NOTIFY);
+      GPR_ASSERT(decrypt_status == S2ADecryptStatus::ALERT_CLOSE_NOTIFY);
       break;
     case TlsAlertType::other:
-      GPR_ASSERT(decrypt_status == ALERT_OTHER);
+      GPR_ASSERT(decrypt_status == S2ADecryptStatus::ALERT_OTHER);
       break;
     case TlsAlertType::small:
-      GPR_ASSERT(decrypt_status == INVALID_RECORD);
+      GPR_ASSERT(decrypt_status == S2ADecryptStatus::INVALID_RECORD);
       GPR_ASSERT(strcmp(error_details, kS2ARecordSmallAlert) == 0);
       gpr_free(error_details);
       break;

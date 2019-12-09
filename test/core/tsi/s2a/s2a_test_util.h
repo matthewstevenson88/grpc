@@ -79,11 +79,4 @@ bool check_record_empty_plaintext(uint16_t ciphersuite,
 void send_message(std::vector<uint8_t>& message, s2a_crypter* out_crypter,
                   s2a_crypter* in_crypter);
 
-/** This method populates |crypter_one| and |crypter_two| with compatible,
- *  random crypters that use |ciphersuite|. **/
-grpc_status_code create_random_crypter_pair(uint16_t ciphersuite,
-                                            s2a_crypter** crypter_one,
-                                            s2a_crypter** crypter_two,
-                                            grpc_channel* channel);
-
 #endif  //  GRPC_TEST_CORE_TSI_S2A_S2A_TEST_UTIL_H
