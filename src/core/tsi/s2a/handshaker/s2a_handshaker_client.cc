@@ -176,7 +176,7 @@ static void s2a_on_status_received(void* arg, grpc_error* error) {
             "details:|%s| error:|%s|",
             client, client->handshake_status_code(), status_details,
             grpc_error_string(error));
-    gpr_free(error_details);
+    gpr_free(status_details);
   }
   client->maybe_complete_tsi_next(/* receive_status_finished=*/true,
                                   /*pending_recv_message_result=*/nullptr);

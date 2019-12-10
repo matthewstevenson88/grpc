@@ -20,8 +20,10 @@
 
 #include <grpc/support/alloc.h>
 #include <grpc/support/log.h>
+#include "src/core/tsi/alts/handshaker/alts_tsi_utils.h"
 #include "src/core/tsi/s2a/handshaker/s2a_handshaker_client.h"
 #include "src/core/tsi/s2a/handshaker/s2a_handshaker_util.h"
+#include "src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.h"
 
 namespace grpc_core {
 namespace experimental {
@@ -30,9 +32,11 @@ namespace experimental {
  *  function of the |s2a_handshaker_client| struct. This method enables the S2A
  *  handshaker client to make a gRPC call to the S2A service. **/
 
+const size_t kHandshakerClientOpNum = 4;
+
 /** The implementation of |make_grpc_call| is nearly identical to that of its
  *  ALTS counterpart, the |make_grpc_call| method in alts_handshaker_client.cc.
- * **/
+ */
 tsi_result s2a_handshaker_client::make_grpc_call(bool is_start) {
   grpc_op ops[kHandshakerClientOpNum];
   memset(ops, 0, sizeof(ops));
@@ -41,7 +45,7 @@ tsi_result s2a_handshaker_client::make_grpc_call(bool is_start) {
     op->op = GRPC_OP_RECV_STATUS_ON_CLIENT;
     op->data.recv_status_on_client.trailing_metadata = nullptr;
     op->data.recv_status_on_client.status = &handshake_status_code_;
-    op->data.recv_status_on_client.status_details = &handshake_status_detailsi_;
+    op->data.recv_status_on_client.status_details = &handshake_status_details_;
     op->flags = 0;
     op->reserved = nullptr;
     op++;
@@ -180,7 +184,7 @@ void s2a_handshaker_client::handle_response(bool is_ok) {
                          /* result=*/nullptr);
     return;
   }
-  const s2a_SessionStatus* session_status = s2a_SessionResp_status(responce);
+  const s2a_SessionStatus* session_status = s2a_SessionResp_status(response);
   if (session_status == nullptr) {
     gpr_log(GPR_ERROR, "No status in the |SessionResp|.");
     handle_response_done(TSI_DATA_CORRUPTED, /* bytes_to_send=*/nullptr,
@@ -211,7 +215,7 @@ void s2a_handshaker_client::handle_response(bool is_ok) {
       return;
     }
     s2a_tsi_handshaker_result_set_unused_bytes(
-        result, recv_bytes_, s2a_SessionResp_bytes_consumed(response));
+        result, &recv_bytes_, static_cast<size_t>(s2a_SessionResp_bytes_consumed(response)));
   }
   grpc_status_code code =
       static_cast<grpc_status_code>(s2a_SessionStatus_code(session_status));

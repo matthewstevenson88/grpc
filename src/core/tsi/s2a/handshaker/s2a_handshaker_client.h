@@ -121,7 +121,7 @@ struct s2a_handshaker_client {
   /** This method populates a |s2a_recv_message_result| instance using the
    *  arguments to the method, and passes this instance to the
    *  |maybe_complete_tsi_next| method. This method should be called whenever
-   * the |handle_response| method is ready to return. **/
+   *  the |handle_response| method is ready to return. **/
   void handle_response_done(tsi_result status, const uint8_t* bytes_to_send,
                             size_t bytes_to_send_size,
                             tsi_handshaker_result* result);
