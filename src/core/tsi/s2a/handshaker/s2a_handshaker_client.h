@@ -68,7 +68,7 @@ struct s2a_handshaker_client {
                         const grpc_slice& target_name,
                         grpc_iomgr_cb_func grpc_cb,
                         tsi_handshaker_on_next_done_cb cb, void* user_data,
-                        bool is_client);
+                        bool is_client, bool is_test);
 
   ~s2a_handshaker_client();
 
@@ -111,8 +111,12 @@ struct s2a_handshaker_client {
       bool receive_status_finished,
       s2a_recv_message_result* pending_recv_message_result);
 
-  /** This method is exposed for testing purposes only. **/
-  grpc_byte_buffer* get_send_buffer_for_testing();
+  /** These methods are exposed for testing purposes only. **/
+  void set_grpc_caller_for_testing(s2a_grpc_caller caller);
+  grpc_metadata_array* initial_metadata_for_testing();
+  grpc_byte_buffer* recv_buffer_addr_for_testing();
+  grpc_byte_buffer* send_buffer_for_testing();
+  grpc_closure* closure_for_testing();
 
  private:
   /** This method makes a call to the S2A service. **/
@@ -195,6 +199,9 @@ struct s2a_handshaker_client {
   /** If this field is not nullptr, then it contains arguments needed to
    *  complete a TSI next callback. **/
   s2a_recv_message_result* pending_recv_message_result_;
+  /** This variable should be set to true iff the S2A handshaker client instance
+   *  is instantiated as part of a test. **/
+  bool is_test_ = true;
 };
 
 /** This method populates |client| with an instance of the
@@ -225,7 +232,7 @@ tsi_result s2a_handshaker_client_create(
     grpc_pollset_set* interested_parties, grpc_s2a_credentials_options* options,
     const grpc_slice& target_name, grpc_iomgr_cb_func grpc_cb,
     tsi_handshaker_on_next_done_cb cb, void* user_data, bool is_client,
-    s2a_handshaker_client** client);
+    bool is_test, s2a_handshaker_client** client);
 
 /** This method destroys an s2a_handshaker_client. The caller must call this
  *  method after any use of s2a_handshaker_client_create, even if it outputs a

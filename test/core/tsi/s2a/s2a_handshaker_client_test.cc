@@ -33,10 +33,6 @@ using ::experimental::grpc_s2a_credentials_options_destroy;
 namespace grpc_core {
 namespace experimental {
 
-// TODO(mattstev): add tests analogous to those in
-// alts_handshaker_client_test.cc. This is blocked by the implementation of
-// |make_grpc_call| and |handle_response|.
-
 constexpr char kS2AHandshakerClientTestTargetName[] = "target_name";
 
 struct s2a_tsi_handshaker_config {
@@ -95,7 +91,8 @@ static s2a_handshaker_client_config* s2a_handshaker_client_config_setup(
       grpc_slice_from_static_string(kS2AHandshakerClientTestTargetName),
       /* grpc_cb=*/nullptr,
       /* cb=*/nullptr,
-      /* user_data=*/nullptr, is_client, &(config->client));
+      /* user_data=*/nullptr, is_client,
+      /* is_test=*/true, &(config->client));
   GPR_ASSERT(result == TSI_OK);
   return config;
 }
@@ -155,7 +152,7 @@ static void s2a_handshaker_client_client_start_test() {
   // |make_grpc_call| has been implemented.
   GPR_ASSERT(result == TSI_UNIMPLEMENTED);
 
-  grpc_byte_buffer* send_buffer = config->client->get_send_buffer_for_testing();
+  grpc_byte_buffer* send_buffer = config->client->send_buffer_for_testing();
   upb::Arena arena;
   s2a_SessionReq* session_request =
       s2a_deserialize_session_req(arena.ptr(), send_buffer);
@@ -212,7 +209,7 @@ static void s2a_handshaker_client_server_start_test() {
   // |make_grpc_call| has been implemented.
   GPR_ASSERT(result == TSI_UNIMPLEMENTED);
 
-  grpc_byte_buffer* send_buffer = config->client->get_send_buffer_for_testing();
+  grpc_byte_buffer* send_buffer = config->client->send_buffer_for_testing();
   upb::Arena arena;
   s2a_SessionReq* session_request =
       s2a_deserialize_session_req(arena.ptr(), send_buffer);
@@ -259,7 +256,7 @@ static void s2a_handshaker_client_next_test() {
   // |make_grpc_call| has been implemented.
   GPR_ASSERT(result == TSI_UNIMPLEMENTED);
 
-  grpc_byte_buffer* send_buffer = config->client->get_send_buffer_for_testing();
+  grpc_byte_buffer* send_buffer = config->client->send_buffer_for_testing();
   upb::Arena arena;
   s2a_SessionReq* session_request =
       s2a_deserialize_session_req(arena.ptr(), send_buffer);

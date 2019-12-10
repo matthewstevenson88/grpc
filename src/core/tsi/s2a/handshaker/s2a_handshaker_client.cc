@@ -203,6 +203,7 @@ s2a_handshaker_client::s2a_handshaker_client(
   recv_bytes_ = grpc_empty_slice();
   grpc_metadata_array_init(&recv_initial_metadata_);
   is_client_ = is_client;
+  is_test_ = is_test;
   buffer_size_ = kS2AInitialBufferSize;
   buffer_ = static_cast<uint8_t*>(gpr_zalloc(buffer_size_));
   handshake_status_details_ = grpc_empty_slice();
@@ -228,7 +229,7 @@ tsi_result s2a_handshaker_client_create(
     grpc_pollset_set* interested_parties, grpc_s2a_credentials_options* options,
     const grpc_slice& target_name, grpc_iomgr_cb_func grpc_cb,
     tsi_handshaker_on_next_done_cb cb, void* user_data, bool is_client,
-    s2a_handshaker_client** client) {
+    bool is_test, s2a_handshaker_client** client) {
   if (channel == nullptr || client == nullptr || options == nullptr ||
       options->handshaker_service_url() == nullptr) {
     gpr_log(GPR_ERROR, kS2AHandshakerClientNullptrArguments);
@@ -236,7 +237,7 @@ tsi_result s2a_handshaker_client_create(
   }
   *client = new s2a_handshaker_client(handshaker, channel, interested_parties,
                                       options, target_name, grpc_cb, cb,
-                                      user_data, is_client);
+                                      user_data, is_client, is_test);
   return TSI_OK;
 }
 
@@ -284,8 +285,26 @@ void s2a_handshaker_client_destroy(s2a_handshaker_client* client) {
 
 /** ------------------- Testing methods. -------------------------- **/
 
-grpc_byte_buffer* s2a_handshaker_client::get_send_buffer_for_testing() {
-  return send_buffer_;
+void set_grpc_caller_for_testing(s2a_grpc_caller caller) {
+  if (is_test_) {
+    grpc_caller_ = caller;
+  }
+}
+
+grpc_metadata_array* s2a_handshaker_client::initial_metadata_for_testing() {
+  return is_test_ ? &recv_initial_metadata_ : nullptr;
+}
+
+grpc_byte_buffer* s2a_handshaker_client::recv_buffer_for_testing() {
+  return is_test_ ? recv_buffer_ : nullptr;
+}
+
+grpc_byte_buffer* s2a_handshaker_client::send_buffer_for_testing() {
+  return is_test_ ? send_buffer_ : nullptr;
+}
+
+grpc_closure* s2a_handshaker_client::closure_for_testing() {
+  return is_test_ ? &on_handshaker_service_resp_recv_ : nullptr;
 }
 
 }  // namespace experimental
