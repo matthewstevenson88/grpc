@@ -99,6 +99,18 @@ struct s2a_handshaker_client {
    *  no further handshaker requests will be scheduled with the S2A. **/
   void shutdown();
 
+  /** These methods are exposed for use in the |on_status_received| callback
+   *  function. **/
+  grpc_status_code handshake_status_code() { return handshake_status_code_; }
+
+  const grpc_slice handshake_status_details() {
+    return handshake_status_details_;
+  }
+
+  void maybe_complete_tsi_next(
+      bool receive_status_finished,
+      s2a_recv_message_result* pending_recv_message_result);
+
   /** This method is exposed for testing purposes only. **/
   grpc_byte_buffer* get_send_buffer_for_testing();
 
@@ -106,9 +118,13 @@ struct s2a_handshaker_client {
   /** This method makes a call to the S2A service. **/
   tsi_result make_grpc_call(bool is_start);
 
-  void maybe_complete_tsi_next(
-      bool receive_status_finished,
-      s2a_recv_message_result* pending_recv_message_result);
+  /** This method populates a |s2a_recv_message_result| instance using the
+   *  arguments to the method, and passes this instance to the
+   *  |maybe_complete_tsi_next| method. This method should be called whenever
+   * the |handle_response| method is ready to return. **/
+  void handle_response_done(tsi_result status, const uint8_t* bytes_to_send,
+                            size_t bytes_to_send_size,
+                            tsi_handshaker_result* result);
 
   /** This method parses a response from the S2A service. **/
   void handle_response(bool is_ok);
@@ -129,7 +145,7 @@ struct s2a_handshaker_client {
    *  another ref is held by the pending RECEIVE_STATUS_ON_CLIENT op. **/
   gpr_refcount refs_;
   /** The S2A TSI handshaker that instantiates this S2A handshaker client. **/
-  s2a_tsi_handshaker* handshaker_;
+  s2a_tsi_handshaker* handshaker_ = nullptr;
   grpc_call* call_;
   s2a_grpc_caller grpc_caller_;
   /** A gRPC closure to be scheduled when the response from handshaker service

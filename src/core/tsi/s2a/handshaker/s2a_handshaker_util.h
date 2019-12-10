@@ -42,6 +42,12 @@ grpc_byte_buffer* s2a_get_serialized_session_req(s2a_SessionReq* request,
 s2a_SessionReq* s2a_deserialize_session_req(upb_arena* arena,
                                             grpc_byte_buffer* buffer);
 
+/** This method deserializes |buffer| and produces a SessionResp message that is
+ *  valid within |arena|. The caller must not pass in nullptr for |arena| or
+ *  |buffer|. **/
+s2a_SessionResp* s2a_deserialize_session_resp(upb_arena* arena,
+                                              grpc_byte_buffer* buffer);
+
 }  // namespace experimental
 }  // namespace grpc_core
 

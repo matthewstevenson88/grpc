@@ -167,8 +167,20 @@ tsi_result s2a_handshaker_client::next(grpc_slice* bytes_received) {
 /** ------------------- Create, shutdown, & destroy methods. ------------- **/
 
 static void s2a_on_status_received(void* arg, grpc_error* error) {
-  // TODO(mattstev): implement.
-  return;
+  s2a_handshaker_client* client = static_cast<s2a_handshaker_client*>(arg);
+  if (client->handshake_status_code() != GRPC_STATUS_OK) {
+    char* status_details =
+        grpc_slice_to_c_string(client->handshake_status_details());
+    gpr_log(GPR_INFO,
+            "s2a_handshaker_client:%p on_status_received status:%d "
+            "details:|%s| error:|%s|",
+            client, client->handshake_status_code(), status_details,
+            grpc_error_string(error));
+    gpr_free(error_details);
+  }
+  client->maybe_complete_tsi_next(/* receive_status_finished=*/true,
+                                  /*pending_recv_message_result=*/nullptr);
+  s2a_handshaker_client_destroy(client);
 }
 
 s2a_handshaker_client::s2a_handshaker_client(
