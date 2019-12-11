@@ -111,12 +111,18 @@ struct s2a_handshaker_client {
       bool receive_status_finished,
       s2a_recv_message_result* pending_recv_message_result);
 
-  /** These methods are exposed for testing purposes only. **/
+  void unref();
+
+  /** These methods are exposed for testing purposes only. If |is_test_| is
+   *  false, then these methods do nothing or return nullptr. **/
   void set_grpc_caller_for_testing(s2a_grpc_caller caller);
   grpc_metadata_array* initial_metadata_for_testing();
-  grpc_byte_buffer* recv_buffer_addr_for_testing();
+  grpc_byte_buffer** recv_buffer_addr_for_testing();
   grpc_byte_buffer* send_buffer_for_testing();
   grpc_closure* closure_for_testing();
+  void on_status_received_for_testing(grpc_status_code status,
+                                      grpc_error* error);
+  void set_no_calls_for_testing(bool no_calls);
 
  private:
   /** This method makes a call to the S2A service. **/
@@ -147,19 +153,19 @@ struct s2a_handshaker_client {
 
   /** One ref is held by the entity that created this handshaker_client, and
    *  another ref is held by the pending RECEIVE_STATUS_ON_CLIENT op. **/
-  gpr_refcount refs_;
+  gpr_refcount* refs_ = nullptr;
   /** The S2A TSI handshaker that instantiates this S2A handshaker client. **/
   s2a_tsi_handshaker* handshaker_ = nullptr;
-  grpc_call* call_;
-  s2a_grpc_caller grpc_caller_;
+  grpc_call* call_ = nullptr;
+  s2a_grpc_caller grpc_caller_ = nullptr;
   /** A gRPC closure to be scheduled when the response from handshaker service
    *  is received. It will be initialized with the injected grpc RPC callback.
    **/
   grpc_closure on_handshaker_service_resp_recv_;
   /** Buffers containing information to be sent (or received) to (or from) the
    *  handshaker service. **/
-  grpc_byte_buffer* send_buffer_;
-  grpc_byte_buffer* recv_buffer_;
+  grpc_byte_buffer* send_buffer_ = nullptr;
+  grpc_byte_buffer* recv_buffer_ = nullptr;
   /** This status indicates to the |handle_response_done| method whether or not
    *  an error occurred during a previous portion of the handshake. **/
   grpc_status_code status_;
@@ -167,7 +173,7 @@ struct s2a_handshaker_client {
   grpc_metadata_array recv_initial_metadata_;
   /** A callback function provided by an application to be invoked when response
    *  is received from handshaker service. **/
-  tsi_handshaker_on_next_done_cb cb_;
+  tsi_handshaker_on_next_done_cb cb_ = nullptr;
   void* user_data_ = nullptr;
   /** The S2A credential options passed in from the caller. **/
   grpc_s2a_credentials_options* options_ = nullptr;
@@ -195,13 +201,17 @@ struct s2a_handshaker_client {
   gpr_mu mu_;
   /** This status indicates whether the handshaker call's RECV_STATUS_ON_CLIENT
    *  op is done. **/
-  bool receive_status_finished_;
+  bool receive_status_finished_ = false;
   /** If this field is not nullptr, then it contains arguments needed to
    *  complete a TSI next callback. **/
-  s2a_recv_message_result* pending_recv_message_result_;
+  s2a_recv_message_result* pending_recv_message_result_ = nullptr;
   /** This variable should be set to true iff the S2A handshaker client instance
    *  is instantiated as part of a test. **/
-  bool is_test_ = true;
+  bool is_test_ = false;
+  /** If this variable is set to true, then the method |make_grpc_call| will not
+   *  be called when handshake messages are being constructed. This enables unit
+   *  testing for the methods that construct these handshake messages. **/
+  bool no_calls_for_testing_ = false;
 };
 
 /** This method populates |client| with an instance of the
@@ -238,6 +248,10 @@ tsi_result s2a_handshaker_client_create(
  *  method after any use of s2a_handshaker_client_create, even if it outputs a
  *  status other than TSI_OK.  **/
 void s2a_handshaker_client_destroy(s2a_handshaker_client* client);
+
+/** This method is exposed for testing purposes only. **/
+void s2a_handshaker_client_on_status_received_for_testing(
+    s2a_handshaker_client* client, grpc_status_code status, grpc_error* error);
 
 }  // namespace experimental
 }  // namespace grpc_core

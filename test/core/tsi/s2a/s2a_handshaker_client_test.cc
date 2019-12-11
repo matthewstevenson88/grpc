@@ -94,6 +94,7 @@ static s2a_handshaker_client_config* s2a_handshaker_client_config_setup(
       /* user_data=*/nullptr, is_client,
       /* is_test=*/true, &(config->client));
   GPR_ASSERT(result == TSI_OK);
+  config->client->set_no_calls_for_testing(/* no_calls=*/true);
   return config;
 }
 
@@ -121,7 +122,8 @@ static void s2a_handshaker_client_bad_options_test() {
       /* grpc_cb=*/nullptr,
       /* cb=*/nullptr,
       /* user_data=*/nullptr,
-      /* is_client=*/true, &client);
+      /* is_client=*/true,
+      /* is_test=*/true, &client);
   GPR_ASSERT(result == TSI_INVALID_ARGUMENT);
   GPR_ASSERT(client == nullptr);
 
@@ -143,14 +145,7 @@ static void s2a_handshaker_client_create_and_destroy_test() {
 static void s2a_handshaker_client_client_start_test() {
   s2a_handshaker_client_config* config =
       s2a_handshaker_client_config_setup(/* is_client=*/true);
-  tsi_result result = config->client->client_start();
-  /** The |result| should be TSI_UNIMPLEMENTED because the |make_grpc_call| API
-   *  currently unimplemented. In order to check that |client_start| was
-   *  successful, we verify that the |send_buffer_| field of |config->client| is
-   *  correct. **/
-  // TODO(mattstev): change the check to |result == TSI_OK| once
-  // |make_grpc_call| has been implemented.
-  GPR_ASSERT(result == TSI_UNIMPLEMENTED);
+  GPR_ASSERT(config->client->client_start() == TSI_OK);
 
   grpc_byte_buffer* send_buffer = config->client->send_buffer_for_testing();
   upb::Arena arena;
@@ -203,11 +198,8 @@ static void s2a_handshaker_client_server_start_test() {
   s2a_handshaker_client_config* config =
       s2a_handshaker_client_config_setup(/* is_client=*/false);
   grpc_slice bytes_received = grpc_slice_from_static_string("bytes_received");
-  tsi_result result =
-      config->client->server_start(kTlsAes128GcmSha256, &bytes_received);
-  // TODO(mattstev): change the check to |result == TSI_OK| once
-  // |make_grpc_call| has been implemented.
-  GPR_ASSERT(result == TSI_UNIMPLEMENTED);
+  GPR_ASSERT(config->client->server_start(kTlsAes128GcmSha256,
+                                          &bytes_received) == TSI_OK);
 
   grpc_byte_buffer* send_buffer = config->client->send_buffer_for_testing();
   upb::Arena arena;
@@ -251,10 +243,7 @@ static void s2a_handshaker_client_next_test() {
   s2a_handshaker_client_config* config =
       s2a_handshaker_client_config_setup(/* is_client=*/true);
   grpc_slice bytes_received = grpc_slice_from_static_string("bytes_received");
-  tsi_result result = config->client->next(&bytes_received);
-  // TODO(mattstev): change the check to |result == TSI_OK| once
-  // |make_grpc_call| has been implemented.
-  GPR_ASSERT(result == TSI_UNIMPLEMENTED);
+  GPR_ASSERT(config->client->next(&bytes_received) == TSI_OK);
 
   grpc_byte_buffer* send_buffer = config->client->send_buffer_for_testing();
   upb::Arena arena;

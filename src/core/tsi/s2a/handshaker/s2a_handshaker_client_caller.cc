@@ -50,7 +50,7 @@ tsi_result s2a_handshaker_client::make_grpc_call(bool is_start) {
     op->reserved = nullptr;
     op++;
     GPR_ASSERT(op - ops <= kHandshakerClientOpNum);
-    gpr_ref(&refs_);
+    gpr_ref(refs_);
     GPR_ASSERT(grpc_caller_ != nullptr);
     grpc_call_error call_error = grpc_caller_(
         call_, ops, static_cast<size_t>(op - ops), &on_status_received_);
@@ -89,7 +89,7 @@ tsi_result s2a_handshaker_client::make_grpc_call(bool is_start) {
 void s2a_handshaker_client::maybe_complete_tsi_next(
     bool receive_status_finished,
     s2a_recv_message_result* pending_recv_message_result) {
-  s2a_recv_message_result* r;
+  s2a_recv_message_result* r = nullptr;
   {
     grpc_core::MutexLock lock(&mu_);
     receive_status_finished_ |= receive_status_finished;
@@ -100,15 +100,17 @@ void s2a_handshaker_client::maybe_complete_tsi_next(
     if (pending_recv_message_result_ == nullptr) {
       return;
     }
-    const bool have_final_result =
-        pending_recv_message_result_->result != nullptr ||
-        pending_recv_message_result_->status != TSI_OK;
+    bool have_final_result =
+        (pending_recv_message_result_->result != nullptr) ||
+        (pending_recv_message_result_->status != TSI_OK);
     if (have_final_result && !receive_status_finished_) {
       return;
     }
     r = pending_recv_message_result_;
     pending_recv_message_result_ = nullptr;
   }
+  GPR_ASSERT(cb_ != nullptr);
+  GPR_ASSERT(r != nullptr);
   cb_(r->status, user_data_, r->bytes_to_send, r->bytes_to_send_size,
       r->result);
   gpr_free(r);
@@ -215,7 +217,8 @@ void s2a_handshaker_client::handle_response(bool is_ok) {
       return;
     }
     s2a_tsi_handshaker_result_set_unused_bytes(
-        result, &recv_bytes_, static_cast<size_t>(s2a_SessionResp_bytes_consumed(response)));
+        result, &recv_bytes_,
+        static_cast<size_t>(s2a_SessionResp_bytes_consumed(response)));
   }
   grpc_status_code code =
       static_cast<grpc_status_code>(s2a_SessionStatus_code(session_status));

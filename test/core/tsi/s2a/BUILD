@@ -78,3 +78,15 @@ grpc_cc_test(
     ],
 )
 
+grpc_cc_test(
+    name = "s2a_handshaker_client_caller_test",
+    srcs = ["s2a_handshaker_client_caller_test.cc"],
+    language = "C++",
+    deps = [
+        "//:s2a_constants",
+        ":s2a_test_util",
+        "//:gpr",
+        "//:grpc",
+        "//:tsi",
+    ],
+)
