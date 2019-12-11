@@ -103,7 +103,7 @@ static grpc_status_code advance_secret(uint16_t ciphersuite,
     return hash_function_status;
   }
 
-  const uint8_t suffix[] = "\x11tls13 traffic upd\x00";
+  static const uint8_t suffix[] = "\x11tls13 traffic upd\x00";
   const size_t suffix_size = 19;
   uint8_t label[2 + suffix_size];
   label[0] = traffic_secret_size >> 8;
@@ -148,7 +148,7 @@ static grpc_status_code derive_key(uint16_t ciphersuite, uint8_t* secret,
                                    size_t secret_size, size_t output_size,
                                    uint8_t* output, char** error_details) {
   GPR_ASSERT(error_details != nullptr);
-  uint8_t key_suffix[] = "\x09tls13 key\x00";
+  static const uint8_t key_suffix[] = "\x09tls13 key\x00";
   size_t suffix_size = sizeof(key_suffix) - 1;
   return derive_secret(ciphersuite, key_suffix, suffix_size, secret,
                        secret_size, output_size, output, error_details);
@@ -160,7 +160,7 @@ static grpc_status_code derive_nonce(uint16_t ciphersuite, uint8_t* secret,
                                      size_t secret_size, size_t output_size,
                                      uint8_t* output, char** error_details) {
   GPR_ASSERT(error_details != nullptr);
-  uint8_t nonce_suffix[] = "\x08tls13 iv\x00";
+  static const uint8_t nonce_suffix[] = "\x08tls13 iv\x00";
   size_t suffix_size = sizeof(nonce_suffix) - 1;
   return derive_secret(ciphersuite, nonce_suffix, suffix_size, secret,
                        secret_size, output_size, output, error_details);
@@ -188,7 +188,7 @@ static grpc_status_code assign_aead_crypter(uint16_t ciphersuite, uint8_t* key,
     case kTlsAes256GcmSha384:
       aead_crypter_status = gsec_aes_gcm_aead_crypter_create(
           key, key_size, nonce_size, tag_size,
-          /* rekey=*/false, aead_crypter, error_details);
+          /*rekey=*/false, aead_crypter, error_details);
       break;
     case kTlsChacha20Poly1305Sha256:
       aead_crypter_status = gsec_chacha_poly_aead_crypter_create(
@@ -325,15 +325,15 @@ grpc_status_code s2a_crypter_create(
   }
 
   grpc_status_code in_crypter_status = assign_s2a_crypter(
-      /* in=*/true, in_traffic_secret, in_traffic_secret_size, tag_size,
-      /* sequence=*/0, crypter, error_details);
+      /*in=*/true, in_traffic_secret, in_traffic_secret_size, tag_size,
+      /*sequence=*/0, crypter, error_details);
   if (in_crypter_status != GRPC_STATUS_OK) {
     return in_crypter_status;
   }
 
   grpc_status_code out_crypter_status = assign_s2a_crypter(
-      /* in=*/false, out_traffic_secret, out_traffic_secret_size, tag_size,
-      /* sequence=*/0, crypter, error_details);
+      /*in=*/false, out_traffic_secret, out_traffic_secret_size, tag_size,
+      /*sequence=*/0, crypter, error_details);
   if (out_crypter_status != GRPC_STATUS_OK) {
     return out_crypter_status;
   }
@@ -471,7 +471,7 @@ grpc_status_code s2a_max_record_overhead(const s2a_crypter& crypter,
   if (status != GRPC_STATUS_OK) {
     return status;
   }
-  *max_record_overhead = SSL3_RT_HEADER_LENGTH + tag_size + /* record type=*/1;
+  *max_record_overhead = SSL3_RT_HEADER_LENGTH + tag_size + /*record type=*/1;
   return GRPC_STATUS_OK;
 }
 
@@ -597,7 +597,7 @@ grpc_status_code s2a_write_tls13_record(
 
   grpc_status_code encrypt_status = gsec_aead_crypter_encrypt_iovec(
       crypter->out_aead_crypter, nonce, nonce_size, &aad_vec,
-      /* aad_vec length=*/1, data_for_processing_vec, unprotected_vec_size + 1,
+      /*aad_vec_length=*/1, data_for_processing_vec, unprotected_vec_size + 1,
       ciphertext, &ciphertext_and_tag_size, error_details);
   gpr_free(nonce);
 
@@ -624,7 +624,7 @@ grpc_status_code s2a_encrypt(s2a_crypter* crypter, uint8_t* plaintext,
   iovec plaintext_vec = {reinterpret_cast<void*>(plaintext), plaintext_size};
   iovec record_vec = {reinterpret_cast<void*>(record), record_allocated_size};
   return s2a_write_tls13_record(crypter, SSL3_RT_APPLICATION_DATA,
-                                &plaintext_vec, /* plaintext_vec length=*/1,
+                                &plaintext_vec, /*plaintext_vec_length=*/1,
                                 record_vec, record_size, error_details);
 }
 
@@ -672,7 +672,7 @@ S2ADecryptStatus s2a_decrypt_payload(s2a_crypter* crypter, iovec& record_header,
   }
   size_t expected_plaintext_and_record_byte_size = payload_size - tag_size;
   GPR_ASSERT(expected_plaintext_and_record_byte_size <=
-             SSL3_RT_MAX_PLAIN_LENGTH + /* record byte=*/1);
+             SSL3_RT_MAX_PLAIN_LENGTH + /*record byte=*/1);
 
   uint8_t sequence[kTlsSequenceSize];
   sequence_to_bytes(crypter->in_connection, sequence);
@@ -680,7 +680,7 @@ S2ADecryptStatus s2a_decrypt_payload(s2a_crypter* crypter, iovec& record_header,
   uint8_t* nonce = s2a_nonce(crypter, sequence, kTlsSequenceSize, &nonce_size);
   grpc_status_code decrypt_status = gsec_aead_crypter_decrypt_iovec(
       crypter->in_aead_crypter, nonce, nonce_size, &record_header,
-      /* aad_vec length=*/1, protected_vec, protected_vec_size, unprotected_vec,
+      /*aad_vec_length=*/1, protected_vec, protected_vec_size, unprotected_vec,
       bytes_written, error_details);
 
   gpr_free(nonce);
@@ -911,6 +911,6 @@ S2ADecryptStatus s2a_decrypt(s2a_crypter* crypter, uint8_t* record,
   iovec payload_vec = {reinterpret_cast<void*>(record + SSL3_RT_HEADER_LENGTH),
                        record_size - SSL3_RT_HEADER_LENGTH};
   return s2a_decrypt_record(crypter, record_header, &payload_vec,
-                            /* payload_vec length=*/1, plaintext_vec,
+                            /*payload_vec_length=*/1, plaintext_vec,
                             plaintext_size, error_details);
 }
