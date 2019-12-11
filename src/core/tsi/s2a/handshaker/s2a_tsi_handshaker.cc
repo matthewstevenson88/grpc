@@ -80,6 +80,86 @@ typedef struct s2a_tsi_handshaker_result {
   bool is_client;
 } s2a_tsi_handshaker_result;
 
+struct s2a_tsi_handshaker_continue_handshaker_next_args {
+  s2a_tsi_handshaker* handshaker;
+  std::unique_ptr<uint8_t> received_bytes;
+  size_t received_bytes_size;
+  tsi_handshaker_on_next_done_cb cb;
+  void* user_data;
+  grpc_closure closure;
+};
+
+static tsi_result s2a_tsi_handshaker_continue_handshaker_next(
+    alts_tsi_handshaker* handshaker, const uint8_t* received_bytes,
+    size_t received_bytes_size, tsi_handshaker_on_next_done_cb cb,
+    void* user_data) {
+  if (!handshaker->has_created_handshaker_client) {
+    s2a_handshaker_client* client = nullptr;
+    char* error_details = nullptr;
+    // TODO(mattstev): what to do with |on_handshaker_service_resp_recv|
+    tsi_result client_create_result = s2a_handshaker_client_create(
+        handshaker, handshaker->channel, handshaker->handshaker_service_url,
+        handshaker->interested_parties, handshaker->options,
+        handshaker->target_name, on_handshaker_service_resp_recv, cb, user_data,
+        handshaker->is_client, &client, &error_details);
+    if (client == nullptr) {
+      gpr_log(GPR_ERROR, "Failed to create S2A handshaker client:%s", error_details);
+      gpr_free(error_details);
+      return TSI_FAILED_PRECONDITION;
+    }
+    GPR_ASSERT(client_create_result == TSI_OK);
+    GPR_ASSERT(error_details == nullptr);
+    {
+      grpc_core::MutexLock lock(&handshaker->mu);
+      GPR_ASSERT(handshaker->client == nullptr);
+      handshaker->client = client;
+      if (handshaker->shutdown) {
+        gpr_log(GPR_ERROR, "TSI handshake shutdown.");
+        return TSI_HANDSHAKE_SHUTDOWN;
+      }
+    }
+    handshaker->has_created_handshaker_client = true;
+  }
+  // TODO(mattstev): this if.
+  if (handshaker->channel == nullptr &&
+      handshaker->client_vtable_for_testing == nullptr) {
+    GPR_ASSERT(grpc_cq_begin_op(grpc_alts_get_shared_resource_dedicated()->cq,
+                                handshaker->client));
+  }
+  grpc_slice slice = (received_bytes == nullptr || received_bytes_size == 0)
+                         ? grpc_empty_slice()
+                         : grpc_slice_from_copied_buffer(
+                               reinterpret_cast<const char*>(received_bytes),
+                               received_bytes_size);
+  tsi_result ok = TSI_OK;
+  if (!handshaker->has_sent_start_message) {
+    handshaker->has_sent_start_message = true;
+    ok = handshaker->is_client
+             ? s2a_handshaker_client_start_client(handshaker->client)
+             : s2a_handshaker_client_start_server(handshaker->client, &slice);
+  } else {
+    ok = s2a_handshaker_client_next(handshaker->client, &slice);
+  }
+  grpc_slice_unref_internal(slice);
+  return ok;
+}
+
+static void s2a_tsi_handshaker_create_channel(void* arg, grpc_error* unused_error) {
+  s2a_tsi_handshaker_continue_handshaker_next_args* next_args = static_cast<s2a_tsi_handshaker_continue_handshaker_next_args*>(arg);
+  s2a_tsi_handshaker* handshaker = next_args->handshaker;
+  GPR_ASSERT(handshaker->channel == nullptr);
+  handshaker->channel = grpc_insecure_channel_create(next_args->handshaker->handshaker_service_url, nullptr, nullptr);
+  tsi_result continue_next_result =
+      s2a_tsi_handshaker_continue_handshaker_next(
+          handshaker, next_args->received_bytes.get(),
+          next_args->received_bytes_size, next_args->cb, next_args->user_data);
+  if (continue_next_result != TSI_OK) {
+    next_args->cb(continue_next_result, next_args->user_data, nullptr, 0,
+                  nullptr);
+  }
+  delete next_args;
+}
+
 static tsi_result handshaker_next(
     tsi_handshaker* self, const unsigned char* received_bytes,
     size_t received_bytes_size, const unsigned char** /** bytes_to_send **/,
@@ -103,19 +183,14 @@ static tsi_result handshaker_next(
     args->received_bytes = nullptr;
     args->received_bytes_size = received_bytes_size;
     if (received_bytes_size > 0) {
-      args->received_bytes = std::unique_ptr<unsigned char>(
-          static_cast<unsigned char*>(gpr_zalloc(received_bytes_size)));
+      args->received_bytes = std::unique_ptr<uint8_t>(
+          static_cast<uint8_t*>(gpr_zalloc(received_bytes_size)));
       memcpy(args->received_bytes.get(), received_bytes, received_bytes_size);
     }
     args->cb = cb;
     args->user_data = user_data;
     GRPC_CLOSURE_INIT(&args->closure, s2a_tsi_handshaker_create_channel, args,
                       grpc_schedule_on_exec_ctx);
-    // We continue this handshaker_next call at the bottom of the ExecCtx just
-    // so that we can invoke grpc_channel_create at the bottom of the call
-    // stack. Doing so avoids potential lock cycles between g_init_mu and other
-    // mutexes within core that might be held on the current call stack
-    // (note that g_init_mu gets acquired during channel creation).
     grpc_core::ExecCtx::Run(DEBUG_LOCATION, &args->closure, GRPC_ERROR_NONE);
   } else {
     tsi_result ok = s2a_tsi_handshaker_continue_handshaker_next(
