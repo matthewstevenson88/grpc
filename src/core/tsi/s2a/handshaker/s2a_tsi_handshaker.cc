@@ -98,8 +98,7 @@ static tsi_result handshaker_next(
     }
   }
   if (handshaker->channel == nullptr) {
-    s2a_tsi_handshaker_continue_handshaker_next_args* args =
-  new s2a_tsi_handshaker_continue_handshaker_next_args();
+    s2a_tsi_handshaker_continue_handshaker_next_args* args = new s2a_tsi_handshaker_continue_handshaker_next_args();
     args->handshaker = handshaker;
     args->received_bytes = nullptr;
     args->received_bytes_size = received_bytes_size;
