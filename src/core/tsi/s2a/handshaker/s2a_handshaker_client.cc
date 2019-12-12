@@ -190,7 +190,6 @@ static void s2a_on_status_received(void* arg, grpc_error* error) {
   }
   client->maybe_complete_tsi_next(/* receive_status_finished=*/true,
                                   /* pending_recv_message_result=*/nullptr);
-  // s2a_handshaker_client_destroy(client);
   client->unref();
 }
 
@@ -230,7 +229,6 @@ s2a_handshaker_client::s2a_handshaker_client(
                     interested_parties,
                     grpc_slice_from_static_string(kS2AServiceMethod), &slice,
                     GRPC_MILLIS_INF_FUTURE, /* reserved=*/nullptr);
-  call_ = nullptr;
   GRPC_CLOSURE_INIT(&on_handshaker_service_resp_recv_, grpc_cb, this,
                     grpc_schedule_on_exec_ctx);
   GRPC_CLOSURE_INIT(&on_status_received_, s2a_on_status_received, this,
