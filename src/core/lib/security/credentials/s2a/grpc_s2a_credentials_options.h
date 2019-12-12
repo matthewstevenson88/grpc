@@ -51,8 +51,8 @@ struct grpc_s2a_credentials_options {
   /** This API should only be called at the client-side, and any target service
    *  accounts that are added on the server-side will be ignored. This method
    *  adds a target service account to the vector
-   * |target_service_account_list_|; it does not remove duplicates from the
-   * vector. **/
+   *  |target_service_account_list_|; it does not remove duplicates from the
+   *  vector. **/
   void AddTargetServiceAccount(std::string target_service_account);
 
   /** Create a deep copy of this grpc_s2a_credentials_options instance. **/
