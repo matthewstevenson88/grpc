@@ -90,7 +90,7 @@ struct s2a_tsi_handshaker_continue_handshaker_next_args {
 };
 
 static tsi_result s2a_tsi_handshaker_continue_handshaker_next(
-    alts_tsi_handshaker* handshaker, const uint8_t* received_bytes,
+    s2a_tsi_handshaker* handshaker, const uint8_t* received_bytes,
     size_t received_bytes_size, tsi_handshaker_on_next_done_cb cb,
     void* user_data) {
   if (!handshaker->has_created_handshaker_client) {
