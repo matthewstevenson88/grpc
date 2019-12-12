@@ -28,6 +28,10 @@
 #include "src/core/tsi/transport_security_interface.h"
 #include "src/proto/grpc/gcp/s2a.upb.h"
 
+using ::experimental::grpc_s2a_credentials_options;
+using ::experimental::grpc_s2a_credentials_options_create;
+using ::experimental::grpc_s2a_credentials_options_destroy;
+
 namespace grpc_core {
 namespace experimental {
 

@@ -93,7 +93,9 @@ static tsi_result s2a_tsi_handshaker_continue_handshaker_next(
     s2a_tsi_handshaker* handshaker, const uint8_t* received_bytes,
     size_t received_bytes_size, tsi_handshaker_on_next_done_cb cb,
     void* user_data) {
-  if (!handshaker->has_created_handshaker_client) {
+  return TSI_UNIMPLEMENTED;
+}
+/**  if (!handshaker->has_created_handshaker_client) {
     s2a_handshaker_client* client = nullptr;
     char* error_details = nullptr;
     // TODO(mattstev): what to do with |on_handshaker_service_resp_recv|
@@ -143,6 +145,7 @@ static tsi_result s2a_tsi_handshaker_continue_handshaker_next(
   grpc_slice_unref_internal(slice);
   return ok;
 }
+**/
 
 static void s2a_tsi_handshaker_create_channel(void* arg, grpc_error* unused_error) {
   s2a_tsi_handshaker_continue_handshaker_next_args* next_args = static_cast<s2a_tsi_handshaker_continue_handshaker_next_args*>(arg);
@@ -169,6 +172,7 @@ static tsi_result handshaker_next(
     gpr_log(GPR_ERROR, "Invalid nullptr arguments to |handshaker_next|.");
     return TSI_INVALID_ARGUMENT;
   }
+  return TSI_UNIMPLEMENTED;
   s2a_tsi_handshaker* handshaker = reinterpret_cast<s2a_tsi_handshaker*>(self);
   {
     grpc_core::MutexLock lock(&handshaker->mu);
@@ -254,7 +258,7 @@ tsi_result s2a_tsi_handshaker_create(
                                 ? grpc_empty_slice()
                                 : grpc_slice_from_static_string(target_name);
   handshaker->interested_parties = interested_parties;
-  handshaker->options = grpc_s2a_credentials_options_copy(options);
+  handshaker->options = options->copy();
   handshaker->base.vtable = &handshaker_vtable;
 
   *self = &(handshaker->base);
@@ -268,7 +272,7 @@ static tsi_result s2a_handshaker_result_extract_peer(
     return TSI_INVALID_ARGUMENT;
   }
   s2a_tsi_handshaker_result* result = reinterpret_cast<s2a_tsi_handshaker_result*>(const_cast<tsi_handshaker_result*>(self));
-  GPR_ASSERT(kTsiS2ANumOfPeerProperties == 3);
+  GPR_ASSERT(kTsiS2ANumOfPeerProperties == 2);
   tsi_result ok = tsi_construct_peer(kTsiS2ANumOfPeerProperties, peer);
   int index = 0;
   if (ok != TSI_OK) {
@@ -293,16 +297,6 @@ static tsi_result s2a_handshaker_result_extract_peer(
   ok = tsi_construct_string_peer_property_from_cstring(
       kTsiS2AServiceAccountPeerProperty, peer_identity,
       &peer->properties[index]);
-  if (ok != TSI_OK) {
-    tsi_peer_destruct(peer);
-    gpr_log(GPR_ERROR, "Failed to set TSI peer property.");
-  }
-  index++;
-  GPR_ASSERT(&peer->properties[index] != nullptr);
-  ok = tsi_construct_string_peer_property(
-      kTlsS2AContext,
-      reinterpret_cast<char*>(GRPC_SLICE_START_PTR(result->serialized_context)),
-      GRPC_SLICE_LENGTH(result->serialized_context), &peer->properties[index]);
   if (ok != TSI_OK) {
     tsi_peer_destruct(peer);
     gpr_log(GPR_ERROR, "Failed to set TSI peer property.");
