@@ -53,8 +53,7 @@ typedef struct s2a_tsi_handshaker s2a_tsi_handshaker;
  * It returns TSI_OK on success and an error status code on failure. **/
 tsi_result s2a_tsi_handshaker_create(
     const grpc_s2a_credentials_options* options, const char* target_name,
-    bool is_client,
-    grpc_pollset_set* interested_parties, tsi_handshaker** self,
+    bool is_client, grpc_pollset_set* interested_parties, tsi_handshaker** self,
     char** error_details);
 
 /** This method creates an S2A TSI handshaker result instance.
@@ -82,10 +81,12 @@ void s2a_tsi_handshaker_result_set_unused_bytes(tsi_handshaker_result* self,
 bool s2a_tsi_handshaker_has_shutdown(s2a_tsi_handshaker* handshaker);
 
 /** The following two methods are exposed for testing purposes only. **/
-void s2a_check_tsi_handshaker_for_testing(tsi_handshaker* base, grpc_slice target_name,
-                              bool is_client, bool has_sent_start_message,
-                              bool has_created_handshaker_client,
-                              bool shutdown);
+void s2a_check_tsi_handshaker_for_testing(tsi_handshaker* base,
+                                          grpc_slice target_name,
+                                          bool is_client,
+                                          bool has_sent_start_message,
+                                          bool has_created_handshaker_client,
+                                          bool shutdown);
 
 void s2a_check_tsi_handshaker_result_for_testing(
     tsi_handshaker_result* base, uint16_t tls_version, uint16_t tls_ciphersuite,
