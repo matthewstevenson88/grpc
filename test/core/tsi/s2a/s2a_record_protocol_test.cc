@@ -531,6 +531,63 @@ static void s2a_test_decrypt_record_success(uint16_t ciphersuite) {
   grpc_core::Delete<grpc_channel>(channel);
 }
 
+static void s2a_test_decrypt_record_with_padding(uint16_t ciphersuite) {
+  s2a_crypter* crypter = nullptr;
+  grpc_channel* channel = grpc_core::New<grpc_channel>();
+  char* error_details = nullptr;
+  grpc_status_code status =
+      setup_crypter(ciphersuite, channel, &crypter, &error_details);
+  if (ciphersuite == kTlsChacha20Poly1305Sha256) {
+    GPR_ASSERT(status == GRPC_STATUS_UNIMPLEMENTED);
+    GPR_ASSERT(strcmp(error_details, kS2AChachaPolyUnimplemented) == 0);
+
+    // Cleanup.
+    s2a_crypter_destroy(crypter);
+    gpr_free(error_details);
+    grpc_core::Delete<grpc_channel>(channel);
+    return;
+  }
+  GPR_ASSERT(status == GRPC_STATUS_OK);
+  GPR_ASSERT(error_details == nullptr);
+
+  std::vector<uint8_t> record;
+  switch (ciphersuite) {
+    case kTlsAes128GcmSha256:
+      record = s2a_test_data::aes_128_gcm_padded_zeros_record;
+      break;
+    case kTlsAes256GcmSha384:
+      record = s2a_test_data::aes_256_gcm_padded_zeros_record;
+      break;
+    case kTlsChacha20Poly1305Sha256:
+      record = s2a_test_data::chacha_poly_padded_zeros_record;
+      break;
+  }
+
+  size_t plaintext_allocated_size;
+  grpc_status_code plaintext_status = s2a_max_plaintext_size(
+      *crypter, record.size(), &plaintext_allocated_size, &error_details);
+  if (plaintext_status != GRPC_STATUS_OK) {
+    gpr_log(GPR_ERROR, "%s", error_details);
+    gpr_free(error_details);
+  }
+  GPR_ASSERT(plaintext_status == GRPC_STATUS_OK);
+  GPR_ASSERT(error_details == nullptr);
+  size_t plaintext_size;
+  std::vector<uint8_t> plaintext(plaintext_allocated_size, 0);
+  S2ADecryptStatus decrypt_status =
+      s2a_decrypt(crypter, record.data(), record.size(), plaintext.data(),
+                  plaintext.size(), &plaintext_size, &error_details);
+  GPR_ASSERT(decrypt_status == S2ADecryptStatus::OK);
+  GPR_ASSERT(error_details == nullptr);
+  GPR_ASSERT(plaintext_size == 6);
+  plaintext.resize(plaintext_size);
+  GPR_ASSERT(plaintext == s2a_test_data::padded_zeros_message);
+
+  // Cleanup.
+  s2a_crypter_destroy(crypter);
+  grpc_core::Delete<grpc_channel>(channel);
+}
+
 static void s2a_test_decrypt_large_record(uint16_t ciphersuite) {
   s2a_crypter* crypter = nullptr;
   grpc_channel* channel = grpc_core::New<grpc_channel>();
@@ -741,6 +798,7 @@ int main(int argc, char** argv) {
     s2a_test_encrypt_three_records(ciphersuite[i]);
     s2a_test_encrypt_empty_plaintext(ciphersuite[i]);
     s2a_test_decrypt_record_success(ciphersuite[i]);
+    s2a_test_decrypt_record_with_padding(ciphersuite[i]);
     s2a_test_decrypt_large_record(ciphersuite[i]);
     for (size_t j = 0; j < number_alert_types; j++) {
       s2a_test_decrypt_alert(ciphersuite[i], alert[j]);
