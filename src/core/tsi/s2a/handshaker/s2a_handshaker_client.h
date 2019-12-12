@@ -56,71 +56,85 @@ struct s2a_recv_message_result {
  *  a handshaker request that could be one of client_start, server_start,
  *  and next handshaker requests. The interface and all API's are
  *  thread-compatible. **/
-struct s2a_handshaker_client {
+class S2AHandshakerClient {
  public:
   /** A caller should employ the API's |s2a_handshaker_client_create| and
    *  |s2a_handshaker_client_destroy| rather than the constructor and destructor
    *  of this class. See the comments above for these API's for details on the
    *  arguments. **/
-  s2a_handshaker_client(s2a_tsi_handshaker* handshaker, grpc_channel* channel,
-                        grpc_pollset_set* interested_parties,
-                        grpc_s2a_credentials_options* options,
-                        const grpc_slice& target_name,
-                        grpc_iomgr_cb_func grpc_cb,
-                        tsi_handshaker_on_next_done_cb cb, void* user_data,
-                        bool is_client);
+  S2AHandshakerClient(s2a_tsi_handshaker* handshaker, grpc_channel* channel,
+                      grpc_pollset_set* interested_parties,
+                      grpc_s2a_credentials_options* options,
+                      const grpc_slice& target_name, grpc_iomgr_cb_func grpc_cb,
+                      tsi_handshaker_on_next_done_cb cb, void* user_data,
+                      bool is_client);
 
-  ~s2a_handshaker_client();
+  ~S2AHandshakerClient();
 
   /** This method schedules a client_start handshaker request with the S2A's
    *  handshaker service. It returns TSI_OK on success and an error code on
-   *  failure. **/
-  tsi_result client_start();
+   *  failure. More precisely, the request has the following data:
+   *  - |application_protocol| is set to |kS2AApplicationProtocol|.
+   *  - |tls_versions| is a length-1 list { TLS 1.3 }.
+   *  - |tls_ciphersuites| is the ordered list of ciphersuites specified by
+   *    |options_->SupportedCiphersuites()|.
+   *  - |target_identities| is the ordered list of target service accounts with
+   *    SPIFFE ID's specified by |options_->TargetServiceAccountList()|.
+   *  - |target_name| is set to |target_name_|. **/
+  tsi_result ClientStart();
 
   /** This method schedules a server_start handshaker request with the S2A's
    *  handshaker service. It returns TSI_OK on success and an error code on
    *  failure.
    *  - bytes_received: the bytes from the out_bytes field of the message
    *    received from the peer; the caller must ensure that this argument is not
-   *    nullptr. **/
-  tsi_result server_start(grpc_slice* bytes_received);
+   *    nullptr.
+   *  More precisely, the request has the following data:
+   *  - |application_protocol| is set to |kS2AApplicationProtocol|.
+   *  - |tls_versions| is a length-1 list { TLS 1.3 }.
+   *  - |tls_ciphersuites| is the ordered list of ciphersuites specified by
+   *    |options_->SupportedCiphersuites()|.
+   *  - |in_bytes| is set to |bytes_received|. **/
+  tsi_result ServerStart(grpc_slice* bytes_received);
 
   /** This method schedules a next handshaker request with the S2A's handshaker
    *  service. It returns TSI_OK on success and an error code on failure.
    *  - bytes_received: the bytes from the out_bytes field of the SessionResp
    *    message that the client peer received from its S2A; the caller must
-   *    ensure that this argument is not nullptr.  **/
-  tsi_result next(grpc_slice* bytes_received);
+   *    ensure that this argument is not nullptr.
+   *  More precisely, the request has the following data:
+   *  - |in_bytes| is set to |bytes_received|. **/
+  tsi_result Next(grpc_slice* bytes_received);
 
   /** This method cancels previously scheduled, but not yet executed, handshaker
    *  requests to the S2A's handshaker service. After this operation completes,
    *  no further handshaker requests will be scheduled with the S2A. **/
-  void shutdown();
+  void Shutdown();
 
   /** This method is exposed for testing purposes only. **/
   grpc_byte_buffer* get_send_buffer_for_testing();
 
  private:
   /** This method makes a call to the S2A service. **/
-  tsi_result make_grpc_call(bool is_start);
+  tsi_result MakeGrpcCall(bool is_start);
 
-  void maybe_complete_tsi_next(
+  void MaybeCompleteTsiNext(
       bool receive_status_finished,
       s2a_recv_message_result* pending_recv_message_result);
 
   /** This method parses a response from the S2A service. **/
-  void handle_response(bool is_ok);
+  void HandleResponse(bool is_ok);
 
   /** This method prepares a serialized version of a client start message. **/
-  grpc_byte_buffer* s2a_get_serialized_start_client();
+  grpc_byte_buffer* SerializedStartClient();
 
   /** This method prepares a serialized version of a server start message. The
    *  caller must ensure that |bytes_received| is not nullptr. **/
-  grpc_byte_buffer* s2a_get_serialized_start_server(grpc_slice* bytes_received);
+  grpc_byte_buffer* SerializedStartServer(grpc_slice* bytes_received);
 
   /** This method prepares a serialized version of a next message. The caller
    *  must ensure that |bytes_received| is not nullptr. **/
-  grpc_byte_buffer* s2a_get_serialized_next(grpc_slice* bytes_received);
+  grpc_byte_buffer* SerializedNext(grpc_slice* bytes_received);
 
   /** One ref is held by the entity that created this handshaker_client, and
    *  another ref is held by the pending RECEIVE_STATUS_ON_CLIENT op. **/
@@ -179,7 +193,7 @@ struct s2a_handshaker_client {
 };
 
 /** This method populates |client| with an instance of the
- *  s2a_handshaker_client, which is configured using the other arguments. The
+ *  S2AHandshakerClient, which is configured using the other arguments. The
  *  additional arguments are specified below.
  *  - handshaker: the s2a_tsi_handshaker that owns |client|.
  *  - channel: the gRPC channel used to connect with the S2A.
@@ -188,6 +202,8 @@ struct s2a_handshaker_client {
  *  - interested_parties: the set of pollsets that are interested in this gRPC
  *    connection.
  *  - options: S2A-specific options used to configure the s2a_handshaker_client.
+ *    This method does not take ownership of |options|, and the caller must
+ *    ensure that |options| survives as long as |client|.
  *  - target_name: the name of the endpoint to which the channel connects; this
  *    data will be used for a secure naming check.
  *  - grpc_cb: a gRPC-provided callback function that is owned by |handshaker|.
@@ -206,12 +222,12 @@ tsi_result s2a_handshaker_client_create(
     grpc_pollset_set* interested_parties, grpc_s2a_credentials_options* options,
     const grpc_slice& target_name, grpc_iomgr_cb_func grpc_cb,
     tsi_handshaker_on_next_done_cb cb, void* user_data, bool is_client,
-    s2a_handshaker_client** client);
+    S2AHandshakerClient** client);
 
-/** This method destroys an s2a_handshaker_client. The caller must call this
- *  method after any use of s2a_handshaker_client_create, even if it outputs a
- *  status other than TSI_OK.  **/
-void s2a_handshaker_client_destroy(s2a_handshaker_client* client);
+/** This method destroys a S2AHandshakerClient instance. The caller must call
+ * this method after any use of s2a_handshaker_client_create, even if it outputs
+ * a status other than TSI_OK.  **/
+void s2a_handshaker_client_destroy(S2AHandshakerClient* client);
 
 }  // namespace experimental
 }  // namespace grpc_core

@@ -27,15 +27,15 @@ namespace grpc_core {
 namespace experimental {
 
 /** This file contains the implementation details of the |make_grpc_call| member
- *  function of the |s2a_handshaker_client| struct. This method enables the S2A
+ *  function of the |S2AHandshakerClient| class. This method enables the S2A
  *  handshaker client to make a gRPC call to the S2A service. **/
 
-tsi_result s2a_handshaker_client::make_grpc_call(bool is_start) {
+tsi_result S2AHandshakerClient::MakeGrpcCall(bool is_start) {
   // TODO(mattstev): implement.
   return TSI_UNIMPLEMENTED;
 }
 
-void s2a_handshaker_client::maybe_complete_tsi_next(
+void S2AHandshakerClient::MaybeCompleteTsiNext(
     bool receive_status_finished,
     s2a_recv_message_result* pending_recv_message_result) {
   // TODO(mattstev): implement.

@@ -47,18 +47,18 @@ struct s2a_tsi_handshaker_config {
 
 struct s2a_handshaker_client_config {
   s2a_tsi_handshaker_config* tsi_config;
-  s2a_handshaker_client* client;
+  S2AHandshakerClient* client;
 };
 
 static s2a_tsi_handshaker_config* s2a_tsi_handshaker_config_setup(
     bool is_client, const std::string& handshaker_service_url) {
   s2a_tsi_handshaker_config* config = new s2a_tsi_handshaker_config();
   config->options = grpc_s2a_credentials_options_create();
-  config->options->set_handshaker_service_url(handshaker_service_url);
-  config->options->add_supported_ciphersuite(kTlsAes128GcmSha256);
-  config->options->add_supported_ciphersuite(kTlsAes256GcmSha384);
-  config->options->add_supported_ciphersuite(kTlsChacha20Poly1305Sha256);
-  config->options->add_target_service_account("target_service_account");
+  config->options->SetHandshakerServiceUrl(handshaker_service_url);
+  config->options->AddSupportedCiphersuite(kTlsAes128GcmSha256);
+  config->options->AddSupportedCiphersuite(kTlsAes256GcmSha384);
+  config->options->AddSupportedCiphersuite(kTlsChacha20Poly1305Sha256);
+  config->options->AddTargetServiceAccount("target_service_account");
   config->channel = ::grpc_core::New<grpc_channel>();
   char* error_details = nullptr;
   tsi_result handshaker_result = s2a_tsi_handshaker_create(
@@ -124,7 +124,7 @@ static void s2a_handshaker_client_create_and_destroy_test() {
 static void s2a_handshaker_client_client_start_test() {
   s2a_handshaker_client_config* config =
       s2a_handshaker_client_config_setup(/*is_client=*/true);
-  tsi_result result = config->client->client_start();
+  tsi_result result = config->client->ClientStart();
   /** The |result| should be TSI_UNIMPLEMENTED because the |make_grpc_call| API
    *  currently unimplemented. In order to check that |client_start| was
    *  successful, we verify that the |send_buffer_| field of |config->client| is
@@ -184,7 +184,7 @@ static void s2a_handshaker_client_server_start_test() {
   s2a_handshaker_client_config* config =
       s2a_handshaker_client_config_setup(/*is_client=*/false);
   grpc_slice bytes_received = grpc_slice_from_static_string("bytes_received");
-  tsi_result result = config->client->server_start(&bytes_received);
+  tsi_result result = config->client->ServerStart(&bytes_received);
   // TODO(mattstev): change the check to |result == TSI_OK| once
   // |make_grpc_call| has been implemented.
   GPR_ASSERT(result == TSI_UNIMPLEMENTED);
@@ -233,7 +233,7 @@ static void s2a_handshaker_client_next_test() {
   s2a_handshaker_client_config* config =
       s2a_handshaker_client_config_setup(/*is_client=*/true);
   grpc_slice bytes_received = grpc_slice_from_static_string("bytes_received");
-  tsi_result result = config->client->next(&bytes_received);
+  tsi_result result = config->client->Next(&bytes_received);
   // TODO(mattstev): change the check to |result == TSI_OK| once
   // |make_grpc_call| has been implemented.
   GPR_ASSERT(result == TSI_UNIMPLEMENTED);
