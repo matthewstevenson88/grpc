@@ -23,28 +23,14 @@
 #include <grpc/support/alloc.h>
 #include <grpc/support/log.h>
 #include <grpc/support/string_util.h>
-#include <string.h>
 
 namespace experimental {
 
-grpc_s2a_credentials_options::~grpc_s2a_credentials_options() {
-  if (handshaker_service_url_ != nullptr) {
-    gpr_free(const_cast<char*>(handshaker_service_url_));
-  }
-  for (auto service_account : target_service_account_list_) {
-    gpr_free(service_account);
-  }
-}
+grpc_s2a_credentials_options::~grpc_s2a_credentials_options() {}
 
 void grpc_s2a_credentials_options::set_handshaker_service_url(
-    const char* handshaker_service_url) {
-  if (handshaker_service_url == nullptr) {
-    return;
-  }
-  if (handshaker_service_url_ != nullptr) {
-    gpr_free(const_cast<char*>(handshaker_service_url_));
-  }
-  handshaker_service_url_ = gpr_strdup(handshaker_service_url);
+    std::string handshaker_service_url) {
+  handshaker_service_url_ = handshaker_service_url;
 }
 
 void grpc_s2a_credentials_options::add_supported_ciphersuite(
@@ -53,20 +39,14 @@ void grpc_s2a_credentials_options::add_supported_ciphersuite(
 }
 
 void grpc_s2a_credentials_options::add_target_service_account(
-    const char* target_service_account) {
-  if (target_service_account == nullptr) {
-    return;
-  }
-  char* service_account = gpr_strdup(target_service_account);
-  target_service_account_list_.push_back(std::move(service_account));
+    std::string target_service_account) {
+  target_service_account_list_.push_back(target_service_account);
 }
 
 grpc_s2a_credentials_options* grpc_s2a_credentials_options::copy() const {
   grpc_s2a_credentials_options* new_options =
       new grpc_s2a_credentials_options();
-  if (handshaker_service_url_ != nullptr) {
-    new_options->set_handshaker_service_url(handshaker_service_url_);
-  }
+  new_options->set_handshaker_service_url(handshaker_service_url_);
   for (auto ciphersuite : supported_ciphersuites_) {
     new_options->add_supported_ciphersuite(ciphersuite);
   }
@@ -77,10 +57,10 @@ grpc_s2a_credentials_options* grpc_s2a_credentials_options::copy() const {
 }
 
 bool grpc_s2a_credentials_options::check_fields(
-    const char* handshaker_service_url,
+    const std::string& handshaker_service_url,
     const std::vector<uint16_t>& supported_ciphersuites,
-    const std::vector<char*>& target_service_account_list) {
-  if (strcmp(handshaker_service_url_, handshaker_service_url) != 0) {
+    const std::vector<std::string>& target_service_account_list) {
+  if (handshaker_service_url_.compare(handshaker_service_url) != 0) {
     return false;
   }
   if (supported_ciphersuites != supported_ciphersuites_) {
@@ -91,8 +71,8 @@ bool grpc_s2a_credentials_options::check_fields(
     return false;
   }
   for (size_t i = 0; i < target_service_account_list.size(); i++) {
-    if (strcmp(target_service_account_list[i],
-               target_service_account_list_[i]) != 0) {
+    if (target_service_account_list[i].compare(
+            target_service_account_list_[i]) != 0) {
       return false;
     }
   }

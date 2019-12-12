@@ -26,12 +26,12 @@
 namespace experimental {
 
 static void s2a_test_create_and_copy_options() {
-  const char* handshaker_service_url = "handshaker_service_url";
+  std::string handshaker_service_url = "handshaker_service_url";
   std::vector<uint16_t> ciphersuites = {
       kTlsAes128GcmSha256, kTlsAes256GcmSha384, kTlsChacha20Poly1305Sha256};
-  std::vector<char*> target_service_account_list;
-  char* service_account_1 = "target_service_account_1";
-  char* service_account_2 = "target_service_account_2";
+  std::vector<std::string> target_service_account_list;
+  std::string service_account_1 = "target_service_account_1";
+  std::string service_account_2 = "target_service_account_2";
   target_service_account_list.push_back(service_account_1);
   target_service_account_list.push_back(service_account_2);
 

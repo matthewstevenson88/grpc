@@ -37,6 +37,8 @@ s2a_Ciphersuite s2a_convert_ciphersuite_to_enum(uint16_t ciphersuite) {
 
 grpc_byte_buffer* s2a_get_serialized_session_req(s2a_SessionReq* request,
                                                  upb_arena* arena) {
+  GPR_ASSERT(request != nullptr);
+  GPR_ASSERT(arena != nullptr);
   size_t buffer_length;
   char* buffer = s2a_SessionReq_serialize(request, arena, &buffer_length);
   if (buffer == nullptr) {
