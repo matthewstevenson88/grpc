@@ -31,6 +31,20 @@ std::vector<uint8_t> test_message_2 = {8};
 std::vector<uint8_t> test_message_3 = {46,  98, 101, 255, 213, 156, 15,  100,
                                        126, 45, 130, 239, 209, 13,  156, 89};
 
+std::vector<uint8_t> message_encrypted_with_padded_zeros = {'1', '2', '3', '4', '5', '6'};
+std::vector<uint8_t> aes_128_gcm_padded_zeros_record = {
+    23,  3,   3,   0,   33,  242, 228, 228, 17,  172, 103, 96,  232,
+    71,  38,  228, 136, 109, 116, 50,  227, 155, 52,  240, 252, 207,
+    193, 244, 85,  131, 3,   198, 138, 25,  83,  92,  15,  245};
+std::vector<uint8_t> aes_256_gcm_padded_zeros_record = {
+    23,  3,   3,   0,   33,  36,  239, 238, 90,  241, 166, 33,  232,
+    164, 209, 242, 105, 147, 14,  120, 53,  207, 221, 5,   226, 208,
+    190, 197, 176, 26,  103, 222, 207, 166, 55,  44,  42,  247};
+std::vector<uint8_t> chacha_poly_padded_zeros_record = {
+    23, 3,   3,   0,   33,  201, 71,  255, 164, 112, 48,  67,  240,
+    99, 231, 182, 160, 81,  159, 189, 9,   86,  207, 58,  124, 151,
+    48, 193, 53,  151, 238, 193, 126, 199, 231, 0,   241, 64};
+
 }  // namespace s2a_test_data
 
 #endif  // GRPC_TEST_CORE_TSI_S2A_S2A_TEST_DATA_H
