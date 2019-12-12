@@ -47,21 +47,19 @@ struct s2a_handshaker_client_config {
 };
 
 static s2a_tsi_handshaker_config* s2a_tsi_handshaker_config_setup(
-    bool is_client, const char* handshaker_service_url) {
+    bool is_client, const std::string& handshaker_service_url) {
   s2a_tsi_handshaker_config* config = new s2a_tsi_handshaker_config();
   config->options = grpc_s2a_credentials_options_create();
   config->options->set_handshaker_service_url(handshaker_service_url);
-  if (is_client) {
-    config->options->add_supported_ciphersuite(kTlsAes128GcmSha256);
-    config->options->add_supported_ciphersuite(kTlsAes256GcmSha384);
-    config->options->add_supported_ciphersuite(kTlsChacha20Poly1305Sha256);
-  }
+  config->options->add_supported_ciphersuite(kTlsAes128GcmSha256);
+  config->options->add_supported_ciphersuite(kTlsAes256GcmSha384);
+  config->options->add_supported_ciphersuite(kTlsChacha20Poly1305Sha256);
   config->options->add_target_service_account("target_service_account");
   config->channel = ::grpc_core::New<grpc_channel>();
   char* error_details = nullptr;
   tsi_result handshaker_result = s2a_tsi_handshaker_create(
       config->options, kS2AHandshakerClientTestTargetName, is_client,
-      /* interested_parties=*/nullptr, &(config->handshaker), &error_details);
+      /*interested_parties=*/nullptr, &(config->handshaker), &error_details);
   GPR_ASSERT(handshaker_result == TSI_OK);
   GPR_ASSERT(error_details == nullptr);
   return config;
@@ -82,12 +80,13 @@ static void s2a_tsi_handshaker_config_destroy(
 static s2a_handshaker_client_config* s2a_handshaker_client_config_setup(
     bool is_client) {
   s2a_handshaker_client_config* config = new s2a_handshaker_client_config();
-  config->tsi_config = s2a_tsi_handshaker_config_setup(
-      is_client, kS2AHandshakerServiceUrlForTesting);
+  std::string handshaker_url(kS2AHandshakerServiceUrlForTesting);
+  config->tsi_config =
+      s2a_tsi_handshaker_config_setup(is_client, handshaker_url);
   tsi_result result = s2a_handshaker_client_create(
       reinterpret_cast<s2a_tsi_handshaker*>(config->tsi_config->handshaker),
       config->tsi_config->channel,
-      /* interested_parties=*/nullptr, config->tsi_config->options,
+      /*interested_parties=*/nullptr, config->tsi_config->options,
       grpc_slice_from_static_string(kS2AHandshakerClientTestTargetName),
       /* grpc_cb=*/nullptr,
       /* cb=*/nullptr,
@@ -109,33 +108,11 @@ static void s2a_handshaker_client_config_destroy(
   config = nullptr;
 }
 
-static void s2a_handshaker_client_bad_options_test() {
-  s2a_tsi_handshaker_config* config =
-      s2a_tsi_handshaker_config_setup(/* is_client=*/true,
-                                      /* handshaker_service_url=*/nullptr);
-  s2a_handshaker_client* client = nullptr;
-  tsi_result result = s2a_handshaker_client_create(
-      reinterpret_cast<s2a_tsi_handshaker*>(config->handshaker),
-      config->channel,
-      /* interested_parties=*/nullptr, config->options,
-      grpc_slice_from_static_string(kS2AHandshakerClientTestTargetName),
-      /* grpc_cb=*/nullptr,
-      /* cb=*/nullptr,
-      /* user_data=*/nullptr,
-      /* is_client=*/true,
-      /* is_test=*/true, &client);
-  GPR_ASSERT(result == TSI_INVALID_ARGUMENT);
-  GPR_ASSERT(client == nullptr);
-
-  // Cleanup.
-  s2a_tsi_handshaker_config_destroy(config);
-}
-
 static void s2a_handshaker_client_create_and_destroy_test() {
   s2a_handshaker_client_config* client_config =
-      s2a_handshaker_client_config_setup(/* is_client=*/true);
+      s2a_handshaker_client_config_setup(/*is_client=*/true);
   s2a_handshaker_client_config* server_config =
-      s2a_handshaker_client_config_setup(/* is_client=*/false);
+      s2a_handshaker_client_config_setup(/*is_client=*/false);
 
   // Cleanup.
   s2a_handshaker_client_config_destroy(client_config);
@@ -169,13 +146,13 @@ static void s2a_handshaker_client_client_start_test() {
       s2a_ClientSessionStartReq_tls_versions(request, &tls_versions_size);
   GPR_ASSERT(tls_versions_size == 1);
   GPR_ASSERT(tls_versions != nullptr);
-  GPR_ASSERT(tls_versions[0] == /* TLS 1.3=*/0);
+  GPR_ASSERT(tls_versions[0] == /*TLS 1.3=*/0);
 
   size_t tls_ciphersuites_size;
   const int* tls_ciphersuites = s2a_ClientSessionStartReq_tls_ciphersuites(
       request, &tls_ciphersuites_size);
   GPR_ASSERT(tls_ciphersuites_size == 3);
-  GPR_ASSERT(tls_versions != nullptr);
+  GPR_ASSERT(tls_ciphersuites != nullptr);
   GPR_ASSERT(tls_ciphersuites[0] == kTlsAes128GcmSha256);
   GPR_ASSERT(tls_ciphersuites[1] == kTlsAes256GcmSha384);
   GPR_ASSERT(tls_ciphersuites[2] == kTlsChacha20Poly1305Sha256);
@@ -196,7 +173,7 @@ static void s2a_handshaker_client_client_start_test() {
 
 static void s2a_handshaker_client_server_start_test() {
   s2a_handshaker_client_config* config =
-      s2a_handshaker_client_config_setup(/* is_client=*/false);
+      s2a_handshaker_client_config_setup(/*is_client=*/false);
   grpc_slice bytes_received = grpc_slice_from_static_string("bytes_received");
   GPR_ASSERT(config->client->server_start(kTlsAes128GcmSha256,
                                           &bytes_received) == TSI_OK);
@@ -228,9 +205,11 @@ static void s2a_handshaker_client_server_start_test() {
   size_t tls_ciphersuites_size;
   const int* tls_ciphersuites = s2a_ServerSessionStartReq_tls_ciphersuites(
       request, &tls_ciphersuites_size);
-  GPR_ASSERT(tls_ciphersuites_size == 1);
-  GPR_ASSERT(tls_versions != nullptr);
+  GPR_ASSERT(tls_ciphersuites_size == 3);
+  GPR_ASSERT(tls_ciphersuites != nullptr);
   GPR_ASSERT(tls_ciphersuites[0] == kTlsAes128GcmSha256);
+  GPR_ASSERT(tls_ciphersuites[1] == kTlsAes256GcmSha384);
+  GPR_ASSERT(tls_ciphersuites[2] == kTlsChacha20Poly1305Sha256);
 
   upb_strview in_bytes = s2a_ServerSessionStartReq_in_bytes(request);
   GPR_ASSERT(upb_strview_eql(in_bytes, upb_strview_makez("bytes_received")));
@@ -241,7 +220,7 @@ static void s2a_handshaker_client_server_start_test() {
 
 static void s2a_handshaker_client_next_test() {
   s2a_handshaker_client_config* config =
-      s2a_handshaker_client_config_setup(/* is_client=*/true);
+      s2a_handshaker_client_config_setup(/*is_client=*/true);
   grpc_slice bytes_received = grpc_slice_from_static_string("bytes_received");
   GPR_ASSERT(config->client->next(&bytes_received) == TSI_OK);
 
@@ -264,7 +243,6 @@ static void s2a_handshaker_client_next_test() {
 }  // namespace grpc_core
 
 int main(int argc, char** argv) {
-  grpc_core::experimental::s2a_handshaker_client_bad_options_test();
   grpc_core::experimental::s2a_handshaker_client_create_and_destroy_test();
   grpc_core::experimental::s2a_handshaker_client_client_start_test();
   grpc_core::experimental::s2a_handshaker_client_server_start_test();

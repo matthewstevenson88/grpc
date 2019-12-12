@@ -71,7 +71,7 @@ message ServerSessionStartReq {
   // versions it supports in the TLS handshake.
   repeated TLSVersion tls_versions = 2;
 
-  // The TLS ciphersuites that the client is willing to support.
+  // The TLS ciphersuites that the server is willing to support.
   repeated Ciphersuite tls_ciphersuites = 3;
 
   // (Optional) A list of local identities supported by the server, if

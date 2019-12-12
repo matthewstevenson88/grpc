@@ -80,12 +80,10 @@ struct s2a_handshaker_client {
   /** This method schedules a server_start handshaker request with the S2A's
    *  handshaker service. It returns TSI_OK on success and an error code on
    *  failure.
-   *  - ciphersuite: the ciphersuite selected by the S2A from the list of
-   *    supported ciphersuites provided by the client.
    *  - bytes_received: the bytes from the out_bytes field of the message
    *    received from the peer; the caller must ensure that this argument is not
    *    nullptr. **/
-  tsi_result server_start(uint16_t ciphersuite, grpc_slice* bytes_received);
+  tsi_result server_start(grpc_slice* bytes_received);
 
   /** This method schedules a next handshaker request with the S2A's handshaker
    *  service. It returns TSI_OK on success and an error code on failure.
@@ -144,8 +142,7 @@ struct s2a_handshaker_client {
 
   /** This method prepares a serialized version of a server start message. The
    *  caller must ensure that |bytes_received| is not nullptr. **/
-  grpc_byte_buffer* s2a_get_serialized_start_server(uint16_t ciphersuite,
-                                                    grpc_slice* bytes_received);
+  grpc_byte_buffer* s2a_get_serialized_start_server(grpc_slice* bytes_received);
 
   /** This method prepares a serialized version of a next message. The caller
    *  must ensure that |bytes_received| is not nullptr. **/
