@@ -581,7 +581,7 @@ static void s2a_test_decrypt_record_with_padding(uint16_t ciphersuite) {
   GPR_ASSERT(error_details == nullptr);
   GPR_ASSERT(plaintext_size == 6);
   plaintext.resize(plaintext_size);
-  GPR_ASSERT(plaintext == s2a_test_data::padded_zeros_message);
+  GPR_ASSERT(plaintext == s2a_test_data::message_encrypted_with_padded_zeros);
 
   // Cleanup.
   s2a_crypter_destroy(crypter);
