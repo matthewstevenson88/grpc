@@ -49,7 +49,7 @@ struct s2a_tsi_handshaker {
    * concurrently (due to the potential concurrency of the
    * |tsi_handshaker_shutdown| and |tsi_handshaker_next| methods). **/
   gpr_mu mu;
-  s2a_handshaker_client* client;
+  S2AHandshakerClient* client;
   bool shutdown;
 };
 
@@ -216,7 +216,7 @@ static void handshaker_shutdown(tsi_handshaker* self) {
     return;
   }
   if (handshaker->client != nullptr) {
-    s2a_handshaker_client_shutdown(handshaker->client);
+    handshaker->client->Shutdown();
   }
   handshaker->shutdown = true;
 }
@@ -259,7 +259,7 @@ tsi_result s2a_tsi_handshaker_create(
                                 ? grpc_empty_slice()
                                 : grpc_slice_from_static_string(target_name);
   handshaker->interested_parties = interested_parties;
-  handshaker->options = options->copy();
+  handshaker->options = options->Copy();
   handshaker->base.vtable = &handshaker_vtable;
 
   *self = &(handshaker->base);
