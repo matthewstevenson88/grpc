@@ -32,28 +32,28 @@ struct grpc_s2a_credentials_options {
   ~grpc_s2a_credentials_options();
 
   /** Getters for member fields. **/
-  const std::string HandshakerServiceUrl() const {
+  const std::string handshaker_service_url() const {
     return handshaker_service_url_;
   }
-  const std::vector<uint16_t>& SupportedCiphersuites() const {
+  const std::vector<uint16_t>& supported_ciphersuites() const {
     return supported_ciphersuites_;
   }
-  const std::vector<std::string>& TargetServiceAccountList() const {
+  const std::vector<std::string>& target_service_account_list() const {
     return target_service_account_list_;
   }
 
   /** The setter method for |handshaker_service_url_|. **/
-  void SetHandshakerServiceUrl(std::string handshaker_service_url);
+  void set_handshaker_service_url(const std::string& handshaker_service_url);
   /** This methods add |ciphersuite| to the vector |supported_ciphersuites_|; it
    *  does not remove duplicates from the vector, if they exist. See
    *  src/core/tsi/s2a/s2a_constants.h for the ciphersuite constants. **/
-  void AddSupportedCiphersuite(uint16_t ciphersuite);
+  void add_supported_ciphersuite(uint16_t ciphersuite);
   /** This API should only be called at the client-side, and any target service
    *  accounts that are added on the server-side will be ignored. This method
    *  adds a target service account to the vector
    *  |target_service_account_list_|; it does not remove duplicates from the
    *  vector. **/
-  void AddTargetServiceAccount(std::string target_service_account);
+  void add_target_service_account(const std::string& target_service_account);
 
   /** Create a deep copy of this grpc_s2a_credentials_options instance. **/
   grpc_s2a_credentials_options* Copy() const;

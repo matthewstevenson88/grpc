@@ -64,7 +64,7 @@ class S2AHandshakerClient {
    *  arguments. **/
   S2AHandshakerClient(s2a_tsi_handshaker* handshaker, grpc_channel* channel,
                       grpc_pollset_set* interested_parties,
-                      grpc_s2a_credentials_options* options,
+                      const grpc_s2a_credentials_options* options,
                       const grpc_slice& target_name, grpc_iomgr_cb_func grpc_cb,
                       tsi_handshaker_on_next_done_cb cb, void* user_data,
                       bool is_client);
@@ -161,7 +161,7 @@ class S2AHandshakerClient {
   tsi_handshaker_on_next_done_cb cb_;
   void* user_data_ = nullptr;
   /** The S2A credential options passed in from the caller. **/
-  grpc_s2a_credentials_options* options_ = nullptr;
+  const grpc_s2a_credentials_options* options_;
   /** The target name information to be passed to handshaker service for server
    *  authorization check. **/
   grpc_slice target_name_;
@@ -219,10 +219,10 @@ class S2AHandshakerClient {
  *  On success, this method returns TSI_OK, and an error code otherwise. **/
 tsi_result s2a_handshaker_client_create(
     s2a_tsi_handshaker* handshaker, grpc_channel* channel,
-    grpc_pollset_set* interested_parties, grpc_s2a_credentials_options* options,
-    const grpc_slice& target_name, grpc_iomgr_cb_func grpc_cb,
-    tsi_handshaker_on_next_done_cb cb, void* user_data, bool is_client,
-    S2AHandshakerClient** client);
+    grpc_pollset_set* interested_parties,
+    const grpc_s2a_credentials_options* options, const grpc_slice& target_name,
+    grpc_iomgr_cb_func grpc_cb, tsi_handshaker_on_next_done_cb cb,
+    void* user_data, bool is_client, S2AHandshakerClient** client);
 
 /** This method destroys a S2AHandshakerClient instance. The caller must call
  * this method after any use of s2a_handshaker_client_create, even if it outputs

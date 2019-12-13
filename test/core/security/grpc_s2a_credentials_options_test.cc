@@ -36,12 +36,12 @@ static void s2a_test_create_and_copy_options() {
   target_service_account_list.push_back(service_account_2);
 
   grpc_s2a_credentials_options* options = grpc_s2a_credentials_options_create();
-  options->SetHandshakerServiceUrl(handshaker_service_url);
-  options->AddSupportedCiphersuite(kTlsAes128GcmSha256);
-  options->AddSupportedCiphersuite(kTlsAes256GcmSha384);
-  options->AddSupportedCiphersuite(kTlsChacha20Poly1305Sha256);
-  options->AddTargetServiceAccount(service_account_1);
-  options->AddTargetServiceAccount(service_account_2);
+  options->set_handshaker_service_url(handshaker_service_url);
+  options->add_supported_ciphersuite(kTlsAes128GcmSha256);
+  options->add_supported_ciphersuite(kTlsAes256GcmSha384);
+  options->add_supported_ciphersuite(kTlsChacha20Poly1305Sha256);
+  options->add_target_service_account(service_account_1);
+  options->add_target_service_account(service_account_2);
   grpc_s2a_credentials_options* copy_options = options->Copy();
 
   GPR_ASSERT(options->CheckFieldsForTesting(

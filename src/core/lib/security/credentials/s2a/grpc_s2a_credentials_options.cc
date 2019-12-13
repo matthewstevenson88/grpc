@@ -28,30 +28,30 @@ namespace experimental {
 
 grpc_s2a_credentials_options::~grpc_s2a_credentials_options() {}
 
-void grpc_s2a_credentials_options::SetHandshakerServiceUrl(
-    std::string handshaker_service_url) {
+void grpc_s2a_credentials_options::set_handshaker_service_url(
+    const std::string& handshaker_service_url) {
   handshaker_service_url_ = handshaker_service_url;
 }
 
-void grpc_s2a_credentials_options::AddSupportedCiphersuite(
+void grpc_s2a_credentials_options::add_supported_ciphersuite(
     uint16_t ciphersuite) {
   supported_ciphersuites_.push_back(ciphersuite);
 }
 
-void grpc_s2a_credentials_options::AddTargetServiceAccount(
-    std::string target_service_account) {
+void grpc_s2a_credentials_options::add_target_service_account(
+    const std::string target_service_account) {
   target_service_account_list_.push_back(target_service_account);
 }
 
 grpc_s2a_credentials_options* grpc_s2a_credentials_options::Copy() const {
   grpc_s2a_credentials_options* new_options =
       new grpc_s2a_credentials_options();
-  new_options->SetHandshakerServiceUrl(handshaker_service_url_);
+  new_options->set_handshaker_service_url(handshaker_service_url_);
   for (auto ciphersuite : supported_ciphersuites_) {
-    new_options->AddSupportedCiphersuite(ciphersuite);
+    new_options->add_supported_ciphersuite(ciphersuite);
   }
-  for (auto service_account : target_service_account_list_) {
-    new_options->AddTargetServiceAccount(service_account);
+  for (const auto& service_account : target_service_account_list_) {
+    new_options->add_target_service_account(service_account);
   }
   return new_options;
 }

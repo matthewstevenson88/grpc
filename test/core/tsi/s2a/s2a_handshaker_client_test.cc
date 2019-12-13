@@ -54,11 +54,11 @@ static s2a_tsi_handshaker_config* s2a_tsi_handshaker_config_setup(
     bool is_client, const std::string& handshaker_service_url) {
   s2a_tsi_handshaker_config* config = new s2a_tsi_handshaker_config();
   config->options = grpc_s2a_credentials_options_create();
-  config->options->SetHandshakerServiceUrl(handshaker_service_url);
-  config->options->AddSupportedCiphersuite(kTlsAes128GcmSha256);
-  config->options->AddSupportedCiphersuite(kTlsAes256GcmSha384);
-  config->options->AddSupportedCiphersuite(kTlsChacha20Poly1305Sha256);
-  config->options->AddTargetServiceAccount("target_service_account");
+  config->options->set_handshaker_service_url(handshaker_service_url);
+  config->options->add_supported_ciphersuite(kTlsAes128GcmSha256);
+  config->options->add_supported_ciphersuite(kTlsAes256GcmSha384);
+  config->options->add_supported_ciphersuite(kTlsChacha20Poly1305Sha256);
+  config->options->add_target_service_account("target_service_account");
   config->channel = ::grpc_core::New<grpc_channel>();
   char* error_details = nullptr;
   tsi_result handshaker_result = s2a_tsi_handshaker_create(

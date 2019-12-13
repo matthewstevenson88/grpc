@@ -40,25 +40,35 @@ grpc_byte_buffer* S2AHandshakerClient::SerializedStartClient() {
   s2a_SessionReq* request = s2a_SessionReq_new(arena.ptr());
   s2a_ClientSessionStartReq* start_client =
       s2a_SessionReq_mutable_client_start(request, arena.ptr());
+
+  /** Set application protocol. **/
   s2a_ClientSessionStartReq_add_application_protocols(
       start_client, upb_strview_makez(kS2AApplicationProtocol), arena.ptr());
+
+  /** Set TLS version. **/
   int32_t* tls_versions = s2a_ClientSessionStartReq_resize_tls_versions(
       start_client, /*len=*/1, arena.ptr());
   GPR_ASSERT(tls_versions != nullptr);
   tls_versions[0] = s2a_TLS1_3;
+
+  /** Set supported TLS ciphersuites. **/
   int32_t* tls_ciphersuites = s2a_ClientSessionStartReq_resize_tls_ciphersuites(
-      start_client, options_->SupportedCiphersuites().size(), arena.ptr());
+      start_client, options_->supported_ciphersuites().size(), arena.ptr());
   GPR_ASSERT(tls_ciphersuites != nullptr);
-  for (size_t i = 0; i < options_->SupportedCiphersuites().size(); i++) {
-    tls_ciphersuites[i] = options_->SupportedCiphersuites()[i];
+  for (size_t i = 0; i < options_->supported_ciphersuites().size(); i++) {
+    tls_ciphersuites[i] = options_->supported_ciphersuites()[i];
   }
-  for (size_t j = 0; j < options_->TargetServiceAccountList().size(); j++) {
+
+  /** Set SPIFFE ID of target service accounts. **/
+  for (size_t j = 0; j < options_->target_service_account_list().size(); j++) {
     s2a_Identity* identity = s2a_ClientSessionStartReq_add_target_identities(
         start_client, arena.ptr());
     s2a_Identity_set_spiffe_id(
         identity,
-        upb_strview_makez(options_->TargetServiceAccountList()[j].c_str()));
+        upb_strview_makez(options_->target_service_account_list()[j].c_str()));
   }
+
+  /** Set target name. **/
   s2a_ClientSessionStartReq_set_target_name(
       start_client, upb_strview_make(reinterpret_cast<const char*>(
                                          GRPC_SLICE_START_PTR(target_name_)),
@@ -90,18 +100,26 @@ grpc_byte_buffer* S2AHandshakerClient::SerializedStartServer(
   s2a_SessionReq* request = s2a_SessionReq_new(arena.ptr());
   s2a_ServerSessionStartReq* start_server =
       s2a_SessionReq_mutable_server_start(request, arena.ptr());
+
+  /** Set application protocols. **/
   s2a_ServerSessionStartReq_add_application_protocols(
       start_server, upb_strview_makez(kS2AApplicationProtocol), arena.ptr());
+
+  /** Set TLS version. **/
   int32_t* tls_versions = s2a_ServerSessionStartReq_resize_tls_versions(
       start_server, /*len=*/1, arena.ptr());
   GPR_ASSERT(tls_versions != nullptr);
   tls_versions[0] = s2a_TLS1_3;
+
+  /** Set supported TLS ciphersuites. **/
   int32_t* tls_ciphersuites = s2a_ServerSessionStartReq_resize_tls_ciphersuites(
-      start_server, options_->SupportedCiphersuites().size(), arena.ptr());
+      start_server, options_->supported_ciphersuites().size(), arena.ptr());
   GPR_ASSERT(tls_ciphersuites != nullptr);
-  for (size_t i = 0; i < options_->SupportedCiphersuites().size(); i++) {
-    tls_ciphersuites[i] = options_->SupportedCiphersuites()[i];
+  for (size_t i = 0; i < options_->supported_ciphersuites().size(); i++) {
+    tls_ciphersuites[i] = options_->supported_ciphersuites()[i];
   }
+
+  /** Set in bytes received from peer. **/
   s2a_ServerSessionStartReq_set_in_bytes(
       start_server, upb_strview_make(reinterpret_cast<const char*>(
                                          GRPC_SLICE_START_PTR(*bytes_received)),
@@ -133,6 +151,8 @@ grpc_byte_buffer* S2AHandshakerClient::SerializedNext(
   upb::Arena arena;
   s2a_SessionReq* request = s2a_SessionReq_new(arena.ptr());
   s2a_SessionNextReq* next = s2a_SessionReq_mutable_next(request, arena.ptr());
+
+  /** Set in bytes received from peer. **/
   s2a_SessionNextReq_set_in_bytes(
       next, upb_strview_make(reinterpret_cast<const char*>(
                                  GRPC_SLICE_START_PTR(*bytes_received)),
@@ -169,9 +189,10 @@ static void S2AOnStatusReceived(void* arg, grpc_error* error) {
 
 S2AHandshakerClient::S2AHandshakerClient(
     s2a_tsi_handshaker* handshaker, grpc_channel* channel,
-    grpc_pollset_set* interested_parties, grpc_s2a_credentials_options* options,
-    const grpc_slice& target_name, grpc_iomgr_cb_func grpc_cb,
-    tsi_handshaker_on_next_done_cb cb, void* user_data, bool is_client)
+    grpc_pollset_set* interested_parties,
+    const grpc_s2a_credentials_options* options, const grpc_slice& target_name,
+    grpc_iomgr_cb_func grpc_cb, tsi_handshaker_on_next_done_cb cb,
+    void* user_data, bool is_client)
     : handshaker_(handshaker),
       cb_(cb),
       user_data_(user_data),
@@ -189,8 +210,8 @@ S2AHandshakerClient::S2AHandshakerClient(
   grpc_metadata_array_init(&recv_initial_metadata_);
   buffer_ = static_cast<uint8_t*>(gpr_zalloc(buffer_size_));
   grpc_slice slice =
-      grpc_slice_from_copied_string(options->HandshakerServiceUrl().c_str());
-  call_ = (options->HandshakerServiceUrl().compare(
+      grpc_slice_from_copied_string(options->handshaker_service_url().c_str());
+  call_ = (options->handshaker_service_url().compare(
                kS2AHandshakerServiceUrlForTesting) == 0)
               ? nullptr
               : grpc_channel_create_pollset_set_call(
@@ -207,12 +228,12 @@ S2AHandshakerClient::S2AHandshakerClient(
 
 tsi_result s2a_handshaker_client_create(
     s2a_tsi_handshaker* handshaker, grpc_channel* channel,
-    grpc_pollset_set* interested_parties, grpc_s2a_credentials_options* options,
-    const grpc_slice& target_name, grpc_iomgr_cb_func grpc_cb,
-    tsi_handshaker_on_next_done_cb cb, void* user_data, bool is_client,
-    S2AHandshakerClient** client) {
+    grpc_pollset_set* interested_parties,
+    const grpc_s2a_credentials_options* options, const grpc_slice& target_name,
+    grpc_iomgr_cb_func grpc_cb, tsi_handshaker_on_next_done_cb cb,
+    void* user_data, bool is_client, S2AHandshakerClient** client) {
   if (channel == nullptr || client == nullptr ||
-      options->HandshakerServiceUrl().empty()) {
+      options->handshaker_service_url().empty()) {
     gpr_log(GPR_ERROR, kS2AHandshakerClientNullptrArguments);
     return TSI_INVALID_ARGUMENT;
   }
