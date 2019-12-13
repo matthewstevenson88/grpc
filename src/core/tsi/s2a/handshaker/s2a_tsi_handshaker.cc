@@ -45,11 +45,11 @@ struct s2a_tsi_handshaker {
   grpc_s2a_credentials_options* options;
   grpc_channel* channel;
   /** The mutex |mu| synchronizes the fields |client| and |shutdown|. These are
-   *  the only fields of the s2a_tsi_handshaker that could be accessed concurrently
-   *  (due to the potential concurrency of the |tsi_handshaker_shutdown| and
-   *  |tsi_handshaker_next| methods). **/
+   *  the only fields of the s2a_tsi_handshaker that could be accessed
+   * concurrently (due to the potential concurrency of the
+   * |tsi_handshaker_shutdown| and |tsi_handshaker_next| methods). **/
   gpr_mu mu;
-  s2a_handshaker_client* client;
+  S2AHandshakerClient* client;
   bool shutdown;
 };
 
@@ -76,7 +76,8 @@ typedef struct s2a_tsi_handshaker_result {
   unsigned char* unused_bytes;
   size_t unused_bytes_size;
   /** The |is_client| variable is true iff the handshaker result is on the
-   *  client-side, and false iff the handshaker result is on the server-side. **/
+   *  client-side, and false iff the handshaker result is on the server-side.
+   * **/
   bool is_client;
 } s2a_tsi_handshaker_result;
 
@@ -136,7 +137,7 @@ static void handshaker_shutdown(tsi_handshaker* self) {
     return;
   }
   if (handshaker->client != nullptr) {
-    s2a_handshaker_client_shutdown(handshaker->client);
+    handshaker->client->Shutdown();
   }
   handshaker->shutdown = true;
 }
@@ -164,10 +165,10 @@ static const tsi_handshaker_vtable handshaker_vtable = {
 
 tsi_result s2a_tsi_handshaker_create(
     const grpc_s2a_credentials_options* options, const char* target_name,
-    bool is_client,
-    grpc_pollset_set* interested_parties, tsi_handshaker** self,
+    bool is_client, grpc_pollset_set* interested_parties, tsi_handshaker** self,
     char** error_details) {
-  if (options == nullptr || (is_client && target_name == nullptr) || self == nullptr) {
+  if (options == nullptr || (is_client && target_name == nullptr) ||
+      self == nullptr) {
     gpr_log(GPR_ERROR, kS2ATsiHandshakerNullptrArguments);
     return TSI_INVALID_ARGUMENT;
   }
@@ -179,7 +180,7 @@ tsi_result s2a_tsi_handshaker_create(
                                 ? grpc_empty_slice()
                                 : grpc_slice_from_static_string(target_name);
   handshaker->interested_parties = interested_parties;
-  handshaker->options = grpc_s2a_credentials_options_copy(options);
+  handshaker->options = options->Copy();
   handshaker->base.vtable = &handshaker_vtable;
 
   *self = &(handshaker->base);
@@ -366,10 +367,12 @@ bool s2a_tsi_handshaker_has_shutdown(s2a_tsi_handshaker* handshaker) {
   return handshaker->shutdown;
 }
 
-void s2a_check_tsi_handshaker_for_testing(tsi_handshaker* base, grpc_slice target_name,
-                              bool is_client, bool has_sent_start_message,
-                              bool has_created_handshaker_client,
-                              bool shutdown) {
+void s2a_check_tsi_handshaker_for_testing(tsi_handshaker* base,
+                                          grpc_slice target_name,
+                                          bool is_client,
+                                          bool has_sent_start_message,
+                                          bool has_created_handshaker_client,
+                                          bool shutdown) {
   // TODO(mattstev): expand this implementation once more fields of
   // s2a_tsi_handshaker are populated.
   s2a_tsi_handshaker* handshaker = reinterpret_cast<s2a_tsi_handshaker*>(base);
