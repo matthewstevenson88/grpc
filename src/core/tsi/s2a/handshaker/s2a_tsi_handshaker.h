@@ -23,6 +23,7 @@
 
 #include <string.h>
 #include "src/core/lib/iomgr/pollset_set.h"
+#include "src/core/lib/security/credentials/s2a/grpc_s2a_credentials_options.h"
 #include "src/core/tsi/s2a/handshaker/s2a_handshaker_client.h"
 #include "src/core/tsi/transport_security.h"
 #include "src/core/tsi/transport_security_interface.h"
