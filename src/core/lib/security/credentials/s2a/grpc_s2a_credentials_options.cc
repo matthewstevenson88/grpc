@@ -39,7 +39,7 @@ void grpc_s2a_credentials_options::add_supported_ciphersuite(
 }
 
 void grpc_s2a_credentials_options::add_target_service_account(
-    const std::string target_service_account) {
+    const std::string& target_service_account) {
   target_service_account_list_.push_back(target_service_account);
 }
 

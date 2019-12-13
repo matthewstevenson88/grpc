@@ -55,8 +55,10 @@ grpc_byte_buffer* S2AHandshakerClient::SerializedStartClient() {
   int32_t* tls_ciphersuites = s2a_ClientSessionStartReq_resize_tls_ciphersuites(
       start_client, options_->supported_ciphersuites().size(), arena.ptr());
   GPR_ASSERT(tls_ciphersuites != nullptr);
-  for (size_t i = 0; i < options_->supported_ciphersuites().size(); i++) {
-    tls_ciphersuites[i] = options_->supported_ciphersuites()[i];
+  size_t index = 0;
+  for (auto ciphersuite : options_->supported_ciphersuites()) {
+    tls_ciphersuites[index] = ciphersuite;
+    index++;
   }
 
   /** Set SPIFFE ID of target service accounts. **/
@@ -115,8 +117,10 @@ grpc_byte_buffer* S2AHandshakerClient::SerializedStartServer(
   int32_t* tls_ciphersuites = s2a_ServerSessionStartReq_resize_tls_ciphersuites(
       start_server, options_->supported_ciphersuites().size(), arena.ptr());
   GPR_ASSERT(tls_ciphersuites != nullptr);
-  for (size_t i = 0; i < options_->supported_ciphersuites().size(); i++) {
-    tls_ciphersuites[i] = options_->supported_ciphersuites()[i];
+  size_t index = 0;
+  for (auto ciphersuite : options_->supported_ciphersuites()) {
+    tls_ciphersuites[index] = ciphersuite;
+    index++;
   }
 
   /** Set in bytes received from peer. **/
