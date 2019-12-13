@@ -48,7 +48,7 @@ struct s2a_tsi_handshaker {
    * concurrently (due to the potential concurrency of the
    * |tsi_handshaker_shutdown| and |tsi_handshaker_next| methods). **/
   gpr_mu mu;
-  s2a_handshaker_client* client;
+  S2AHandshakerClient* client;
   bool shutdown;
 };
 
@@ -97,7 +97,7 @@ static void handshaker_shutdown(tsi_handshaker* self) {
     return;
   }
   if (handshaker->client != nullptr) {
-    s2a_handshaker_client_shutdown(handshaker->client);
+    handshaker->client->Shutdown();
   }
   handshaker->shutdown = true;
 }
@@ -109,8 +109,7 @@ static void handshaker_destroy(tsi_handshaker* self) {
   s2a_tsi_handshaker* handshaker = reinterpret_cast<s2a_tsi_handshaker*>(self);
   s2a_handshaker_client_destroy(handshaker->client);
   grpc_slice_unref_internal(handshaker->target_name);
-  // TODO(mattstev): this API is exposed in a PR that is not yet merged.
-  // grpc_s2a_credentials_options_destroy(handshaker->options);
+  grpc_s2a_credentials_options_destroy(handshaker->options);
   if (handshaker->channel != nullptr) {
     grpc_channel_destroy_internal(handshaker->channel);
   }
@@ -141,8 +140,7 @@ tsi_result s2a_tsi_handshaker_create(
                                 ? grpc_empty_slice()
                                 : grpc_slice_from_static_string(target_name);
   handshaker->interested_parties = interested_parties;
-  // TODO(mattstev): this API is exposed in a PR that is not yet merged.
-  // handshaker->options = grpc_s2a_credentials_options_copy(options);
+  handshaker->options = options->Copy();
   handshaker->base.vtable = &handshaker_vtable;
 
   *self = &(handshaker->base);
