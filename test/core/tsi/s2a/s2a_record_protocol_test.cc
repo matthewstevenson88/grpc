@@ -825,10 +825,11 @@ static void s2a_test_key_update(uint16_t ciphersuite) {
       expected_traffic_secret_size = chacha_poly_advanced_traffic_secret.size();
       break;
   }
-  check_half_connection(crypter, /* in=*/true, /* expected sequence=*/0,
-                        expected_traffic_secret_size, expected_traffic_secret,
-                        /* verify_nonce=*/false, /* expected_nonce_size=*/0,
-                        /* expected_nonce=*/nullptr, SSL3_RT_HEADER_LENGTH);
+  check_half_connection_for_testing(
+      crypter, /* in=*/true, /* expected sequence=*/0,
+      expected_traffic_secret_size, expected_traffic_secret,
+      /* verify_nonce=*/false, /* expected_nonce_size=*/0,
+      /* expected_nonce=*/nullptr, SSL3_RT_HEADER_LENGTH);
   plaintext.resize(unprotected_bytes_written);
   GPR_ASSERT(plaintext == s2a_test_data::key_update_message);
 

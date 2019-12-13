@@ -380,12 +380,11 @@ gsec_aead_crypter* s2a_out_aead_crypter(s2a_crypter* crypter) {
   return crypter->out_aead_crypter;
 }
 
-void check_half_connection(s2a_crypter* crypter, bool in_half_connection,
-                           uint64_t expected_sequence,
-                           size_t expected_traffic_secret_size,
-                           uint8_t* expected_traffic_secret, bool verify_nonce,
-                           size_t expected_nonce_size, uint8_t* expected_nonce,
-                           uint8_t expected_additional_data_size) {
+void check_half_connection_for_testing(
+    s2a_crypter* crypter, bool in_half_connection, uint64_t expected_sequence,
+    size_t expected_traffic_secret_size, uint8_t* expected_traffic_secret,
+    bool verify_nonce, size_t expected_nonce_size, uint8_t* expected_nonce,
+    uint8_t expected_additional_data_size) {
   s2a_half_connection* half_connection =
       in_half_connection ? crypter->in_connection : crypter->out_connection;
   GPR_ASSERT(half_connection != nullptr);
@@ -873,6 +872,8 @@ S2ADecryptStatus s2a_decrypt_record(s2a_crypter* crypter, iovec& record_header,
         if (key_update_status != GRPC_STATUS_OK) {
           return S2ADecryptStatus::INTERNAL_ERROR;
         }
+        // TODO(mattstev): if necessary, send a key update to the peer. See
+        // https://tools.ietf.org/html/rfc8446#section-4.6.3.
         return S2ADecryptStatus::OK;
       }
       *error_details = gpr_strdup(kS2ARecordInvalidFormat);

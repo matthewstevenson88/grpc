@@ -126,18 +126,18 @@ void verify_half_connections(uint16_t ciphersuite, s2a_crypter* crypter,
       gpr_log(GPR_ERROR, kS2AUnsupportedCiphersuite);
       abort();
   }
-  check_half_connection(crypter, /* in_half_connection=*/true,
-                        /* expected_sequence=*/0,
-                        expected_traffic_secret.size(),
-                        expected_traffic_secret.data(),
-                        /* verify_nonce=*/true, expected_nonce_size,
-                        expected_nonce, SSL3_RT_HEADER_LENGTH);
-  check_half_connection(crypter, /* in_half_connection=*/true,
-                        /* expected_sequence=*/0,
-                        expected_traffic_secret.size(),
-                        expected_traffic_secret.data(),
-                        /* verify_nonce=*/true, expected_nonce_size,
-                        expected_nonce, SSL3_RT_HEADER_LENGTH);
+  check_half_connection_for_testing(crypter, /* in_half_connection=*/true,
+                                    /* expected_sequence=*/0,
+                                    expected_traffic_secret.size(),
+                                    expected_traffic_secret.data(),
+                                    /* verify_nonce=*/true, expected_nonce_size,
+                                    expected_nonce, SSL3_RT_HEADER_LENGTH);
+  check_half_connection_for_testing(crypter, /* in_half_connection=*/true,
+                                    /* expected_sequence=*/0,
+                                    expected_traffic_secret.size(),
+                                    expected_traffic_secret.data(),
+                                    /* verify_nonce=*/true, expected_nonce_size,
+                                    expected_nonce, SSL3_RT_HEADER_LENGTH);
 }
 
 size_t expected_message_size(size_t plaintext_size) {
