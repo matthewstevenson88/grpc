@@ -29,7 +29,7 @@ namespace experimental {
 grpc_s2a_credentials_options::~grpc_s2a_credentials_options() {}
 
 void grpc_s2a_credentials_options::set_handshaker_service_url(
-    std::string handshaker_service_url) {
+    const std::string& handshaker_service_url) {
   handshaker_service_url_ = handshaker_service_url;
 }
 
@@ -39,24 +39,24 @@ void grpc_s2a_credentials_options::add_supported_ciphersuite(
 }
 
 void grpc_s2a_credentials_options::add_target_service_account(
-    std::string target_service_account) {
+    const std::string& target_service_account) {
   target_service_account_list_.push_back(target_service_account);
 }
 
-grpc_s2a_credentials_options* grpc_s2a_credentials_options::copy() const {
+grpc_s2a_credentials_options* grpc_s2a_credentials_options::Copy() const {
   grpc_s2a_credentials_options* new_options =
       new grpc_s2a_credentials_options();
   new_options->set_handshaker_service_url(handshaker_service_url_);
   for (auto ciphersuite : supported_ciphersuites_) {
     new_options->add_supported_ciphersuite(ciphersuite);
   }
-  for (auto service_account : target_service_account_list_) {
+  for (const auto& service_account : target_service_account_list_) {
     new_options->add_target_service_account(service_account);
   }
   return new_options;
 }
 
-bool grpc_s2a_credentials_options::check_fields(
+bool grpc_s2a_credentials_options::CheckFieldsForTesting(
     const std::string& handshaker_service_url,
     const std::vector<uint16_t>& supported_ciphersuites,
     const std::vector<std::string>& target_service_account_list) {

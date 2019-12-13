@@ -43,7 +43,7 @@ struct s2a_tsi_handshaker_config {
 
 struct s2a_handshaker_client_config {
   s2a_tsi_handshaker_config* tsi_config;
-  s2a_handshaker_client* client;
+  S2AHandshakerClient* client;
 };
 
 static s2a_tsi_handshaker_config* s2a_tsi_handshaker_config_setup(
@@ -122,9 +122,10 @@ static void s2a_handshaker_client_create_and_destroy_test() {
 static void s2a_handshaker_client_client_start_test() {
   s2a_handshaker_client_config* config =
       s2a_handshaker_client_config_setup(/* is_client=*/true);
-  GPR_ASSERT(config->client->client_start() == TSI_OK);
+  GPR_ASSERT(config->client->ClientStart() == TSI_OK);
 
   grpc_byte_buffer* send_buffer = config->client->send_buffer_for_testing();
+
   upb::Arena arena;
   s2a_SessionReq* session_request =
       s2a_deserialize_session_req(arena.ptr(), send_buffer);
@@ -175,8 +176,7 @@ static void s2a_handshaker_client_server_start_test() {
   s2a_handshaker_client_config* config =
       s2a_handshaker_client_config_setup(/*is_client=*/false);
   grpc_slice bytes_received = grpc_slice_from_static_string("bytes_received");
-  GPR_ASSERT(config->client->server_start(kTlsAes128GcmSha256,
-                                          &bytes_received) == TSI_OK);
+  GPR_ASSERT(config->client->ServerStart(&bytes_received) == TSI_OK);
 
   grpc_byte_buffer* send_buffer = config->client->send_buffer_for_testing();
   upb::Arena arena;
@@ -222,7 +222,7 @@ static void s2a_handshaker_client_next_test() {
   s2a_handshaker_client_config* config =
       s2a_handshaker_client_config_setup(/*is_client=*/true);
   grpc_slice bytes_received = grpc_slice_from_static_string("bytes_received");
-  GPR_ASSERT(config->client->next(&bytes_received) == TSI_OK);
+  GPR_ASSERT(config->client->Next(&bytes_received) == TSI_OK);
 
   grpc_byte_buffer* send_buffer = config->client->send_buffer_for_testing();
   upb::Arena arena;

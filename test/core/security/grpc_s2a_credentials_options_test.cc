@@ -42,12 +42,12 @@ static void s2a_test_create_and_copy_options() {
   options->add_supported_ciphersuite(kTlsChacha20Poly1305Sha256);
   options->add_target_service_account(service_account_1);
   options->add_target_service_account(service_account_2);
-  grpc_s2a_credentials_options* copy_options = options->copy();
+  grpc_s2a_credentials_options* copy_options = options->Copy();
 
-  GPR_ASSERT(options->check_fields(handshaker_service_url, ciphersuites,
-                                   target_service_account_list));
-  GPR_ASSERT(copy_options->check_fields(handshaker_service_url, ciphersuites,
-                                        target_service_account_list));
+  GPR_ASSERT(options->CheckFieldsForTesting(
+      handshaker_service_url, ciphersuites, target_service_account_list));
+  GPR_ASSERT(copy_options->CheckFieldsForTesting(
+      handshaker_service_url, ciphersuites, target_service_account_list));
 
   grpc_s2a_credentials_options_destroy(options);
   grpc_s2a_credentials_options_destroy(copy_options);

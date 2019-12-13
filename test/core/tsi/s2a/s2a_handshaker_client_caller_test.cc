@@ -42,14 +42,15 @@ const char kS2AHandshakerClientTestOutFrame[] = "Hello Google!";
 
 struct s2a_handshaker_client_test_config {
   grpc_channel* channel;
+  grpc_s2a_credentials_options* options;
   tsi_handshaker* client_tsi_handshaker;
-  s2a_handshaker_client* client;
+  S2AHandshakerClient* client;
   tsi_handshaker* server_tsi_handshaker;
-  s2a_handshaker_client* server;
+  S2AHandshakerClient* server;
   grpc_slice out_frame;
 };
 
-static bool validate_op(s2a_handshaker_client* client, const grpc_op* op,
+static bool validate_op(S2AHandshakerClient* client, const grpc_op* op,
                         size_t nops, bool is_start) {
   GPR_ASSERT(client != nullptr && op != nullptr && nops != 0);
   bool ok = true;
@@ -101,8 +102,8 @@ static grpc_call_error check_client_start_success(grpc_call* /*call*/,
   }
   GPR_ASSERT(closure != nullptr);
   upb::Arena arena;
-  s2a_handshaker_client* client =
-      static_cast<s2a_handshaker_client*>(closure->cb_arg);
+  S2AHandshakerClient* client =
+      static_cast<S2AHandshakerClient*>(closure->cb_arg);
   GPR_ASSERT(client->closure_for_testing() == closure);
   s2a_SessionReq* session_request = s2a_deserialize_session_req(
       arena.ptr(), client->send_buffer_for_testing());
@@ -158,8 +159,8 @@ static grpc_call_error check_server_start_success(grpc_call* /*call*/,
   }
   GPR_ASSERT(closure != nullptr);
   upb::Arena arena;
-  s2a_handshaker_client* client =
-      static_cast<s2a_handshaker_client*>(closure->cb_arg);
+  S2AHandshakerClient* client =
+      static_cast<S2AHandshakerClient*>(closure->cb_arg);
   GPR_ASSERT(client->closure_for_testing() == closure);
   s2a_SessionReq* session_request = s2a_deserialize_session_req(
       arena.ptr(), client->send_buffer_for_testing());
@@ -186,9 +187,11 @@ static grpc_call_error check_server_start_success(grpc_call* /*call*/,
   size_t tls_ciphersuites_size;
   const int* tls_ciphersuites = s2a_ServerSessionStartReq_tls_ciphersuites(
       server_start, &tls_ciphersuites_size);
-  GPR_ASSERT(tls_ciphersuites_size == 1);
+  GPR_ASSERT(tls_ciphersuites_size == 3);
   GPR_ASSERT(tls_versions != nullptr);
   GPR_ASSERT(tls_ciphersuites[0] == kTlsAes128GcmSha256);
+  GPR_ASSERT(tls_ciphersuites[1] == kTlsAes256GcmSha384);
+  GPR_ASSERT(tls_ciphersuites[2] == kTlsChacha20Poly1305Sha256);
 
   upb_strview in_bytes = s2a_ServerSessionStartReq_in_bytes(server_start);
   GPR_ASSERT(upb_strview_eql(
@@ -203,8 +206,8 @@ static grpc_call_error check_next_success(grpc_call* /*call*/,
                                           grpc_closure* closure) {
   GPR_ASSERT(closure != nullptr);
   upb::Arena arena;
-  s2a_handshaker_client* client =
-      static_cast<s2a_handshaker_client*>(closure->cb_arg);
+  S2AHandshakerClient* client =
+      static_cast<S2AHandshakerClient*>(closure->cb_arg);
   GPR_ASSERT(client->closure_for_testing() == closure);
   s2a_SessionReq* session_request = s2a_deserialize_session_req(
       arena.ptr(), client->send_buffer_for_testing());
@@ -227,15 +230,12 @@ static grpc_call_error check_grpc_call_failure(grpc_call* /*call*/,
   return GRPC_CALL_ERROR;
 }
 
-static grpc_s2a_credentials_options* s2a_create_credentials_options(
-    bool is_client) {
+static grpc_s2a_credentials_options* s2a_create_test_credentials_options() {
   grpc_s2a_credentials_options* options = grpc_s2a_credentials_options_create();
   options->set_handshaker_service_url(kS2AHandshakerServiceUrlForTesting);
-  if (is_client) {
-    options->add_supported_ciphersuite(kTlsAes128GcmSha256);
-    options->add_supported_ciphersuite(kTlsAes256GcmSha384);
-    options->add_supported_ciphersuite(kTlsChacha20Poly1305Sha256);
-  }
+  options->add_supported_ciphersuite(kTlsAes128GcmSha256);
+  options->add_supported_ciphersuite(kTlsAes256GcmSha384);
+  options->add_supported_ciphersuite(kTlsChacha20Poly1305Sha256);
   options->add_target_service_account("target_service_account");
   return options;
 }
@@ -245,22 +245,18 @@ static s2a_handshaker_client_test_config* s2a_create_config() {
       new s2a_handshaker_client_test_config();
   config->channel = grpc_insecure_channel_create(
       kS2AHandshakerServiceUrlForTesting, nullptr, nullptr);
-
-  grpc_s2a_credentials_options* client_options =
-      s2a_create_credentials_options(/* is_client=*/true);
-  grpc_s2a_credentials_options* server_options =
-      s2a_create_credentials_options(/*  is_client=*/false);
+  config->options = s2a_create_test_credentials_options();
 
   char* error_details = nullptr;
   tsi_result client_handshaker_result = s2a_tsi_handshaker_create(
-      client_options, kS2AHandshakerClientTestTargetName, /* is_client=*/true,
+      config->options, kS2AHandshakerClientTestTargetName, /* is_client=*/true,
       /* interested_parties=*/nullptr, &(config->client_tsi_handshaker),
       &error_details);
   GPR_ASSERT(client_handshaker_result == TSI_OK);
   GPR_ASSERT(error_details == nullptr);
 
   tsi_result server_handshaker_result = s2a_tsi_handshaker_create(
-      server_options, kS2AHandshakerClientTestTargetName, /* is_client=*/false,
+      config->options, kS2AHandshakerClientTestTargetName, /* is_client=*/false,
       /* interested_parties=*/nullptr, &(config->server_tsi_handshaker),
       &error_details);
   GPR_ASSERT(server_handshaker_result == TSI_OK);
@@ -268,7 +264,7 @@ static s2a_handshaker_client_test_config* s2a_create_config() {
 
   tsi_result client_result = s2a_handshaker_client_create(
       reinterpret_cast<s2a_tsi_handshaker*>(config->client_tsi_handshaker),
-      config->channel, /* interested_parties=*/nullptr, client_options,
+      config->channel, /* interested_parties=*/nullptr, config->options,
       grpc_slice_from_static_string(kS2AHandshakerClientTestTargetName),
       /* grpc_cb=*/nullptr, /* cb=*/nullptr, /* user_data=*/nullptr,
       /* is_client=*/true, /* is_test=*/true, &(config->client));
@@ -277,15 +273,13 @@ static s2a_handshaker_client_test_config* s2a_create_config() {
 
   tsi_result server_result = s2a_handshaker_client_create(
       reinterpret_cast<s2a_tsi_handshaker*>(config->server_tsi_handshaker),
-      config->channel, /* interested_parties=*/nullptr, server_options,
+      config->channel, /* interested_parties=*/nullptr, config->options,
       grpc_slice_from_static_string(kS2AHandshakerClientTestTargetName),
       /* grpc_cb=*/nullptr, /* cb=*/nullptr, /* user_data=*/nullptr,
       /* is_client=*/false, /* is_test=*/true, &(config->server));
   GPR_ASSERT(server_result == TSI_OK);
   GPR_ASSERT(config->server != nullptr);
 
-  grpc_s2a_credentials_options_destroy(client_options);
-  grpc_s2a_credentials_options_destroy(server_options);
   config->out_frame =
       grpc_slice_from_static_string(kS2AHandshakerClientTestOutFrame);
   return config;
@@ -300,6 +294,7 @@ static void s2a_destroy_config(s2a_handshaker_client_test_config* config) {
   s2a_handshaker_client_destroy(config->server);
   tsi_handshaker_destroy(config->client_tsi_handshaker);
   tsi_handshaker_destroy(config->server_tsi_handshaker);
+  grpc_s2a_credentials_options_destroy(config->options);
   grpc_slice_unref(config->out_frame);
   delete config;
 }
@@ -308,17 +303,16 @@ static void s2a_schedule_request_success_test() {
   s2a_handshaker_client_test_config* config = s2a_create_config();
 
   config->client->set_grpc_caller_for_testing(check_client_start_success);
-  GPR_ASSERT(config->client->client_start() == TSI_OK);
+  GPR_ASSERT(config->client->ClientStart() == TSI_OK);
 
   config->server->set_grpc_caller_for_testing(check_server_start_success);
-  GPR_ASSERT(config->server->server_start(kTlsAes128GcmSha256,
-                                          &(config->out_frame)) == TSI_OK);
+  GPR_ASSERT(config->server->ServerStart(&(config->out_frame)) == TSI_OK);
 
   config->client->set_grpc_caller_for_testing(check_next_success);
-  GPR_ASSERT(config->client->next(&(config->out_frame)) == TSI_OK);
+  GPR_ASSERT(config->client->Next(&(config->out_frame)) == TSI_OK);
 
   config->server->set_grpc_caller_for_testing(check_next_success);
-  GPR_ASSERT(config->server->next(&(config->out_frame)) == TSI_OK);
+  GPR_ASSERT(config->server->Next(&(config->out_frame)) == TSI_OK);
 
   /** Cleanup. **/
   s2a_handshaker_client_on_status_received_for_testing(
@@ -332,16 +326,16 @@ static void s2a_schedule_request_grpc_call_failure_test() {
   s2a_handshaker_client_test_config* config = s2a_create_config();
 
   config->client->set_grpc_caller_for_testing(check_grpc_call_failure);
-  GPR_ASSERT(config->client->client_start() == TSI_INTERNAL_ERROR);
+  GPR_ASSERT(config->client->ClientStart() == TSI_INTERNAL_ERROR);
 
   config->server->set_grpc_caller_for_testing(check_grpc_call_failure);
   GPR_ASSERT(
-      config->server->server_start(kTlsAes128GcmSha256, &(config->out_frame)) ==
+      config->server->ServerStart(&(config->out_frame)) ==
       TSI_INTERNAL_ERROR);
 
-  GPR_ASSERT(config->client->next(&(config->out_frame)) == TSI_INTERNAL_ERROR);
+  GPR_ASSERT(config->client->Next(&(config->out_frame)) == TSI_INTERNAL_ERROR);
 
-  GPR_ASSERT(config->server->next(&(config->out_frame)) == TSI_INTERNAL_ERROR);
+  GPR_ASSERT(config->server->Next(&(config->out_frame)) == TSI_INTERNAL_ERROR);
 
   /** Cleanup. **/
   s2a_handshaker_client_on_status_received_for_testing(

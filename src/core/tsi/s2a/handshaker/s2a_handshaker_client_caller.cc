@@ -29,7 +29,7 @@ namespace grpc_core {
 namespace experimental {
 
 /** This file contains the implementation details of the |make_grpc_call| member
- *  function of the |s2a_handshaker_client| struct. This method enables the S2A
+ *  function of the |S2AHandshakerClient| class. This method enables the S2A
  *  handshaker client to make a gRPC call to the S2A service. **/
 
 const size_t kHandshakerClientOpNum = 4;
@@ -37,7 +37,7 @@ const size_t kHandshakerClientOpNum = 4;
 /** The implementation of |make_grpc_call| is nearly identical to that of its
  *  ALTS counterpart, the |make_grpc_call| method in alts_handshaker_client.cc.
  */
-tsi_result s2a_handshaker_client::make_grpc_call(bool is_start) {
+tsi_result S2AHandshakerClient::MakeGrpcCall(bool is_start) {
   grpc_op ops[kHandshakerClientOpNum];
   memset(ops, 0, sizeof(ops));
   grpc_op* op = ops;
@@ -86,7 +86,7 @@ tsi_result s2a_handshaker_client::make_grpc_call(bool is_start) {
 
 /** The implementation of this method is nearly identical to its ALTS
  *  counterpart, |maybe_complete_tsi_next| in alts_handshaker_client.cc. **/
-void s2a_handshaker_client::maybe_complete_tsi_next(
+void S2AHandshakerClient::MaybeCompleteTsiNext(
     bool receive_status_finished,
     s2a_recv_message_result* pending_recv_message_result) {
   s2a_recv_message_result* r = nullptr;
@@ -116,20 +116,21 @@ void s2a_handshaker_client::maybe_complete_tsi_next(
   gpr_free(r);
 }
 
-void s2a_handshaker_client::handle_response_done(
-    tsi_result status, const uint8_t* bytes_to_send, size_t bytes_to_send_size,
-    tsi_handshaker_result* result) {
+void S2AHandshakerClient::HandleResponseDone(tsi_result status,
+                                             const uint8_t* bytes_to_send,
+                                             size_t bytes_to_send_size,
+                                             tsi_handshaker_result* result) {
   s2a_recv_message_result* p =
       static_cast<s2a_recv_message_result*>(gpr_zalloc(sizeof(*p)));
   p->status = status;
   p->bytes_to_send = bytes_to_send;
   p->bytes_to_send_size = bytes_to_send_size;
   p->result = result;
-  maybe_complete_tsi_next(/* receive_status_finished=*/false,
-                          /* pending_recv_message_result=*/p);
+  MaybeCompleteTsiNext(/* receive_status_finished=*/false,
+                       /* pending_recv_message_result=*/p);
 }
 
-void s2a_handshaker_client::handle_response(bool is_ok) {
+void S2AHandshakerClient::HandleResponse(bool is_ok) {
   /** Invalid input check. **/
   if (cb_ == nullptr) {
     gpr_log(GPR_ERROR,
@@ -139,18 +140,18 @@ void s2a_handshaker_client::handle_response(bool is_ok) {
   if (handshaker_ == nullptr) {
     gpr_log(GPR_ERROR,
             "The |handshaker_| field is nullptr in |handle_response|.");
-    handle_response_done(TSI_INTERNAL_ERROR, /* bytes_to_send=*/nullptr,
-                         /* bytes_to_send_size=*/0,
-                         /* result=*/nullptr);
+    HandleResponseDone(TSI_INTERNAL_ERROR, /* bytes_to_send=*/nullptr,
+                       /* bytes_to_send_size=*/0,
+                       /* result=*/nullptr);
     return;
   }
 
   /** Handle the case when the TSI handshake has been shutdown. **/
   if (s2a_tsi_handshaker_has_shutdown(handshaker_)) {
     gpr_log(GPR_ERROR, "The TSI handshake was shutdown.");
-    handle_response_done(TSI_HANDSHAKE_SHUTDOWN, /* bytes_to_send=*/nullptr,
-                         /* bytes_to_send_size=*/0,
-                         /* result=*/nullptr);
+    HandleResponseDone(TSI_HANDSHAKE_SHUTDOWN, /* bytes_to_send=*/nullptr,
+                       /* bytes_to_send_size=*/0,
+                       /* result=*/nullptr);
     return;
   }
 
@@ -158,17 +159,17 @@ void s2a_handshaker_client::handle_response(bool is_ok) {
   if (!is_ok || status_ != GRPC_STATUS_OK) {
     gpr_log(GPR_ERROR,
             "The gRPC call made to the S2A handshaker service failed.");
-    handle_response_done(TSI_INTERNAL_ERROR, /* bytes_to_send=*/nullptr,
-                         /* bytes_to_send_size=*/0,
-                         /* result=*/nullptr);
+    HandleResponseDone(TSI_INTERNAL_ERROR, /* bytes_to_send=*/nullptr,
+                       /* bytes_to_send_size=*/0,
+                       /* result=*/nullptr);
     return;
   }
   if (recv_buffer_ == nullptr) {
     gpr_log(GPR_ERROR,
             "The |recv_buffer_| buffer is nullptr in |handle_response|.");
-    handle_response_done(TSI_INTERNAL_ERROR, /* bytes_to_send=*/nullptr,
-                         /* bytes_to_send_size=*/0,
-                         /* result=*/nullptr);
+    HandleResponseDone(TSI_INTERNAL_ERROR, /* bytes_to_send=*/nullptr,
+                       /* bytes_to_send_size=*/0,
+                       /* result=*/nullptr);
     return;
   }
 
@@ -181,17 +182,17 @@ void s2a_handshaker_client::handle_response(bool is_ok) {
   /** Invalid handshaker response check. **/
   if (response == nullptr) {
     gpr_log(GPR_ERROR, "The |s2a_deserialize_session_resp| method failed.");
-    handle_response_done(TSI_DATA_CORRUPTED, /* bytes_to_send=*/nullptr,
-                         /* bytes_to_send_size=*/0,
-                         /* result=*/nullptr);
+    HandleResponseDone(TSI_DATA_CORRUPTED, /* bytes_to_send=*/nullptr,
+                       /* bytes_to_send_size=*/0,
+                       /* result=*/nullptr);
     return;
   }
   const s2a_SessionStatus* session_status = s2a_SessionResp_status(response);
   if (session_status == nullptr) {
     gpr_log(GPR_ERROR, "No status in the |SessionResp|.");
-    handle_response_done(TSI_DATA_CORRUPTED, /* bytes_to_send=*/nullptr,
-                         /* bytes_to_send_size=*/0,
-                         /* result=*/nullptr);
+    HandleResponseDone(TSI_DATA_CORRUPTED, /* bytes_to_send=*/nullptr,
+                       /* bytes_to_send_size=*/0,
+                       /* result=*/nullptr);
     return;
   }
   upb_strview out_frames = s2a_SessionResp_out_frames(response);
@@ -231,8 +232,8 @@ void s2a_handshaker_client::handle_response(bool is_ok) {
       gpr_free(error_details);
     }
   }
-  handle_response_done(alts_tsi_utils_convert_to_tsi_result(code),
-                       bytes_to_send, bytes_to_send_size, result);
+  HandleResponseDone(alts_tsi_utils_convert_to_tsi_result(code), bytes_to_send,
+                     bytes_to_send_size, result);
 }
 
 }  // namespace experimental

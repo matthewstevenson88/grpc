@@ -41,14 +41,14 @@ struct s2a_tsi_handshaker {
   bool has_sent_start_message;
   bool has_created_handshaker_client;
   grpc_pollset_set* interested_parties;
-  grpc_s2a_credentials_options* options;
+  const grpc_s2a_credentials_options* options;
   grpc_channel* channel;
   /** The mutex |mu| synchronizes the fields |client| and |shutdown|. These are
    *  the only fields of the s2a_tsi_handshaker that could be accessed
    * concurrently (due to the potential concurrency of the
    * |tsi_handshaker_shutdown| and |tsi_handshaker_next| methods). **/
   gpr_mu mu;
-  s2a_handshaker_client* client;
+  S2AHandshakerClient* client;
   bool shutdown;
 };
 
@@ -97,7 +97,7 @@ static void handshaker_shutdown(tsi_handshaker* self) {
     return;
   }
   if (handshaker->client != nullptr) {
-    handshaker->client->shutdown();
+    handshaker->client->Shutdown();
   }
   handshaker->shutdown = true;
 }
@@ -109,7 +109,7 @@ static void handshaker_destroy(tsi_handshaker* self) {
   s2a_tsi_handshaker* handshaker = reinterpret_cast<s2a_tsi_handshaker*>(self);
   s2a_handshaker_client_destroy(handshaker->client);
   grpc_slice_unref_internal(handshaker->target_name);
-  grpc_s2a_credentials_options_destroy(handshaker->options);
+  //grpc_s2a_credentials_options_destroy(handshaker->options);
   if (handshaker->channel != nullptr) {
     grpc_channel_destroy_internal(handshaker->channel);
   }
@@ -140,7 +140,8 @@ tsi_result s2a_tsi_handshaker_create(
                                 ? grpc_empty_slice()
                                 : grpc_slice_from_static_string(target_name);
   handshaker->interested_parties = interested_parties;
-  handshaker->options = options->copy();
+  //handshaker->options = options->Copy();
+  handshaker->options = options;
   handshaker->base.vtable = &handshaker_vtable;
 
   *self = &(handshaker->base);
