@@ -451,6 +451,8 @@ if test "$PHP_GRPC" != "no"; then
     src/core/tsi/fake_transport_security.cc \
     src/core/tsi/local_transport_security.cc \
     src/core/tsi/s2a/handshaker/s2a_handshaker_client.cc \
+    src/core/tsi/s2a/handshaker/s2a_handshaker_client_caller.cc \
+    src/core/tsi/s2a/handshaker/s2a_handshaker_util.cc \
     src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.cc \
     src/core/tsi/s2a/record_protocol/s2a_crypter.cc \
     src/core/tsi/s2a/record_protocol/s2a_crypter_util.cc \

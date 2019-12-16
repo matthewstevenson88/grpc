@@ -49,12 +49,26 @@ constexpr size_t kTlsAes128GcmSha256NonceSize = 12;
 constexpr size_t kTlsAes256GcmSha384NonceSize = 12;
 constexpr size_t kTlsChacha20Poly1305Sha256NonceSize = 12;
 
-/** The size of the additional data bytes buffer used for encrypting and
- *  decrypting TLS 1.3 records. **/
+/** The size (in bytes) of the additional data bytes buffer used for encrypting
+ * and decrypting TLS 1.3 records. **/
 constexpr size_t kTlsAdditionalDataBytesSize = 13;
 
-/** The size of the sequence buffer used for parsing TLS 1.3 records. **/
+/** The initial size (in bytes) of the buffer owned by an S2A handshaker client.
+ * **/
+constexpr size_t kS2AInitialBufferSize = 256;
+
+/** The extension for the interaction with the S2A service. **/
+constexpr char kS2AServiceMethod[] = "/s2a.S2AService/SetUpSession";
+
+/** The application protocol used by S2A. **/
+constexpr char kS2AApplicationProtocol[] = "grpc";
+
+/** The size (in bytes) of the sequence buffer used for parsing TLS 1.3 records.
+ * **/
 constexpr size_t kTlsSequenceSize = 8;
+
+/** The URL of the S2A handshaker service for testing purposes. **/
+constexpr char kS2AHandshakerServiceUrlForTesting[] = "testing";
 
 /** S2A error messages. **/
 constexpr char kS2AUnsupportedTlsVersion[] =
@@ -84,6 +98,31 @@ constexpr char kS2AHeaderSizeMismatch[] =
     "The header size does not match the size of a TLS 1.3 record header.";
 constexpr char kS2AInvalidUnprotectedVec[] =
     "Ensure |unprotected_vec| is nullptr iff |unprotected_vec_size| = 0.";
+constexpr char kS2ATsiHandshakerNullptrArguments[] =
+    "There is an unexpected nullptr argument to |s2a_tsi_handshaker_create|.";
+constexpr char kS2ATsiHandshakerResultNullptrArguments[] =
+    "There is an unexpected nullptr argument to "
+    "|s2a_tsi_handshaker_result_create|.";
+constexpr char kS2ATsiHandshakerResultEmpty[] =
+    "The result field of |resp| is nullptr.";
+constexpr char kS2ATsiHandshakerResultInvalidPeerIdentity[] =
+    "The peer_identity field of |resp| is nullptr.";
+constexpr char kS2ATsiHandshakerResultInvalidSessionState[] =
+    "The session_state field of |resp| is nullptr.";
+constexpr char kS2ATsiHandshakerResultUnusedBytesNullptr[] =
+    "There is an unexpected nullptr argument to "
+    "|s2a_handshaker_result_get_unused_bytes|.";
+constexpr char kS2AHandshakerClientNullptrArguments[] =
+    "There is an unexpected nullptr argument to "
+    "|s2a_grpc_handshaker_client_create|.";
+constexpr char kS2AGetSerializedStartClientFailed[] =
+    "The |s2a_get_serialized_start_client| method failed.";
+constexpr char kS2AGetSerializedStartServerFailed[] =
+    "The |s2a_get_serialized_start_server| method failed.";
+constexpr char kS2AGetSerializedNextFailed[] =
+    "The |s2a_get_serialized_next| method failed.";
+constexpr char kS2AMakeGrpcCallFailed[] =
+    "The |make_grpc_call| member function failed.";
 constexpr char kS2ARecordExceedMaxSize[] =
     "The TLS 1.3 payload exceeds the maximum size.";
 constexpr char kS2AHeaderIncorrectFormat[] =
