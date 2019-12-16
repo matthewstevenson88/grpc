@@ -32,7 +32,12 @@ using ::experimental::grpc_s2a_credentials_options_destroy;
 namespace grpc_core {
 namespace experimental {
 
-static void s2a_test_tsi_handshaker_create_and_destroy_test() {
+std::vector<char> traffic_secret = {'k', 'k', 'k', 'k', 'k', 'k', 'k', 'k',
+                                      'k', 'k', 'k', 'k', 'k', 'k', 'k', 'k'};
+
+char spiffe_id[] = "spiffe_id";
+
+static void s2a_tsi_handshaker_create_and_destroy_test() {
   grpc_s2a_credentials_options* options = grpc_s2a_credentials_options_create();
   tsi_handshaker* handshaker = nullptr;
   char* error_details = nullptr;
@@ -58,7 +63,7 @@ static void s2a_test_tsi_handshaker_create_and_destroy_test() {
   grpc_s2a_credentials_options_destroy(options);
 }
 
-static void s2a_test_tsi_handshaker_next_test() {
+static void s2a_tsi_handshaker_next_test() {
   grpc_s2a_credentials_options* options = grpc_s2a_credentials_options_create();
   tsi_handshaker* handshaker = nullptr;
   char* error_details = nullptr;
@@ -69,12 +74,18 @@ static void s2a_test_tsi_handshaker_next_test() {
   GPR_ASSERT(error_details == nullptr);
   GPR_ASSERT(handshaker != nullptr);
 
-  tsi_result result = tsi_handshaker_next(
+  std::vector<unsigned char> received_bytes = {1, 2, 3, 4, 5, 6};
+  //std::vector<uint8_t> bytes_to_send = {7, 8, 9, 10, 11, 12, 13};
+  const unsigned char* bytes_to_send = nullptr;
+  size_t bytes_to_send_size;
+
+  tsi_result next_result = tsi_handshaker_next(
       handshaker,
-      /*received bytes*/ nullptr, /*received_bytes_size*/ 0,
-      /*bytes_to_send*/ nullptr, /*bytes_to_send_size*/ 0,
-      /*result*/ nullptr, /*cb*/ nullptr, /*user_data*/ nullptr);
-  GPR_ASSERT(result == TSI_UNIMPLEMENTED);
+      received_bytes.data(), received_bytes.size(),
+      &bytes_to_send, &bytes_to_send_size,
+      /*result=*/nullptr, /*cb=*/ nullptr, /*user_data=*/nullptr);
+  GPR_ASSERT(next_result == TSI_INVALID_ARGUMENT);
+
   tsi_handshaker_destroy(handshaker);
   grpc_s2a_credentials_options_destroy(options);
 }
@@ -87,8 +98,6 @@ static s2a_SessionResp* s2a_setup_test_session_resp(upb_arena* arena,
       session_state, static_cast<int32_t>(kTlsAes128GcmSha256));
   s2a_SessionState_set_in_sequence(session_state, 0);
   s2a_SessionState_set_out_sequence(session_state, 0);
-  std::vector<char> traffic_secret = {'k', 'k', 'k', 'k', 'k', 'k', 'k', 'k',
-                                      'k', 'k', 'k', 'k', 'k', 'k', 'k', 'k'};
   s2a_SessionState_set_in_key(
       session_state,
       upb_strview_make(traffic_secret.data(), traffic_secret.size()));
@@ -97,7 +106,6 @@ static s2a_SessionResp* s2a_setup_test_session_resp(upb_arena* arena,
       upb_strview_make(traffic_secret.data(), traffic_secret.size()));
 
   s2a_Identity* peer_identity = s2a_Identity_new(arena);
-  char spiffe_id[] = "spiffe_id";
   s2a_Identity_set_spiffe_id(peer_identity, upb_strview_make(spiffe_id, 9));
 
   s2a_SessionResult* session_result = s2a_SessionResult_new(arena);
@@ -151,35 +159,44 @@ static void s2a_tsi_handshaker_result_create_and_destroy_test() {
       reinterpret_cast<unsigned char*>(recv_bytes), recv_size,
       /*is_client*/ true);
 
-  tsi_result frame_protector_result = s2a_handshaker_result_create_zero_copy_grpc_protector(handshaker_result, nullptr, nullptr);
+  tsi_zero_copy_grpc_protector* protector = nullptr;
+  tsi_result frame_protector_result = tsi_handshaker_result_create_zero_copy_grpc_protector(handshaker_result, nullptr, &protector);
   GPR_ASSERT(frame_protector_result == TSI_UNIMPLEMENTED);
 
   tsi_handshaker_result_destroy(handshaker_result);
 }
 
+static bool s2a_compare_peer_property_with_string(const tsi_peer_property* property, const char* string, size_t string_size) {
+  GPR_ASSERT(property->value.length == string_size);
+  for (size_t i = 0; i < string_size; i++) {
+    GPR_ASSERT(property->value.data[i] == string[i]);
+  }
+  return true;
+}
+
 static void s2a_tsi_handshaker_result_extract_peer_test() {
   upb::Arena arena;
   s2a_SessionResp* session_response = s2a_setup_test_session_resp(arena.ptr(), /*has_peer_identity=*/true);
+  tsi_handshaker_result* handshaker_result = nullptr;
   tsi_result result = s2a_tsi_handshaker_result_create(session_response,
                                             /*is_client*/ true,
                                             &handshaker_result);
   GPR_ASSERT(result == TSI_OK);
   GPR_ASSERT(handshaker_result != nullptr);
 
-  tsi_peer* peer = nullptr;
-  tsu_result extract_peer_result = tsi_handshaker_result_extract_peer(handshaker_result, &peer);
+  tsi_peer peer;
+  tsi_result extract_peer_result = tsi_handshaker_result_extract_peer(handshaker_result, &peer);
   GPR_ASSERT(extract_peer_result == TSI_OK);
-  GPR_ASSERT(peer != nullptr);
 
-  const tsi_peer_property* cert_type = tsi_peer_get_property_by_name(peer, TSI_CERTIFICATE_TYPE_PEER_PROPERTY);
+  const tsi_peer_property* cert_type = tsi_peer_get_property_by_name(&peer, TSI_CERTIFICATE_TYPE_PEER_PROPERTY);
   GPR_ASSERT(cert_type != nullptr);
-  GPR_ASSERT(strcmp(cert_type->value.data, kTsiS2ACertificateType) == 0);
+  GPR_ASSERT(s2a_compare_peer_property_with_string(cert_type, kTsiS2ACertificateType, /*string_size=*/3));
 
-  const tsi_peer_property* spiffe_id = tsi_peer_get_property_by_name(peer, kTsiS2AServiceAccountPeerProperty);
+  const tsi_peer_property* peer_spiffe_id = tsi_peer_get_property_by_name(&peer, kTsiS2AServiceAccountPeerProperty);
   GPR_ASSERT(spiffe_id != nullptr);
-  GPR_ASSERT(strcmp(spiffe_id->value.data, "spiffe_id") == 0);
+  GPR_ASSERT(s2a_compare_peer_property_with_string(peer_spiffe_id, spiffe_id, /*string_size=*/9));
 
-  tsi_peer_destruct(peer);
+  tsi_peer_destruct(&peer);
   tsi_handshaker_result_destroy(handshaker_result);
 }
 

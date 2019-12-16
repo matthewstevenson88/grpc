@@ -152,7 +152,7 @@ static void s2a_tsi_handshaker_create_channel(void* arg, grpc_error* unused_erro
   s2a_tsi_handshaker_continue_handshaker_next_args* next_args = static_cast<s2a_tsi_handshaker_continue_handshaker_next_args*>(arg);
   s2a_tsi_handshaker* handshaker = next_args->handshaker;
   GPR_ASSERT(handshaker->channel == nullptr);
-  handshaker->channel = grpc_insecure_channel_create(next_args->handshaker->options->handshaker_service_url(), nullptr, nullptr);
+  handshaker->channel = ::grpc_insecure_channel_create(next_args->handshaker->options->handshaker_service_url().c_str(), nullptr, nullptr);
   tsi_result continue_next_result =
       s2a_tsi_handshaker_continue_handshaker_next(
           handshaker, next_args->received_bytes.get(),
