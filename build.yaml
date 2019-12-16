@@ -1627,6 +1627,7 @@ filegroups:
   headers:
   - src/core/tsi/s2a/frame_protector/s2a_frame_protector.h
   - src/core/tsi/s2a/handshaker/s2a_handshaker_client.h
+  - src/core/tsi/s2a/handshaker/s2a_handshaker_util.h
   - src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.h
   - src/core/tsi/s2a/record_protocol/s2a_crypter.h
   - src/core/tsi/s2a/record_protocol/s2a_crypter_util.h
@@ -1634,6 +1635,8 @@ filegroups:
   src:
   - src/core/tsi/s2a/frame_protector/s2a_frame_protector.cc
   - src/core/tsi/s2a/handshaker/s2a_handshaker_client.cc
+  - src/core/tsi/s2a/handshaker/s2a_handshaker_client_caller.cc
+  - src/core/tsi/s2a/handshaker/s2a_handshaker_util.cc
   - src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.cc
   - src/core/tsi/s2a/record_protocol/s2a_crypter.cc
   - src/core/tsi/s2a/record_protocol/s2a_crypter_util.cc
@@ -5695,6 +5698,13 @@ targets:
   deps:
   - grpc_test_util
   - gpr
+- name: s2a_handshaker_client_test
+  build: test
+  language: c++
+  src:
+  - test/core/tsi/s2a/s2a_handshaker_client_test.cc
+  deps:
+  - grpc_test_util
   - grpc
 - name: s2a_record_protocol_test
   build: test
@@ -5711,6 +5721,8 @@ targets:
   - test/core/security/s2a_security_connector_test.cc
   deps:
   - gpr
+  - grpc_test_util
+  - grpc
 - name: s2a_tsi_handshaker_test
   build: test
   language: c++

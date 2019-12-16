@@ -26,12 +26,12 @@
 namespace experimental {
 
 static void s2a_test_create_and_copy_options() {
-  const char* handshaker_service_url = "handshaker_service_url";
+  std::string handshaker_service_url = "handshaker_service_url";
   std::vector<uint16_t> ciphersuites = {
       kTlsAes128GcmSha256, kTlsAes256GcmSha384, kTlsChacha20Poly1305Sha256};
-  std::vector<char*> target_service_account_list;
-  char* service_account_1 = "target_service_account_1";
-  char* service_account_2 = "target_service_account_2";
+  std::vector<std::string> target_service_account_list;
+  std::string service_account_1 = "target_service_account_1";
+  std::string service_account_2 = "target_service_account_2";
   target_service_account_list.push_back(service_account_1);
   target_service_account_list.push_back(service_account_2);
 
@@ -42,12 +42,12 @@ static void s2a_test_create_and_copy_options() {
   options->add_supported_ciphersuite(kTlsChacha20Poly1305Sha256);
   options->add_target_service_account(service_account_1);
   options->add_target_service_account(service_account_2);
-  grpc_s2a_credentials_options* copy_options = options->copy();
+  grpc_s2a_credentials_options* copy_options = options->Copy();
 
-  GPR_ASSERT(options->check_fields(handshaker_service_url, ciphersuites,
-                                   target_service_account_list));
-  GPR_ASSERT(copy_options->check_fields(handshaker_service_url, ciphersuites,
-                                        target_service_account_list));
+  GPR_ASSERT(options->CheckFieldsForTesting(
+      handshaker_service_url, ciphersuites, target_service_account_list));
+  GPR_ASSERT(copy_options->CheckFieldsForTesting(
+      handshaker_service_url, ciphersuites, target_service_account_list));
 
   grpc_s2a_credentials_options_destroy(options);
   grpc_s2a_credentials_options_destroy(copy_options);

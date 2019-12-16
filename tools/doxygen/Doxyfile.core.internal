@@ -1661,6 +1661,9 @@ src/core/tsi/s2a/frame_protector/s2a_frame_protector.cc \
 src/core/tsi/s2a/frame_protector/s2a_frame_protector.h \
 src/core/tsi/s2a/handshaker/s2a_handshaker_client.cc \
 src/core/tsi/s2a/handshaker/s2a_handshaker_client.h \
+src/core/tsi/s2a/handshaker/s2a_handshaker_client_caller.cc \
+src/core/tsi/s2a/handshaker/s2a_handshaker_util.cc \
+src/core/tsi/s2a/handshaker/s2a_handshaker_util.h \
 src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.cc \
 src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.h \
 src/core/tsi/s2a/record_protocol/s2a_crypter.cc \
