@@ -20,33 +20,25 @@
 #include <grpc/support/alloc.h>
 #include <grpc/support/log.h>
 #include <grpc/support/string_util.h>
+#include "src/core/tsi/s2a/s2a_constants.h"
 
-grpc_status_code s2a_deserialize_session_state(
-    grpc_byte_buffer* session_state_buffer, upb_arena* arena,
-    s2a_SessionState** session_state, char** error_details) {
-  if (session_state_buffer == nullptr) {
-    *error_details =
-        gpr_strdup("The |session_state_buffer| argument is nullptr.");
-    return GRPC_STATUS_FAILED_PRECONDITION;
-  }
-  if (arena == nullptr) {
-    *error_details = gpr_strdup("The |arena| argument is nullptr.");
-    return GRPC_STATUS_FAILED_PRECONDITION;
-  }
-  grpc_byte_buffer_reader bbr;
-  grpc_byte_buffer_reader_init(&bbr, session_state_buffer);
-  grpc_slice slice = grpc_byte_buffer_reader_readall(&bbr);
-  size_t buf_size = GPR_SLICE_LENGTH(slice);
-  void* buf = upb_arena_malloc(arena, buf_size);
-  memcpy(buf, reinterpret_cast<const char*>(GPR_SLICE_START_PTR(slice)),
-         buf_size);
-  *session_state =
-      s2a_SessionState_parse(reinterpret_cast<char*>(buf), buf_size, arena);
-  grpc_slice_unref_internal(slice);
-  grpc_byte_buffer_reader_destroy(&bbr);
-  if (*session_state == nullptr) {
-    *error_details = gpr_strdup("The |s2a_SessionState_parse| method failed.");
-    return GRPC_STATUS_INTERNAL;
+grpc_status_code s2a_ciphersuite_to_hash_function(
+    uint16_t ciphersuite, GsecHashFunction* hash_function,
+    char** error_details) {
+  GPR_ASSERT(hash_function != nullptr);
+  switch (ciphersuite) {
+    case kTlsAes128GcmSha256:
+      *hash_function = GsecHashFunction::SHA256_hash_function;
+      break;
+    case kTlsAes256GcmSha384:
+      *hash_function = GsecHashFunction::SHA384_hash_function;
+      break;
+    case kTlsChacha20Poly1305Sha256:
+      *hash_function = GsecHashFunction::SHA256_hash_function;
+      break;
+    default:
+      *error_details = gpr_strdup(kS2AUnsupportedCiphersuite);
+      return GRPC_STATUS_FAILED_PRECONDITION;
   }
   return GRPC_STATUS_OK;
 }

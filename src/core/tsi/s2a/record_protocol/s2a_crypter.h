@@ -205,13 +205,11 @@ gsec_aead_crypter* s2a_in_aead_crypter(s2a_crypter* crypter);
 
 gsec_aead_crypter* s2a_out_aead_crypter(s2a_crypter* crypter);
 
-void check_half_connection(s2a_crypter* crypter, bool in_half_connection,
-                           uint64_t expected_sequence,
-                           size_t expected_traffic_secret_size,
-                           uint8_t* expected_traffic_secret,
-                           size_t expected_fixed_nonce_size,
-                           uint8_t* expected_fixed_nonce,
-                           uint8_t expected_additional_data_size);
+void check_half_connection_for_testing(
+    s2a_crypter* crypter, bool in_half_connection, uint64_t expected_sequence,
+    size_t expected_traffic_secret_size, uint8_t* expected_traffic_secret,
+    bool verify_nonce, size_t expected_fixed_nonce_size,
+    uint8_t* expected_fixed_nonce, uint8_t expected_additional_data_size);
 
 /** This function writes a TLS 1.3 record to |protected_record| of type
  *  |record_type|, and with a payload containing the ciphertext obtained by

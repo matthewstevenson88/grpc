@@ -24,6 +24,8 @@
 
 namespace s2a_test_data {
 
+std::vector<uint8_t> key_update_message = {24, 0, 0, 1, 0};
+
 std::vector<uint8_t> test_message_1 = {};
 
 std::vector<uint8_t> test_message_2 = {8};
@@ -31,8 +33,13 @@ std::vector<uint8_t> test_message_2 = {8};
 std::vector<uint8_t> test_message_3 = {46,  98, 101, 255, 213, 156, 15,  100,
                                        126, 45, 130, 239, 209, 13,  156, 89};
 
+std::vector<uint8_t> test_message_4(1500, 'm');
+
+std::vector<uint8_t> test_message_5(16384, 's');
+
 std::vector<uint8_t> message_encrypted_with_padded_zeros = {'1', '2', '3',
                                                             '4', '5', '6'};
+
 std::vector<uint8_t> aes_128_gcm_padded_zeros_record = {
     23,  3,   3,   0,   33,  242, 228, 228, 17,  172, 103, 96,  232,
     71,  38,  228, 136, 109, 116, 50,  227, 155, 52,  240, 252, 207,
