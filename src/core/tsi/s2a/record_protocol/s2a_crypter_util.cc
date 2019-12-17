@@ -20,6 +20,7 @@
 #include <grpc/support/alloc.h>
 #include <grpc/support/log.h>
 #include <grpc/support/string_util.h>
+#include "src/core/tsi/s2a/s2a_constants.h"
 
 tsi_result s2a_util_convert_to_tsi_result(S2ADecryptStatus status) {
   switch (status) {
@@ -30,4 +31,25 @@ tsi_result s2a_util_convert_to_tsi_result(S2ADecryptStatus status) {
       // how they will be used by the S2A TSI handshaker.
       return TSI_UNIMPLEMENTED;
   }
+}
+
+grpc_status_code s2a_ciphersuite_to_hash_function(
+    uint16_t ciphersuite, GsecHashFunction* hash_function,
+    char** error_details) {
+  GPR_ASSERT(hash_function != nullptr);
+  switch (ciphersuite) {
+    case kTlsAes128GcmSha256:
+      *hash_function = GsecHashFunction::SHA256_hash_function;
+      break;
+    case kTlsAes256GcmSha384:
+      *hash_function = GsecHashFunction::SHA384_hash_function;
+      break;
+    case kTlsChacha20Poly1305Sha256:
+      *hash_function = GsecHashFunction::SHA256_hash_function;
+      break;
+    default:
+      *error_details = gpr_strdup(kS2AUnsupportedCiphersuite);
+      return GRPC_STATUS_FAILED_PRECONDITION;
+  }
+  return GRPC_STATUS_OK;
 }

@@ -27,10 +27,11 @@ constexpr size_t kPoly1305TagLength = 16;
 constexpr size_t kSha256DigestLength = 32;
 constexpr size_t kSha384DigestLength = 48;
 
-/** The uint16_t's for the supported TLS 1.3 ciphersuites. **/
-constexpr uint16_t kTlsAes128GcmSha256 = 0x009c;
+/** The uint16_t's for the supported TLS 1.3 ciphersuites. The values are
+ *  specified here: https://tools.ietf.org/html/rfc8446#appendix-B.4. **/
+constexpr uint16_t kTlsAes128GcmSha256 = 0x1301;
 constexpr uint16_t kTlsAes256GcmSha384 = 0x1302;
-constexpr uint16_t kTlsChacha20Poly1305Sha256 = 0xcca8;
+constexpr uint16_t kTlsChacha20Poly1305Sha256 = 0x1303;
 
 /** The following constants represent the key and nonce sizes of the supported
  *  ciphersuites. **/
