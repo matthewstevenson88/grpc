@@ -19258,16 +19258,16 @@ $(BINDIR)/$(CONFIG)/s2a_frame_protector_test: protobuf_dep_error
 
 else
 
-$(BINDIR)/$(CONFIG)/s2a_frame_protector_test: $(PROTOBUF_DEP) $(S2A_FRAME_PROTECTOR_TEST_OBJS) $(LIBDIR)/$(CONFIG)/libgrpc_test_util.a $(LIBDIR)/$(CONFIG)/libgpr.a
+$(BINDIR)/$(CONFIG)/s2a_frame_protector_test: $(PROTOBUF_DEP) $(S2A_FRAME_PROTECTOR_TEST_OBJS) $(LIBDIR)/$(CONFIG)/libgrpc_test_util.a $(LIBDIR)/$(CONFIG)/libgpr.a $(LIBDIR)/$(CONFIG)/libgrpc.a
 	$(E) "[LD]      Linking $@"
 	$(Q) mkdir -p `dirname $@`
-	$(Q) $(LDXX) $(LDFLAGS) $(S2A_FRAME_PROTECTOR_TEST_OBJS) $(LIBDIR)/$(CONFIG)/libgrpc_test_util.a $(LIBDIR)/$(CONFIG)/libgpr.a $(LDLIBSXX) $(LDLIBS_PROTOBUF) $(LDLIBS) $(LDLIBS_SECURE) $(GTEST_LIB) -o $(BINDIR)/$(CONFIG)/s2a_frame_protector_test
+	$(Q) $(LDXX) $(LDFLAGS) $(S2A_FRAME_PROTECTOR_TEST_OBJS) $(LIBDIR)/$(CONFIG)/libgrpc_test_util.a $(LIBDIR)/$(CONFIG)/libgpr.a $(LIBDIR)/$(CONFIG)/libgrpc.a $(LDLIBSXX) $(LDLIBS_PROTOBUF) $(LDLIBS) $(LDLIBS_SECURE) $(GTEST_LIB) -o $(BINDIR)/$(CONFIG)/s2a_frame_protector_test
 
 endif
 
 endif
 
-$(OBJDIR)/$(CONFIG)/test/core/tsi/s2a/s2a_frame_protector_test.o:  $(LIBDIR)/$(CONFIG)/libgrpc_test_util.a $(LIBDIR)/$(CONFIG)/libgpr.a
+$(OBJDIR)/$(CONFIG)/test/core/tsi/s2a/s2a_frame_protector_test.o:  $(LIBDIR)/$(CONFIG)/libgrpc_test_util.a $(LIBDIR)/$(CONFIG)/libgpr.a $(LIBDIR)/$(CONFIG)/libgrpc.a
 
 deps_s2a_frame_protector_test: $(S2A_FRAME_PROTECTOR_TEST_OBJS:.o=.dep)
 
@@ -19344,16 +19344,16 @@ $(BINDIR)/$(CONFIG)/s2a_record_protocol_test: protobuf_dep_error
 
 else
 
-$(BINDIR)/$(CONFIG)/s2a_record_protocol_test: $(PROTOBUF_DEP) $(S2A_RECORD_PROTOCOL_TEST_OBJS) $(LIBDIR)/$(CONFIG)/libgrpc_test_util.a $(LIBDIR)/$(CONFIG)/libgrpc.a
+$(BINDIR)/$(CONFIG)/s2a_record_protocol_test: $(PROTOBUF_DEP) $(S2A_RECORD_PROTOCOL_TEST_OBJS) $(LIBDIR)/$(CONFIG)/libgrpc_test_util.a $(LIBDIR)/$(CONFIG)/libgpr.a $(LIBDIR)/$(CONFIG)/libgrpc.a
 	$(E) "[LD]      Linking $@"
 	$(Q) mkdir -p `dirname $@`
-	$(Q) $(LDXX) $(LDFLAGS) $(S2A_RECORD_PROTOCOL_TEST_OBJS) $(LIBDIR)/$(CONFIG)/libgrpc_test_util.a $(LIBDIR)/$(CONFIG)/libgrpc.a $(LDLIBSXX) $(LDLIBS_PROTOBUF) $(LDLIBS) $(LDLIBS_SECURE) $(GTEST_LIB) -o $(BINDIR)/$(CONFIG)/s2a_record_protocol_test
+	$(Q) $(LDXX) $(LDFLAGS) $(S2A_RECORD_PROTOCOL_TEST_OBJS) $(LIBDIR)/$(CONFIG)/libgrpc_test_util.a $(LIBDIR)/$(CONFIG)/libgpr.a $(LIBDIR)/$(CONFIG)/libgrpc.a $(LDLIBSXX) $(LDLIBS_PROTOBUF) $(LDLIBS) $(LDLIBS_SECURE) $(GTEST_LIB) -o $(BINDIR)/$(CONFIG)/s2a_record_protocol_test
 
 endif
 
 endif
 
-$(OBJDIR)/$(CONFIG)/test/core/tsi/s2a/s2a_record_protocol_test.o:  $(LIBDIR)/$(CONFIG)/libgrpc_test_util.a $(LIBDIR)/$(CONFIG)/libgrpc.a
+$(OBJDIR)/$(CONFIG)/test/core/tsi/s2a/s2a_record_protocol_test.o:  $(LIBDIR)/$(CONFIG)/libgrpc_test_util.a $(LIBDIR)/$(CONFIG)/libgpr.a $(LIBDIR)/$(CONFIG)/libgrpc.a
 
 deps_s2a_record_protocol_test: $(S2A_RECORD_PROTOCOL_TEST_OBJS:.o=.dep)
 

@@ -148,7 +148,7 @@ static grpc_status_code derive_key(uint16_t ciphersuite, uint8_t* secret,
                                    size_t secret_size, size_t output_size,
                                    uint8_t* output, char** error_details) {
   GPR_ASSERT(error_details != nullptr);
-  static const uint8_t key_suffix[] = "\x09tls13 key\x00";
+  static uint8_t key_suffix[] = "\x09tls13 key\x00";
   size_t suffix_size = sizeof(key_suffix) - 1;
   return derive_secret(ciphersuite, key_suffix, suffix_size, secret,
                        secret_size, output_size, output, error_details);
@@ -160,7 +160,7 @@ static grpc_status_code derive_nonce(uint16_t ciphersuite, uint8_t* secret,
                                      size_t secret_size, size_t output_size,
                                      uint8_t* output, char** error_details) {
   GPR_ASSERT(error_details != nullptr);
-  static const uint8_t nonce_suffix[] = "\x08tls13 iv\x00";
+  static uint8_t nonce_suffix[] = "\x08tls13 iv\x00";
   size_t suffix_size = sizeof(nonce_suffix) - 1;
   return derive_secret(ciphersuite, nonce_suffix, suffix_size, secret,
                        secret_size, output_size, output, error_details);
@@ -978,8 +978,7 @@ S2ADecryptStatus s2a_unprotect_record(s2a_crypter* crypter,
   GPR_ASSERT(error_details != nullptr);
 
   size_t tag_size;
-  grpc_status_code tag_status =
-      s2a_tag_size(*crypter, &tag_size, error_details);
+  grpc_status_code tag_status = s2a_tag_size(crypter->ciphersuite, &tag_size, error_details);
   if (tag_status != GRPC_STATUS_OK) {
     return S2ADecryptStatus::INTERNAL_ERROR;
   }
