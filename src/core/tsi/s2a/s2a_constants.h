@@ -61,7 +61,8 @@ constexpr char kS2AApplicationProtocol[] = "grpc";
 constexpr size_t kTlsSequenceSize = 8;
 
 /** The maximum size of a frame expected by the S2A frame protector. **/
-constexpr size_t kS2AMaxFrameSize = 16 * 1024 * 1024;
+constexpr size_t kS2AMaxFrameSize =
+    /*record_header=*/5 + /*max_plaintext_size=*/16 * 1024 + /*tag=*/16;
 
 /** The URL of the S2A handshaker service for testing purposes. **/
 constexpr char kS2AHandshakerServiceUrlForTesting[] = "testing";
