@@ -539,6 +539,7 @@
         'src/core/tsi/ssl/session_cache/ssl_session_openssl.cc',
         'src/core/tsi/ssl_transport_security.cc',
         'src/core/tsi/transport_security_grpc.cc',
+        'src/core/tsi/s2a/frame_protector/s2a_frame_protector.cc',
         'src/core/tsi/s2a/handshaker/s2a_handshaker_client.cc',
         'src/core/tsi/s2a/handshaker/s2a_handshaker_client_caller.cc',
         'src/core/tsi/s2a/handshaker/s2a_handshaker_util.cc',

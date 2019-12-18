@@ -863,6 +863,8 @@ Gem::Specification.new do |s|
   s.files += %w( src/core/tsi/grpc_shadow_boringssl.h )
   s.files += %w( src/core/tsi/local_transport_security.cc )
   s.files += %w( src/core/tsi/local_transport_security.h )
+  s.files += %w( src/core/tsi/s2a/frame_protector/s2a_frame_protector.cc )
+  s.files += %w( src/core/tsi/s2a/frame_protector/s2a_frame_protector.h )
   s.files += %w( src/core/tsi/s2a/handshaker/s2a_handshaker_client.cc )
   s.files += %w( src/core/tsi/s2a/handshaker/s2a_handshaker_client.h )
   s.files += %w( src/core/tsi/s2a/handshaker/s2a_handshaker_client_caller.cc )

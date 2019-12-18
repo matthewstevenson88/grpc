@@ -2011,6 +2011,23 @@ grpc_cc_library(
 )
 
 grpc_cc_library(
+    name = "s2a_frame_protector",
+    srcs = [
+        "src/core/tsi/s2a/frame_protector/s2a_frame_protector.cc",
+    ],
+    hdrs = [
+        "src/core/tsi/s2a/frame_protector/s2a_frame_protector.h",
+    ],
+    language = "c++",
+    deps = [
+        "gpr",
+        "grpc_base",
+        "s2a_constants",
+        "s2a_record_protocol",
+        "tsi_interface",
+    ],
+)
+grpc_cc_library(
     name = "alts_util",
     srcs = [
         "src/core/lib/security/credentials/alts/check_gcp_environment.cc",

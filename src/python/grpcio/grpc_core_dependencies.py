@@ -428,6 +428,7 @@ CORE_SOURCE_FILES = [
     'src/core/tsi/alts/zero_copy_frame_protector/alts_zero_copy_grpc_protector.cc',
     'src/core/tsi/fake_transport_security.cc',
     'src/core/tsi/local_transport_security.cc',
+    'src/core/tsi/s2a/frame_protector/s2a_frame_protector.cc',
     'src/core/tsi/s2a/handshaker/s2a_handshaker_client.cc',
     'src/core/tsi/s2a/handshaker/s2a_handshaker_client_caller.cc',
     'src/core/tsi/s2a/handshaker/s2a_handshaker_util.cc',

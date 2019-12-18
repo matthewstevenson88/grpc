@@ -32,6 +32,10 @@ tsi_result alts_tsi_utils_convert_to_tsi_result(grpc_status_code code) {
       return TSI_UNKNOWN_ERROR;
     case GRPC_STATUS_INVALID_ARGUMENT:
       return TSI_INVALID_ARGUMENT;
+    case GRPC_STATUS_FAILED_PRECONDITION:
+      return TSI_FAILED_PRECONDITION;
+    case GRPC_STATUS_UNIMPLEMENTED:
+      return TSI_UNIMPLEMENTED;
     case GRPC_STATUS_NOT_FOUND:
       return TSI_NOT_FOUND;
     case GRPC_STATUS_INTERNAL:

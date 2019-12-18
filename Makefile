@@ -1278,6 +1278,7 @@ ref_counted_ptr_test: $(BINDIR)/$(CONFIG)/ref_counted_ptr_test
 ref_counted_test: $(BINDIR)/$(CONFIG)/ref_counted_test
 retry_throttle_test: $(BINDIR)/$(CONFIG)/retry_throttle_test
 s2a_credentials_test: $(BINDIR)/$(CONFIG)/s2a_credentials_test
+s2a_frame_protector_test: $(BINDIR)/$(CONFIG)/s2a_frame_protector_test
 s2a_handshaker_client_test: $(BINDIR)/$(CONFIG)/s2a_handshaker_client_test
 s2a_record_protocol_test: $(BINDIR)/$(CONFIG)/s2a_record_protocol_test
 s2a_security_connector_test: $(BINDIR)/$(CONFIG)/s2a_security_connector_test
@@ -1753,6 +1754,7 @@ buildtests_cxx: privatelibs_cxx \
   $(BINDIR)/$(CONFIG)/ref_counted_test \
   $(BINDIR)/$(CONFIG)/retry_throttle_test \
   $(BINDIR)/$(CONFIG)/s2a_credentials_test \
+  $(BINDIR)/$(CONFIG)/s2a_frame_protector_test \
   $(BINDIR)/$(CONFIG)/s2a_handshaker_client_test \
   $(BINDIR)/$(CONFIG)/s2a_record_protocol_test \
   $(BINDIR)/$(CONFIG)/s2a_security_connector_test \
@@ -1930,6 +1932,7 @@ buildtests_cxx: privatelibs_cxx \
   $(BINDIR)/$(CONFIG)/ref_counted_test \
   $(BINDIR)/$(CONFIG)/retry_throttle_test \
   $(BINDIR)/$(CONFIG)/s2a_credentials_test \
+  $(BINDIR)/$(CONFIG)/s2a_frame_protector_test \
   $(BINDIR)/$(CONFIG)/s2a_handshaker_client_test \
   $(BINDIR)/$(CONFIG)/s2a_record_protocol_test \
   $(BINDIR)/$(CONFIG)/s2a_security_connector_test \
@@ -2457,6 +2460,8 @@ test_cxx: buildtests_cxx
 	$(Q) $(BINDIR)/$(CONFIG)/retry_throttle_test || ( echo test retry_throttle_test failed ; exit 1 )
 	$(E) "[RUN]     Testing s2a_credentials_test"
 	$(Q) $(BINDIR)/$(CONFIG)/s2a_credentials_test || ( echo test s2a_credentials_test failed ; exit 1 )
+	$(E) "[RUN]     Testing s2a_frame_protector_test"
+	$(Q) $(BINDIR)/$(CONFIG)/s2a_frame_protector_test || ( echo test s2a_frame_protector_test failed ; exit 1 )
 	$(E) "[RUN]     Testing s2a_handshaker_client_test"
 	$(Q) $(BINDIR)/$(CONFIG)/s2a_handshaker_client_test || ( echo test s2a_handshaker_client_test failed ; exit 1 )
 	$(E) "[RUN]     Testing s2a_record_protocol_test"
@@ -3923,6 +3928,7 @@ LIBGRPC_SRC = \
     src/core/tsi/ssl/session_cache/ssl_session_openssl.cc \
     src/core/tsi/ssl_transport_security.cc \
     src/core/tsi/transport_security_grpc.cc \
+    src/core/tsi/s2a/frame_protector/s2a_frame_protector.cc \
     src/core/tsi/s2a/handshaker/s2a_handshaker_client.cc \
     src/core/tsi/s2a/handshaker/s2a_handshaker_client_caller.cc \
     src/core/tsi/s2a/handshaker/s2a_handshaker_util.cc \
@@ -4403,6 +4409,7 @@ LIBGRPC_CRONET_SRC = \
     src/core/tsi/ssl/session_cache/ssl_session_openssl.cc \
     src/core/tsi/ssl_transport_security.cc \
     src/core/tsi/transport_security_grpc.cc \
+    src/core/tsi/s2a/frame_protector/s2a_frame_protector.cc \
     src/core/tsi/s2a/handshaker/s2a_handshaker_client.cc \
     src/core/tsi/s2a/handshaker/s2a_handshaker_client_caller.cc \
     src/core/tsi/s2a/handshaker/s2a_handshaker_util.cc \
@@ -19228,6 +19235,49 @@ endif
 endif
 
 
+S2A_FRAME_PROTECTOR_TEST_SRC = \
+    test/core/tsi/s2a/s2a_frame_protector_test.cc \
+
+S2A_FRAME_PROTECTOR_TEST_OBJS = $(addprefix $(OBJDIR)/$(CONFIG)/, $(addsuffix .o, $(basename $(S2A_FRAME_PROTECTOR_TEST_SRC))))
+ifeq ($(NO_SECURE),true)
+
+# You can't build secure targets if you don't have OpenSSL.
+
+$(BINDIR)/$(CONFIG)/s2a_frame_protector_test: openssl_dep_error
+
+else
+
+
+
+
+ifeq ($(NO_PROTOBUF),true)
+
+# You can't build the protoc plugins or protobuf-enabled targets if you don't have protobuf 3.5.0+.
+
+$(BINDIR)/$(CONFIG)/s2a_frame_protector_test: protobuf_dep_error
+
+else
+
+$(BINDIR)/$(CONFIG)/s2a_frame_protector_test: $(PROTOBUF_DEP) $(S2A_FRAME_PROTECTOR_TEST_OBJS) $(LIBDIR)/$(CONFIG)/libgrpc_test_util.a $(LIBDIR)/$(CONFIG)/libgpr.a
+	$(E) "[LD]      Linking $@"
+	$(Q) mkdir -p `dirname $@`
+	$(Q) $(LDXX) $(LDFLAGS) $(S2A_FRAME_PROTECTOR_TEST_OBJS) $(LIBDIR)/$(CONFIG)/libgrpc_test_util.a $(LIBDIR)/$(CONFIG)/libgpr.a $(LDLIBSXX) $(LDLIBS_PROTOBUF) $(LDLIBS) $(LDLIBS_SECURE) $(GTEST_LIB) -o $(BINDIR)/$(CONFIG)/s2a_frame_protector_test
+
+endif
+
+endif
+
+$(OBJDIR)/$(CONFIG)/test/core/tsi/s2a/s2a_frame_protector_test.o:  $(LIBDIR)/$(CONFIG)/libgrpc_test_util.a $(LIBDIR)/$(CONFIG)/libgpr.a
+
+deps_s2a_frame_protector_test: $(S2A_FRAME_PROTECTOR_TEST_OBJS:.o=.dep)
+
+ifneq ($(NO_SECURE),true)
+ifneq ($(NO_DEPS),true)
+-include $(S2A_FRAME_PROTECTOR_TEST_OBJS:.o=.dep)
+endif
+endif
+
+
 S2A_HANDSHAKER_CLIENT_TEST_SRC = \
     test/core/tsi/s2a/s2a_handshaker_client_test.cc \
 
@@ -23487,6 +23537,7 @@ src/core/tsi/alts/zero_copy_frame_protector/alts_iovec_record_protocol.cc: $(OPE
 src/core/tsi/alts/zero_copy_frame_protector/alts_zero_copy_grpc_protector.cc: $(OPENSSL_DEP)
 src/core/tsi/fake_transport_security.cc: $(OPENSSL_DEP)
 src/core/tsi/local_transport_security.cc: $(OPENSSL_DEP)
+src/core/tsi/s2a/frame_protector/s2a_frame_protector.cc: $(OPENSSL_DEP)
 src/core/tsi/s2a/handshaker/s2a_handshaker_client.cc: $(OPENSSL_DEP)
 src/core/tsi/s2a/handshaker/s2a_handshaker_client_caller.cc: $(OPENSSL_DEP)
 src/core/tsi/s2a/handshaker/s2a_handshaker_util.cc: $(OPENSSL_DEP)
