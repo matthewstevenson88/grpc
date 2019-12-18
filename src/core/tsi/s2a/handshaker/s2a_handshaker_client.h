@@ -111,6 +111,9 @@ class S2AHandshakerClient {
    *  no further handshaker requests will be scheduled with the S2A. **/
   void Shutdown();
 
+  /** This method parses a response from the S2A service. **/
+  void HandleResponse(bool is_ok);
+
   /** This method is exposed for testing purposes only. **/
   grpc_byte_buffer* get_send_buffer_for_testing();
 
@@ -121,9 +124,6 @@ class S2AHandshakerClient {
   void MaybeCompleteTsiNext(
       bool receive_status_finished,
       s2a_recv_message_result* pending_recv_message_result);
-
-  /** This method parses a response from the S2A service. **/
-  void HandleResponse(bool is_ok);
 
   /** This method prepares a serialized version of a client start message. **/
   grpc_byte_buffer* SerializedStartClient();
