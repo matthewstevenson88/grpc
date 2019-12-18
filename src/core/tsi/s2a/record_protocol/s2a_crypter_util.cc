@@ -22,6 +22,17 @@
 #include <grpc/support/string_util.h>
 #include "src/core/tsi/s2a/s2a_constants.h"
 
+tsi_result s2a_util_convert_to_tsi_result(S2ADecryptStatus status) {
+  switch (status) {
+    case S2ADecryptStatus::OK:
+      return TSI_OK;
+    default:
+      // TODO(mattstev): add more specifics for other error codes once I decide
+      // how they will be used by the S2A TSI handshaker.
+      return TSI_UNIMPLEMENTED;
+  }
+}
+
 grpc_status_code s2a_ciphersuite_to_hash_function(
     uint16_t ciphersuite, GsecHashFunction* hash_function,
     char** error_details) {

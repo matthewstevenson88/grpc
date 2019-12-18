@@ -1625,6 +1625,7 @@ filegroups:
   - google_api_upb
 - name: s2a_tsi
   headers:
+  - src/core/tsi/s2a/frame_protector/s2a_frame_protector.h
   - src/core/tsi/s2a/handshaker/s2a_handshaker_client.h
   - src/core/tsi/s2a/handshaker/s2a_handshaker_util.h
   - src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.h
@@ -1632,6 +1633,7 @@ filegroups:
   - src/core/tsi/s2a/record_protocol/s2a_crypter_util.h
   - src/core/tsi/s2a/s2a_constants.h
   src:
+  - src/core/tsi/s2a/frame_protector/s2a_frame_protector.cc
   - src/core/tsi/s2a/handshaker/s2a_handshaker_client.cc
   - src/core/tsi/s2a/handshaker/s2a_handshaker_client_caller.cc
   - src/core/tsi/s2a/handshaker/s2a_handshaker_util.cc
@@ -1642,6 +1644,7 @@ filegroups:
   - upb
   uses:
   - alts_tsi
+  - alts_util
   - grpc_base
   - s2a_upb
   - tsi_interface
@@ -5687,6 +5690,14 @@ targets:
   deps:
   - gpr
   - grpc
+- name: s2a_frame_protector_test
+  build: test
+  language: c++
+  src:
+  - test/core/tsi/s2a/s2a_frame_protector_test.cc
+  deps:
+  - grpc_test_util
+  - gpr
 - name: s2a_handshaker_client_test
   build: test
   language: c++

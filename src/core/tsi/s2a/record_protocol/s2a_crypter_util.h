@@ -19,7 +19,14 @@
 #ifndef GRPC_CORE_TSI_S2A_RECORD_PROTOCOL_S2A_CRYPTER_UTIL_H
 #define GRPC_CORE_TSI_S2A_RECORD_PROTOCOL_S2A_CRYPTER_UTIL_H
 
+#include <grpc/grpc.h>
+#include "src/core/lib/slice/slice_internal.h"
 #include "src/core/tsi/alts/crypt/gsec.h"
+#include "src/core/tsi/s2a/record_protocol/s2a_crypter.h"
+#include "src/core/tsi/transport_security_interface.h"
+#include "src/proto/grpc/gcp/s2a.upb.h"
+
+tsi_result s2a_util_convert_to_tsi_result(S2ADecryptStatus status);
 
 /** This method sets |hash_function| to the hash function belonging to
  *  |ciphersuite| if |ciphersuite| is a supported ciphersuite, and returns

@@ -899,6 +899,8 @@ config("grpc_config") {
         "src/core/tsi/grpc_shadow_boringssl.h",
         "src/core/tsi/local_transport_security.cc",
         "src/core/tsi/local_transport_security.h",
+        "src/core/tsi/s2a/frame_protector/s2a_frame_protector.cc",
+        "src/core/tsi/s2a/frame_protector/s2a_frame_protector.h",
         "src/core/tsi/s2a/handshaker/s2a_handshaker_client.cc",
         "src/core/tsi/s2a/handshaker/s2a_handshaker_client.h",
         "src/core/tsi/s2a/handshaker/s2a_handshaker_client_caller.cc",

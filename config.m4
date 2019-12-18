@@ -449,6 +449,7 @@ if test "$PHP_GRPC" != "no"; then
     src/core/tsi/alts/zero_copy_frame_protector/alts_zero_copy_grpc_protector.cc \
     src/core/tsi/fake_transport_security.cc \
     src/core/tsi/local_transport_security.cc \
+    src/core/tsi/s2a/frame_protector/s2a_frame_protector.cc \
     src/core/tsi/s2a/handshaker/s2a_handshaker_client.cc \
     src/core/tsi/s2a/handshaker/s2a_handshaker_client_caller.cc \
     src/core/tsi/s2a/handshaker/s2a_handshaker_util.cc \
@@ -845,6 +846,7 @@ if test "$PHP_GRPC" != "no"; then
   PHP_ADD_BUILD_DIR($ext_builddir/src/core/tsi/alts/frame_protector)
   PHP_ADD_BUILD_DIR($ext_builddir/src/core/tsi/alts/handshaker)
   PHP_ADD_BUILD_DIR($ext_builddir/src/core/tsi/alts/zero_copy_frame_protector)
+  PHP_ADD_BUILD_DIR($ext_builddir/src/core/tsi/s2a/frame_protector)
   PHP_ADD_BUILD_DIR($ext_builddir/src/core/tsi/s2a/handshaker)
   PHP_ADD_BUILD_DIR($ext_builddir/src/core/tsi/s2a/record_protocol)
   PHP_ADD_BUILD_DIR($ext_builddir/src/core/tsi/ssl/session_cache)

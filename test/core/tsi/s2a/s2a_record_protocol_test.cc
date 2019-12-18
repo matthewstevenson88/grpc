@@ -124,16 +124,16 @@ static grpc_status_code setup_crypter(uint16_t ciphersuite,
   size_t traffic_secret_size;
   switch (ciphersuite) {
     case kTlsAes128GcmSha256:
-      traffic_secret = aes_128_gcm_traffic_secret.data();
-      traffic_secret_size = aes_128_gcm_traffic_secret.size();
+      traffic_secret = s2a_test_data::aes_128_gcm_traffic_secret.data();
+      traffic_secret_size = s2a_test_data::aes_128_gcm_traffic_secret.size();
       break;
     case kTlsAes256GcmSha384:
-      traffic_secret = aes_256_gcm_traffic_secret.data();
-      traffic_secret_size = aes_256_gcm_traffic_secret.size();
+      traffic_secret = s2a_test_data::aes_256_gcm_traffic_secret.data();
+      traffic_secret_size = s2a_test_data::aes_256_gcm_traffic_secret.size();
       break;
     case kTlsChacha20Poly1305Sha256:
-      traffic_secret = chacha_poly_traffic_secret.data();
-      traffic_secret_size = chacha_poly_traffic_secret.size();
+      traffic_secret = s2a_test_data::chacha_poly_traffic_secret.data();
+      traffic_secret_size = s2a_test_data::chacha_poly_traffic_secret.size();
       break;
     default:
       gpr_log(GPR_ERROR, kS2AUnsupportedCiphersuite);
@@ -200,8 +200,8 @@ static void s2a_test_create_crypter_success(uint16_t ciphersuite) {
   GPR_ASSERT(status == GRPC_STATUS_OK);
   GPR_ASSERT(error_details == nullptr);
 
-  gsec_aead_crypter* in_crypter = s2a_in_aead_crypter(crypter);
-  gsec_aead_crypter* out_crypter = s2a_out_aead_crypter(crypter);
+  gsec_aead_crypter* in_crypter = s2a_in_aead_crypter_for_testing(crypter);
+  gsec_aead_crypter* out_crypter = s2a_out_aead_crypter_for_testing(crypter);
   GPR_ASSERT(in_crypter != nullptr);
   GPR_ASSERT(out_crypter != nullptr);
 
@@ -259,13 +259,16 @@ static void s2a_test_create_crypter_success(uint16_t ciphersuite) {
 
   switch (ciphersuite) {
     case kTlsAes128GcmSha256:
-      verify_half_connections(ciphersuite, crypter, aes_128_gcm_traffic_secret);
+      verify_half_connections(ciphersuite, crypter,
+                              s2a_test_data::aes_128_gcm_traffic_secret);
       break;
     case kTlsAes256GcmSha384:
-      verify_half_connections(ciphersuite, crypter, aes_256_gcm_traffic_secret);
+      verify_half_connections(ciphersuite, crypter,
+                              s2a_test_data::aes_256_gcm_traffic_secret);
       break;
     case kTlsChacha20Poly1305Sha256:
-      verify_half_connections(ciphersuite, crypter, chacha_poly_traffic_secret);
+      verify_half_connections(ciphersuite, crypter,
+                              s2a_test_data::chacha_poly_traffic_secret);
       break;
     default:
       gpr_log(GPR_ERROR, kS2AUnsupportedCiphersuite);
@@ -470,8 +473,7 @@ static void s2a_test_encrypt_empty_plaintext(uint16_t ciphersuite) {
       s2a_encrypt(crypter, test_plaintext.data(), /** plaintext size **/ 1,
                   record.data(), record.size(), &record_size, &error_details);
   GPR_ASSERT(bad_encrypt_status == GRPC_STATUS_INVALID_ARGUMENT);
-  int correct_error_message = strcmp(error_details, kS2APlaintextNullptr);
-  GPR_ASSERT(correct_error_message == 0);
+  GPR_ASSERT(strcmp(error_details, kS2APlaintextNullptr) == 0);
   gpr_free(error_details);
   error_details = nullptr;
 
@@ -510,13 +512,13 @@ static void s2a_test_decrypt_record_success(uint16_t ciphersuite) {
   std::vector<uint8_t> record;
   switch (ciphersuite) {
     case kTlsAes128GcmSha256:
-      record = aes_128_gcm_decrypt_record_1;
+      record = s2a_test_data::aes_128_gcm_decrypt_record_1;
       break;
     case kTlsAes256GcmSha384:
-      record = aes_256_gcm_decrypt_record_1;
+      record = s2a_test_data::aes_256_gcm_decrypt_record_1;
       break;
     case kTlsChacha20Poly1305Sha256:
-      record = chacha_poly_decrypt_record_1;
+      record = s2a_test_data::chacha_poly_decrypt_record_1;
       break;
   }
 
@@ -538,7 +540,7 @@ static void s2a_test_decrypt_record_success(uint16_t ciphersuite) {
   GPR_ASSERT(error_details == nullptr);
   GPR_ASSERT(plaintext_size == 6);
   plaintext.resize(plaintext_size);
-  GPR_ASSERT(plaintext == decrypt_plaintext_1);
+  GPR_ASSERT(plaintext == s2a_test_data::decrypt_plaintext_1);
 
   // Cleanup.
   s2a_crypter_destroy(crypter);
@@ -623,11 +625,10 @@ static void s2a_test_decrypt_large_record(uint16_t ciphersuite) {
 
   /** Construct a TLS record whose plaintext is larger than is allowed. **/
   size_t tag_size;
-  gsec_aead_crypter_tag_length(s2a_in_aead_crypter(crypter), &tag_size,
-                               /** error details **/ nullptr);
-  size_t oversize_payload_size = /** ciphertext **/ SSL3_RT_MAX_PLAIN_LENGTH +
-                                 /** extra **/ 15 + /** record type **/ 1 +
-                                 tag_size;
+  gsec_aead_crypter_tag_length(s2a_in_aead_crypter_for_testing(crypter),
+                               &tag_size, &error_details);
+  size_t oversize_payload_size = /* ciphertext=*/SSL3_RT_MAX_PLAIN_LENGTH +
+                                 /* extra=*/15 + /* record type=*/1 + tag_size;
   size_t oversize_record_size = SSL3_RT_HEADER_LENGTH + oversize_payload_size;
   std::vector<uint8_t> oversize_record(oversize_record_size, 0);
   oversize_record[0] = SSL3_RT_APPLICATION_DATA;
@@ -693,39 +694,39 @@ static void s2a_test_decrypt_alert(uint16_t ciphersuite,
     case kTlsAes128GcmSha256: {
       switch (alert_type) {
         case TlsAlertType::close_notify:
-          record = aes_128_gcm_decrypt_close_notify;
+          record = s2a_test_data::aes_128_gcm_decrypt_close_notify;
           break;
         case TlsAlertType::other:
-          record = aes_128_gcm_decrypt_alert_other;
+          record = s2a_test_data::aes_128_gcm_decrypt_alert_other;
           break;
         case TlsAlertType::small:
-          record = aes_128_gcm_decrypt_alert_small;
+          record = s2a_test_data::aes_128_gcm_decrypt_alert_small;
           break;
       }
     } break;
     case kTlsAes256GcmSha384: {
       switch (alert_type) {
         case TlsAlertType::close_notify:
-          record = aes_256_gcm_decrypt_close_notify;
+          record = s2a_test_data::aes_256_gcm_decrypt_close_notify;
           break;
         case TlsAlertType::other:
-          record = aes_256_gcm_decrypt_alert_other;
+          record = s2a_test_data::aes_256_gcm_decrypt_alert_other;
           break;
         case TlsAlertType::small:
-          record = aes_256_gcm_decrypt_alert_small;
+          record = s2a_test_data::aes_256_gcm_decrypt_alert_small;
           break;
       }
     } break;
     case kTlsChacha20Poly1305Sha256: {
       switch (alert_type) {
         case TlsAlertType::close_notify:
-          record = chacha_poly_decrypt_close_notify;
+          record = s2a_test_data::chacha_poly_decrypt_close_notify;
           break;
         case TlsAlertType::other:
-          record = chacha_poly_decrypt_alert_other;
+          record = s2a_test_data::chacha_poly_decrypt_alert_other;
           break;
         case TlsAlertType::small:
-          record = chacha_poly_decrypt_alert_small;
+          record = s2a_test_data::chacha_poly_decrypt_alert_small;
           break;
       }
     } break;
