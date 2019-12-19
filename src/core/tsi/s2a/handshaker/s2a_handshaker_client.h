@@ -115,8 +115,10 @@ class S2AHandshakerClient {
       bool receive_status_finished,
       s2a_recv_message_result* pending_recv_message_result);
 
-  /** This method dereferences all of the data owned by this S2A handshaker
-   *  client instance. **/
+  /** When the refcount (given by |refs_|) of this S2A handshaker client
+   *  instance is positive, this method dereferences all of the data owned by
+   *  this S2A handshaker client instance. Otherwise, this method does
+   *  nothing. **/
   void Unref();
 
   /** These methods are exposed for use in the |on_status_received| callback
@@ -140,6 +142,8 @@ class S2AHandshakerClient {
  private:
   /** This method makes a call to the S2A service. **/
   tsi_result MakeGrpcCall(bool is_start);
+
+  tsi_result MakeGrpcCallUtil(bool is_start);
 
   /** This method populates a |s2a_recv_message_result| instance using the
    *  arguments to the method, and passes this instance to the
@@ -253,20 +257,22 @@ class S2AHandshakerClient {
  *    |client| to point to a nullptr.
  *
  *  On success, this method returns TSI_OK, and an error code otherwise. **/
-tsi_result s2a_handshaker_client_create(
+tsi_result S2AHandshakerClientCreate(
     s2a_tsi_handshaker* handshaker, grpc_channel* channel,
     grpc_pollset_set* interested_parties,
     const grpc_s2a_credentials_options* options, const grpc_slice& target_name,
     grpc_iomgr_cb_func grpc_cb, tsi_handshaker_on_next_done_cb cb,
-    void* user_data, bool is_client, bool is_test, S2AHandshakerClient** client);
+    void* user_data, bool is_client, bool is_test,
+    S2AHandshakerClient** client);
 
 /** This method destroys a S2AHandshakerClient instance. The caller must call
- * this method after any use of s2a_handshaker_client_create, even if it outputs
- * a status other than TSI_OK.  **/
-void s2a_handshaker_client_destroy(S2AHandshakerClient* client);
+ *  this method after any use of S2AHandshakerClientCreate, even if it outputs
+ *  a status other thand TSI_OK.  **/
+void S2AHandshakerClientDestroy(S2AHandshakerClient* client);
 
 /** This method is exposed for testing purposes only. **/
-void s2a_handshaker_client_on_status_received_for_testing(S2AHandshakerClient* client, grpc_status_code status, grpc_error* error);
+void s2a_handshaker_client_on_status_received_for_testing(
+    S2AHandshakerClient* client, grpc_status_code status, grpc_error* error);
 
 }  // namespace experimental
 }  // namespace grpc_core

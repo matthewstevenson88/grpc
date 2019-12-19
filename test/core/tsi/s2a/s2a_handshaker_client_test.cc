@@ -83,7 +83,7 @@ static s2a_handshaker_client_config* s2a_handshaker_client_config_setup(
   std::string handshaker_url(kS2AHandshakerServiceUrlForTesting);
   config->tsi_config =
       s2a_tsi_handshaker_config_setup(is_client, handshaker_url);
-  tsi_result result = s2a_handshaker_client_create(
+  tsi_result result = S2AHandshakerClientCreate(
       reinterpret_cast<s2a_tsi_handshaker*>(config->tsi_config->handshaker),
       config->tsi_config->channel,
       /*interested_parties=*/nullptr, config->tsi_config->options,
@@ -103,7 +103,7 @@ static void s2a_handshaker_client_config_destroy(
     return;
   }
   s2a_tsi_handshaker_config_destroy(config->tsi_config);
-  s2a_handshaker_client_destroy(config->client);
+  S2AHandshakerClientDestroy(config->client);
   delete config;
   config = nullptr;
 }

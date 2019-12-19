@@ -262,7 +262,7 @@ static s2a_handshaker_client_test_config* s2a_create_config() {
   GPR_ASSERT(server_handshaker_result == TSI_OK);
   GPR_ASSERT(error_details == nullptr);
 
-  tsi_result client_result = s2a_handshaker_client_create(
+  tsi_result client_result = S2AHandshakerClientCreate(
       reinterpret_cast<s2a_tsi_handshaker*>(config->client_tsi_handshaker),
       config->channel, /* interested_parties=*/nullptr, config->options,
       grpc_slice_from_static_string(kS2AHandshakerClientTestTargetName),
@@ -271,7 +271,7 @@ static s2a_handshaker_client_test_config* s2a_create_config() {
   GPR_ASSERT(client_result == TSI_OK);
   GPR_ASSERT(config->client != nullptr);
 
-  tsi_result server_result = s2a_handshaker_client_create(
+  tsi_result server_result = S2AHandshakerClientCreate(
       reinterpret_cast<s2a_tsi_handshaker*>(config->server_tsi_handshaker),
       config->channel, /* interested_parties=*/nullptr, config->options,
       grpc_slice_from_static_string(kS2AHandshakerClientTestTargetName),
@@ -290,8 +290,8 @@ static void s2a_destroy_config(s2a_handshaker_client_test_config* config) {
     return;
   }
   grpc_channel_destroy(config->channel);
-  s2a_handshaker_client_destroy(config->client);
-  s2a_handshaker_client_destroy(config->server);
+  S2AHandshakerClientDestroy(config->client);
+  S2AHandshakerClientDestroy(config->server);
   tsi_handshaker_destroy(config->client_tsi_handshaker);
   tsi_handshaker_destroy(config->server_tsi_handshaker);
   grpc_s2a_credentials_options_destroy(config->options);
@@ -329,9 +329,8 @@ static void s2a_schedule_request_grpc_call_failure_test() {
   GPR_ASSERT(config->client->ClientStart() == TSI_INTERNAL_ERROR);
 
   config->server->set_grpc_caller_for_testing(check_grpc_call_failure);
-  GPR_ASSERT(
-      config->server->ServerStart(&(config->out_frame)) ==
-      TSI_INTERNAL_ERROR);
+  GPR_ASSERT(config->server->ServerStart(&(config->out_frame)) ==
+             TSI_INTERNAL_ERROR);
 
   GPR_ASSERT(config->client->Next(&(config->out_frame)) == TSI_INTERNAL_ERROR);
 

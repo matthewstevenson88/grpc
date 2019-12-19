@@ -33,6 +33,17 @@
 namespace grpc_core {
 namespace experimental {
 
+tsi_result S2AHandshakerClient::MakeGrpcCallUtil(bool is_start) {
+  if (!no_calls_for_testing_) {
+    tsi_result call_result = MakeGrpcCall(is_start);
+    if (call_result != TSI_OK) {
+      gpr_log(GPR_ERROR, kS2AMakeGrpcCallFailed);
+      return call_result;
+    }
+  }
+  return TSI_OK;
+}
+
 /** ------------ Preparation of client start messages. --------------- **/
 
 grpc_byte_buffer* S2AHandshakerClient::SerializedStartClient() {
@@ -86,14 +97,7 @@ tsi_result S2AHandshakerClient::ClientStart() {
   }
   grpc_byte_buffer_destroy(send_buffer_);
   send_buffer_ = buffer;
-  if (!no_calls_for_testing_) {
-    tsi_result call_result = MakeGrpcCall(/* is_start=*/true);
-    if (call_result != TSI_OK) {
-      gpr_log(GPR_ERROR, kS2AMakeGrpcCallFailed);
-      return call_result;
-    }
-  }
-  return TSI_OK;
+  return MakeGrpcCallUtil(/*is_start=*/true);
 }
 
 /** ------------ Preparation of server start messages. --------------- **/
@@ -143,14 +147,7 @@ tsi_result S2AHandshakerClient::ServerStart(grpc_slice* bytes_received) {
   }
   grpc_byte_buffer_destroy(send_buffer_);
   send_buffer_ = buffer;
-  if (!no_calls_for_testing_) {
-    tsi_result call_result = MakeGrpcCall(/* is_start=*/true);
-    if (call_result != TSI_OK) {
-      gpr_log(GPR_ERROR, kS2AMakeGrpcCallFailed);
-      return call_result;
-    }
-  }
-  return TSI_OK;
+  return MakeGrpcCallUtil(/*is_start=*/true);
 }
 
 /** ------------ Preparation of next messages. --------------- **/
@@ -181,14 +178,7 @@ tsi_result S2AHandshakerClient::Next(grpc_slice* bytes_received) {
   }
   grpc_byte_buffer_destroy(send_buffer_);
   send_buffer_ = buffer;
-  if (!no_calls_for_testing_) {
-    tsi_result call_result = MakeGrpcCall(/* is_start=*/false);
-    if (call_result != TSI_OK) {
-      gpr_log(GPR_ERROR, kS2AMakeGrpcCallFailed);
-      return call_result;
-    }
-  }
-  return TSI_OK;
+  return MakeGrpcCallUtil(/*is_start=*/false);
 }
 
 /** ------------------- Callback methods. -------------------------------- **/
@@ -254,20 +244,21 @@ S2AHandshakerClient::S2AHandshakerClient(
   grpc_slice_unref_internal(slice);
 }
 
-tsi_result s2a_handshaker_client_create(
+tsi_result S2AHandshakerClientCreate(
     s2a_tsi_handshaker* handshaker, grpc_channel* channel,
     grpc_pollset_set* interested_parties,
     const grpc_s2a_credentials_options* options, const grpc_slice& target_name,
     grpc_iomgr_cb_func grpc_cb, tsi_handshaker_on_next_done_cb cb,
-    void* user_data, bool is_client, bool is_test, S2AHandshakerClient** client) {
+    void* user_data, bool is_client, bool is_test,
+    S2AHandshakerClient** client) {
   if (channel == nullptr || client == nullptr ||
       options->handshaker_service_url().empty()) {
     gpr_log(GPR_ERROR, kS2AHandshakerClientNullptrArguments);
     return TSI_INVALID_ARGUMENT;
   }
-  *client =
-      new S2AHandshakerClient(handshaker, channel, interested_parties, options,
-                              target_name, grpc_cb, cb, user_data, is_client, is_test);
+  *client = new S2AHandshakerClient(handshaker, channel, interested_parties,
+                                    options, target_name, grpc_cb, cb,
+                                    user_data, is_client, is_test);
   return TSI_OK;
 }
 
@@ -292,16 +283,12 @@ void S2AHandshakerClient::Unref() {
                               GRPC_ERROR_NONE);
     }
     gpr_free(refs_);
-    refs_ = nullptr;
     grpc_byte_buffer_destroy(send_buffer_);
     grpc_byte_buffer_destroy(recv_buffer_);
-    send_buffer_ = nullptr;
-    recv_buffer_ = nullptr;
     grpc_metadata_array_destroy(&recv_initial_metadata_);
     grpc_slice_unref_internal(recv_bytes_);
     grpc_slice_unref_internal(target_name_);
     gpr_free(buffer_);
-    buffer_ = nullptr;
     grpc_slice_unref_internal(handshake_status_details_);
     gpr_mu_destroy(&mu_);
   }
@@ -309,7 +296,7 @@ void S2AHandshakerClient::Unref() {
 
 S2AHandshakerClient::~S2AHandshakerClient() { Unref(); }
 
-void s2a_handshaker_client_destroy(S2AHandshakerClient* client) {
+void S2AHandshakerClientDestroy(S2AHandshakerClient* client) {
   if (client == nullptr) {
     return;
   }
