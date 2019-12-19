@@ -36,9 +36,9 @@
 namespace experimental {
 namespace {
 
-void s2a_check_peer(tsi_peer peer,
-                    grpc_core::RefCountedPtr<grpc_auth_context>* auth_context,
-                    grpc_closure* on_peer_checked) {
+void S2ACheckPeer(tsi_peer peer,
+                  grpc_core::RefCountedPtr<grpc_auth_context>* auth_context,
+                  grpc_closure* on_peer_checked) {
   *auth_context = internal::grpc_s2a_auth_context_from_tsi_peer(&peer);
   tsi_peer_destruct(&peer);
   grpc_error* error =
@@ -50,10 +50,10 @@ void s2a_check_peer(tsi_peer peer,
 }
 
 /** The S2A channel security connector. **/
-class grpc_s2a_channel_security_connector final
+class S2AChannelSecurityConnector final
     : public grpc_channel_security_connector {
  public:
-  grpc_s2a_channel_security_connector(
+  S2AChannelSecurityConnector(
       grpc_core::RefCountedPtr<grpc_channel_credentials> channel_creds,
       grpc_core::RefCountedPtr<grpc_call_credentials> request_metadata_creds,
       const char* target_name)
@@ -62,7 +62,9 @@ class grpc_s2a_channel_security_connector final
                                         std::move(request_metadata_creds)),
         target_name_(gpr_strdup(target_name)) {}
 
-  ~grpc_s2a_channel_security_connector() override { gpr_free(target_name_); }
+  ~S2AChannelSecurityConnector() override {}
+
+  const std::string target_name() const { return target_name_; }
 
   void add_handshakers(
       const grpc_channel_args* args, grpc_pollset_set* interested_parties,
@@ -75,17 +77,17 @@ class grpc_s2a_channel_security_connector final
   void check_peer(tsi_peer peer, grpc_endpoint* ep,
                   grpc_core::RefCountedPtr<grpc_auth_context>* auth_context,
                   grpc_closure* on_peer_checked) override {
-    s2a_check_peer(peer, auth_context, on_peer_checked);
+    S2ACheckPeer(peer, auth_context, on_peer_checked);
   }
 
   int cmp(const grpc_security_connector* other_sc) const override {
     auto* other =
-        reinterpret_cast<const grpc_s2a_channel_security_connector*>(other_sc);
+        reinterpret_cast<const S2AChannelSecurityConnector*>(other_sc);
     int c = channel_security_connector_cmp(other);
     if (c != 0) {
       return c;
     }
-    return strcmp(target_name_, other->target_name_);
+    return target_name_.compare(other->target_name());
   }
 
   bool check_call_host(grpc_core::StringView host,
@@ -93,10 +95,6 @@ class grpc_s2a_channel_security_connector final
                        grpc_closure* on_call_host_checked,
                        grpc_error** error) override {
     GPR_ASSERT(error != nullptr);
-    if (host.empty() || host != target_name_) {
-      *error = GRPC_ERROR_CREATE_FROM_STATIC_STRING(
-          "The S2A call host does not match the target name.");
-    }
     return true;
   }
 
@@ -106,19 +104,18 @@ class grpc_s2a_channel_security_connector final
   }
 
  private:
-  char* target_name_;
+  std::string target_name_;
 };
 
 /** The S2A server security connector. **/
-class grpc_s2a_server_security_connector final
-    : public grpc_server_security_connector {
+class S2AServerSecurityConnector final : public grpc_server_security_connector {
  public:
-  grpc_s2a_server_security_connector(
+  S2AServerSecurityConnector(
       grpc_core::RefCountedPtr<grpc_server_credentials> server_creds)
       : grpc_server_security_connector(/* url_scheme=*/nullptr,
                                        std::move(server_creds)) {}
 
-  ~grpc_s2a_server_security_connector() override = default;
+  ~S2AServerSecurityConnector() override = default;
 
   void add_handshakers(
       const grpc_channel_args* args, grpc_pollset_set* interested_parties,
@@ -131,7 +128,7 @@ class grpc_s2a_server_security_connector final
   void check_peer(tsi_peer peer, grpc_endpoint* ep,
                   grpc_core::RefCountedPtr<grpc_auth_context>* auth_context,
                   grpc_closure* on_peer_checked) override {
-    s2a_check_peer(peer, auth_context, on_peer_checked);
+    S2ACheckPeer(peer, auth_context, on_peer_checked);
   }
 
   int cmp(const grpc_security_connector* other) const override {
@@ -142,7 +139,7 @@ class grpc_s2a_server_security_connector final
 }  // namespace
 
 grpc_core::RefCountedPtr<grpc_channel_security_connector>
-grpc_s2a_channel_security_connector_create(
+S2AChannelSecurityConnectorCreate(
     grpc_core::RefCountedPtr<grpc_channel_credentials> channel_creds,
     grpc_core::RefCountedPtr<grpc_call_credentials> request_metadata_creds,
     const char* target_name) {
@@ -152,12 +149,12 @@ grpc_s2a_channel_security_connector_create(
         "Invalid arguments to |grpc_s2a_channel_security_connector_create|.");
     return nullptr;
   }
-  return grpc_core::MakeRefCounted<grpc_s2a_channel_security_connector>(
+  return grpc_core::MakeRefCounted<S2AChannelSecurityConnector>(
       std::move(channel_creds), std::move(request_metadata_creds), target_name);
 }
 
 grpc_core::RefCountedPtr<grpc_server_security_connector>
-grpc_s2a_server_security_connector_create(
+S2AServerSecurityConnectorCreate(
     grpc_core::RefCountedPtr<grpc_server_credentials> server_creds) {
   if (server_creds == nullptr) {
     gpr_log(
@@ -165,7 +162,7 @@ grpc_s2a_server_security_connector_create(
         "Invalid arguments to |grpc_s2a_server_security_connector_create|.");
     return nullptr;
   }
-  return grpc_core::MakeRefCounted<grpc_s2a_server_security_connector>(
+  return grpc_core::MakeRefCounted<S2AServerSecurityConnector>(
       std::move(server_creds));
 }
 

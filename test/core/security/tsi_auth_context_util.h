@@ -22,8 +22,8 @@
 #include <grpc/grpc_security.h>
 #include <grpc/support/port_platform.h>
 
-bool test_identity(const grpc_auth_context* ctx,
-                   const char* expected_property_name,
-                   const char* expected_identity);
+bool test_identity_from_auth_context(const grpc_auth_context* ctx,
+                                     const char* expected_property_name,
+                                     const char* expected_identity);
 
 #endif  // GRPC_TEST_CORE_SECURITY_TSI_AUTH_CONTEXT_UTIL_H

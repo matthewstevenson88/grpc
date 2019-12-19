@@ -89,8 +89,8 @@ static void s2a_auth_context_success() {
   grpc_core::RefCountedPtr<grpc_auth_context> ctx =
       grpc_s2a_auth_context_from_tsi_peer(&peer);
   GPR_ASSERT(ctx != nullptr);
-  GPR_ASSERT(
-      test_identity(ctx.get(), kTsiS2AServiceAccountPeerProperty, "alice"));
+  GPR_ASSERT(test_identity_from_auth_context(
+      ctx.get(), kTsiS2AServiceAccountPeerProperty, "alice"));
   ctx.reset(DEBUG_LOCATION, "test");
   grpc_slice_unref(serialized_s2a_ctx);
   tsi_peer_destruct(&peer);

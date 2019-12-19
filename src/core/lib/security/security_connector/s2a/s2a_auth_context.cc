@@ -43,7 +43,7 @@ grpc_core::RefCountedPtr<grpc_auth_context> grpc_s2a_auth_context_from_tsi_peer(
     return nullptr;
   }
 
-  /** Validate ALTS Context. **/
+  /** Validate S2A Context. **/
   const tsi_peer_property* s2a_context_property =
       tsi_peer_get_property_by_name(peer, kTsiS2AContext);
   if (s2a_context_property == nullptr) {

@@ -33,7 +33,7 @@ namespace experimental {
  *  - target_name: the name of the endpoint to which the channel connects; this
  *    data will be used for a secure naming check. **/
 grpc_core::RefCountedPtr<grpc_channel_security_connector>
-grpc_s2a_channel_security_connector_create(
+S2AChannelSecurityConnectorCreate(
     grpc_core::RefCountedPtr<grpc_channel_credentials> channel_creds,
     grpc_core::RefCountedPtr<grpc_call_credentials> request_metadata_creds,
     const char* target_name);
@@ -43,7 +43,7 @@ grpc_s2a_channel_security_connector_create(
  *  - server_creds: an instance of server credentials; the caller must not
  *    pass in nullptr for this argument. **/
 grpc_core::RefCountedPtr<grpc_server_security_connector>
-grpc_s2a_server_security_connector_create(
+S2AServerSecurityConnectorCreate(
     grpc_core::RefCountedPtr<grpc_server_credentials> server_creds);
 
 }  // namespace experimental
