@@ -14897,6 +14897,7 @@ target_link_libraries(s2a_frame_protector_test
   ${_gRPC_ALLTARGETS_LIBRARIES}
   grpc_test_util
   gpr
+  grpc
   ${_gRPC_GFLAGS_LIBRARIES}
 )
 
@@ -14966,6 +14967,7 @@ target_link_libraries(s2a_record_protocol_test
   ${_gRPC_PROTOBUF_LIBRARIES}
   ${_gRPC_ALLTARGETS_LIBRARIES}
   grpc_test_util
+  gpr
   grpc
   ${_gRPC_GFLAGS_LIBRARIES}
 )

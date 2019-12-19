@@ -45,11 +45,9 @@ grpc_byte_buffer* S2AHandshakerClient::SerializedStartClient() {
   s2a_ClientSessionStartReq_add_application_protocols(
       start_client, upb_strview_makez(kS2AApplicationProtocol), arena.ptr());
 
-  /** Set TLS version. **/
-  int32_t* tls_versions = s2a_ClientSessionStartReq_resize_tls_versions(
-      start_client, /*len=*/1, arena.ptr());
-  GPR_ASSERT(tls_versions != nullptr);
-  tls_versions[0] = s2a_TLS1_3;
+  /** Set min and max TLS version. **/
+  s2a_ClientSessionStartReq_set_min_tls_version(start_client, s2a_TLS1_3);
+  s2a_ClientSessionStartReq_set_max_tls_version(start_client, s2a_TLS1_3);
 
   /** Set supported TLS ciphersuites. **/
   int32_t* tls_ciphersuites = s2a_ClientSessionStartReq_resize_tls_ciphersuites(
@@ -107,11 +105,9 @@ grpc_byte_buffer* S2AHandshakerClient::SerializedStartServer(
   s2a_ServerSessionStartReq_add_application_protocols(
       start_server, upb_strview_makez(kS2AApplicationProtocol), arena.ptr());
 
-  /** Set TLS version. **/
-  int32_t* tls_versions = s2a_ServerSessionStartReq_resize_tls_versions(
-      start_server, /*len=*/1, arena.ptr());
-  GPR_ASSERT(tls_versions != nullptr);
-  tls_versions[0] = s2a_TLS1_3;
+  /** Set min and max TLS version. **/
+  s2a_ServerSessionStartReq_set_min_tls_version(start_server, s2a_TLS1_3);
+  s2a_ServerSessionStartReq_set_max_tls_version(start_server, s2a_TLS1_3);
 
   /** Set supported TLS ciphersuites. **/
   int32_t* tls_ciphersuites = s2a_ServerSessionStartReq_resize_tls_ciphersuites(
