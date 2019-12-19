@@ -40,6 +40,20 @@ std::vector<uint8_t> chacha_poly_traffic_secret = {
     0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b,
     0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b};
 
+/** The following vectors are the new traffic secret obtaing from "kkkk...k"
+ *  after advancing once. **/
+std::vector<uint8_t> aes_128_gcm_advanced_traffic_secret = {
+    243, 139, 148, 85,  234, 88, 113, 35, 90,  105, 252, 55, 97,  12, 108, 161,
+    33,  87,  121, 230, 107, 69, 160, 71, 215, 57,  1,   17, 224, 0,  129, 196};
+std::vector<uint8_t> aes_256_gcm_advanced_traffic_secret = {
+    1,   108, 131, 93,  182, 100, 190, 181, 82,  106, 155, 179,
+    217, 164, 251, 166, 62,  103, 37,  93,  207, 164, 96,  161,
+    20,  217, 241, 239, 154, 154, 31,  104, 90,  81,  135, 57,
+    245, 87,  208, 230, 111, 219, 137, 189, 175, 162, 98,  87};
+std::vector<uint8_t> chacha_poly_advanced_traffic_secret = {
+    243, 139, 148, 85,  234, 88, 113, 35, 90,  105, 252, 55, 97,  12, 108, 161,
+    33,  87,  121, 230, 107, 69, 160, 71, 215, 57,  1,   17, 224, 0,  129, 196};
+
 /** The following buffers are obtained by encrypting |decrypt_plaintext_1|
  *  using the crypter constructed in |setup_crypter| and the
  *  sequence number 0. **/

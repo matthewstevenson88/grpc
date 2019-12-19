@@ -40,6 +40,7 @@ grpc_cc_test(
     name = "s2a_record_protocol_test",
     srcs = ["s2a_record_protocol_test.cc"],
     external_deps = [
+        "gtest",
         "libssl",
     ],
     language = "C++",
