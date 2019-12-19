@@ -172,13 +172,13 @@ static void s2a_zero_copy_grpc_protector_destroy(
 }
 
 static tsi_result s2a_zero_copy_grpc_protector_max_frame_size(
-    tsi_zero_copy_grpc_protector* self, size_t& max_frame_size) {
-  if (self == nullptr) {
+    tsi_zero_copy_grpc_protector* self, size_t* max_frame_size) {
+  if (self == nullptr || max_frame_size == nullptr) {
     return TSI_INVALID_ARGUMENT;
   }
   s2a_zero_copy_grpc_protector* protector =
       reinterpret_cast<s2a_zero_copy_grpc_protector*>(self);
-  max_frame_size = protector->max_protected_frame_size;
+  *max_frame_size = protector->max_protected_frame_size;
   return TSI_OK;
 }
 

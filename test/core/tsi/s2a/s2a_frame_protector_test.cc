@@ -61,7 +61,7 @@ static void s2a_zero_copy_grpc_protector_create_test(uint16_t ciphersuite) {
       abort();
   }
   tsi_zero_copy_grpc_protector* protector = nullptr;
-  grpc_channel* channel = grpc_core::New<grpc_channel>();
+  grpc_channel* channel = new grpc_channel();
 
   /** Attempt to create an s2a_zero_copy_grpc_protector instance using
    *  nullptr arguments. **/
@@ -130,13 +130,13 @@ static void s2a_zero_copy_grpc_protector_create_test(uint16_t ciphersuite) {
         SSL3_RT_HEADER_LENGTH + SSL3_RT_MAX_PLAIN_LENGTH + 1 + tag_size;
     size_t actual_max_protected_frame_size;
     GPR_ASSERT(tsi_zero_copy_grpc_protector_max_frame_size(
-                   protector, actual_max_protected_frame_size) == TSI_OK);
+                   protector, &actual_max_protected_frame_size) == TSI_OK);
     GPR_ASSERT(max_protected_frame_size == actual_max_protected_frame_size);
   }
 
   // Cleanup.
   tsi_zero_copy_grpc_protector_destroy(protector);
-  grpc_core::Delete<grpc_channel>(channel);
+  delete channel;
   grpc_core::ExecCtx::Get()->Flush();
 }
 
@@ -170,14 +170,14 @@ static void s2a_zero_copy_grpc_protector_small_protect_test(
     uint16_t ciphersuite) {
   grpc_core::ExecCtx exec_ctx;
   tsi_zero_copy_grpc_protector* protector = nullptr;
-  grpc_channel* channel = grpc_core::New<grpc_channel>();
+  grpc_channel* channel = new grpc_channel();
   tsi_result create_result = setup_protector(ciphersuite, channel, &protector);
   if (ciphersuite == kTlsChacha20Poly1305Sha256) {
     GPR_ASSERT(create_result == TSI_UNIMPLEMENTED);
 
     // Cleanup.
     tsi_zero_copy_grpc_protector_destroy(protector);
-    grpc_core::Delete<grpc_channel>(channel);
+    delete channel;
     grpc_core::ExecCtx::Get()->Flush();
     return;
   }
@@ -218,7 +218,7 @@ static void s2a_zero_copy_grpc_protector_small_protect_test(
   grpc_slice_buffer_destroy_internal(&plaintext_buffer);
   grpc_slice_buffer_destroy_internal(&record_buffer);
   tsi_zero_copy_grpc_protector_destroy(protector);
-  grpc_core::Delete<grpc_channel>(channel);
+  delete channel;
   grpc_core::ExecCtx::Get()->Flush();
 }
 
@@ -226,14 +226,14 @@ static void s2a_zero_copy_grpc_protector_empty_protect_test(
     uint16_t ciphersuite) {
   grpc_core::ExecCtx exec_ctx;
   tsi_zero_copy_grpc_protector* protector = nullptr;
-  grpc_channel* channel = grpc_core::New<grpc_channel>();
+  grpc_channel* channel = new grpc_channel();
   tsi_result create_result = setup_protector(ciphersuite, channel, &protector);
   if (ciphersuite == kTlsChacha20Poly1305Sha256) {
     GPR_ASSERT(create_result == TSI_UNIMPLEMENTED);
 
     // Cleanup.
     tsi_zero_copy_grpc_protector_destroy(protector);
-    grpc_core::Delete<grpc_channel>(channel);
+    delete channel;
     grpc_core::ExecCtx::Get()->Flush();
     return;
   }
@@ -273,21 +273,21 @@ static void s2a_zero_copy_grpc_protector_empty_protect_test(
   grpc_slice_buffer_destroy_internal(&plaintext_buffer);
   grpc_slice_buffer_destroy_internal(&record_buffer);
   tsi_zero_copy_grpc_protector_destroy(protector);
-  grpc_core::Delete<grpc_channel>(channel);
+  delete channel;
   grpc_core::ExecCtx::Get()->Flush();
 }
 
 static void s2a_zero_copy_grpc_protector_unprotect_test(uint16_t ciphersuite) {
   grpc_core::ExecCtx exec_ctx;
   tsi_zero_copy_grpc_protector* protector = nullptr;
-  grpc_channel* channel = grpc_core::New<grpc_channel>();
+  grpc_channel* channel = new grpc_channel();
   tsi_result create_result = setup_protector(ciphersuite, channel, &protector);
   if (ciphersuite == kTlsChacha20Poly1305Sha256) {
     GPR_ASSERT(create_result == TSI_UNIMPLEMENTED);
 
     // Cleanup.
     tsi_zero_copy_grpc_protector_destroy(protector);
-    grpc_core::Delete<grpc_channel>(channel);
+    delete channel;
     grpc_core::ExecCtx::Get()->Flush();
     return;
   }
@@ -334,7 +334,7 @@ static void s2a_zero_copy_grpc_protector_unprotect_test(uint16_t ciphersuite) {
   grpc_slice_buffer_destroy_internal(&plaintext_buffer);
   grpc_slice_buffer_destroy_internal(&record_buffer);
   tsi_zero_copy_grpc_protector_destroy(protector);
-  grpc_core::Delete<grpc_channel>(channel);
+  delete channel;
   grpc_core::ExecCtx::Get()->Flush();
 }
 

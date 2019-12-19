@@ -310,7 +310,7 @@ grpc_status_code s2a_crypter_create(
     return GRPC_STATUS_FAILED_PRECONDITION;
   }
 
-  *crypter = grpc_core::New<s2a_crypter>(tls_version, tls_ciphersuite);
+  *crypter = new s2a_crypter(tls_version, tls_ciphersuite);
   s2a_crypter* rp_crypter = *crypter;
   rp_crypter->in_aead_crypter = nullptr;
   rp_crypter->out_aead_crypter = nullptr;
@@ -362,7 +362,7 @@ void s2a_crypter_destroy(s2a_crypter* crypter) {
     if (crypter->out_aead_crypter != nullptr) {
       gsec_aead_crypter_destroy(crypter->out_aead_crypter);
     }
-    grpc_core::Delete<s2a_crypter>(crypter);
+    delete crypter;
   }
 }
 
