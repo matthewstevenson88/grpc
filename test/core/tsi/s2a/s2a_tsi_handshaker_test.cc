@@ -74,9 +74,8 @@ static void s2a_tsi_handshaker_next_test() {
   GPR_ASSERT(error_details == nullptr);
   GPR_ASSERT(handshaker != nullptr);
 
-  std::vector<unsigned char> received_bytes = {1, 2, 3, 4, 5, 6};
-  //std::vector<uint8_t> bytes_to_send = {7, 8, 9, 10, 11, 12, 13};
-  const unsigned char* bytes_to_send = nullptr;
+  std::vector<uint8_t> received_bytes = {1, 2, 3, 4, 5, 6};
+  const uint8_t* bytes_to_send = nullptr;
   size_t bytes_to_send_size;
 
   tsi_result next_result = tsi_handshaker_next(
@@ -85,6 +84,9 @@ static void s2a_tsi_handshaker_next_test() {
       &bytes_to_send, &bytes_to_send_size,
       /*result=*/nullptr, /*cb=*/ nullptr, /*user_data=*/nullptr);
   GPR_ASSERT(next_result == TSI_INVALID_ARGUMENT);
+
+  next_result = tsi_handshaker_next(
+      handshaker,
 
   tsi_handshaker_destroy(handshaker);
   grpc_s2a_credentials_options_destroy(options);
