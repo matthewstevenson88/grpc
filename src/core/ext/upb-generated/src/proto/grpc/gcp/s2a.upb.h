@@ -61,8 +61,8 @@ typedef enum {
 } s2a_Ciphersuite;
 
 typedef enum {
-  s2a_TLS1_3 = 0,
-  s2a_TLS1_2 = 1
+  s2a_TLS1_2 = 0,
+  s2a_TLS1_3 = 1
 } s2a_TLSVersion;
 
 
@@ -151,58 +151,55 @@ UPB_INLINE char *s2a_ClientSessionStartReq_serialize(const s2a_ClientSessionStar
   return upb_encode(msg, &s2a_ClientSessionStartReq_msginit, arena, len);
 }
 
-UPB_INLINE upb_strview const* s2a_ClientSessionStartReq_application_protocols(const s2a_ClientSessionStartReq *msg, size_t *len) { return (upb_strview const*)_upb_array_accessor(msg, UPB_SIZE(12, 24), len); }
-UPB_INLINE int32_t const* s2a_ClientSessionStartReq_tls_versions(const s2a_ClientSessionStartReq *msg, size_t *len) { return (int32_t const*)_upb_array_accessor(msg, UPB_SIZE(16, 32), len); }
-UPB_INLINE int32_t const* s2a_ClientSessionStartReq_tls_ciphersuites(const s2a_ClientSessionStartReq *msg, size_t *len) { return (int32_t const*)_upb_array_accessor(msg, UPB_SIZE(20, 40), len); }
-UPB_INLINE const s2a_Identity* const* s2a_ClientSessionStartReq_target_identities(const s2a_ClientSessionStartReq *msg, size_t *len) { return (const s2a_Identity* const*)_upb_array_accessor(msg, UPB_SIZE(24, 48), len); }
-UPB_INLINE const s2a_Identity* s2a_ClientSessionStartReq_local_identity(const s2a_ClientSessionStartReq *msg) { return UPB_FIELD_AT(msg, const s2a_Identity*, UPB_SIZE(8, 16)); }
-UPB_INLINE upb_strview s2a_ClientSessionStartReq_target_name(const s2a_ClientSessionStartReq *msg) { return UPB_FIELD_AT(msg, upb_strview, UPB_SIZE(0, 0)); }
+UPB_INLINE upb_strview const* s2a_ClientSessionStartReq_application_protocols(const s2a_ClientSessionStartReq *msg, size_t *len) { return (upb_strview const*)_upb_array_accessor(msg, UPB_SIZE(28, 40), len); }
+UPB_INLINE int32_t s2a_ClientSessionStartReq_min_tls_version(const s2a_ClientSessionStartReq *msg) { return UPB_FIELD_AT(msg, int32_t, UPB_SIZE(0, 0)); }
+UPB_INLINE int32_t s2a_ClientSessionStartReq_max_tls_version(const s2a_ClientSessionStartReq *msg) { return UPB_FIELD_AT(msg, int32_t, UPB_SIZE(8, 8)); }
+UPB_INLINE int32_t const* s2a_ClientSessionStartReq_tls_ciphersuites(const s2a_ClientSessionStartReq *msg, size_t *len) { return (int32_t const*)_upb_array_accessor(msg, UPB_SIZE(32, 48), len); }
+UPB_INLINE const s2a_Identity* const* s2a_ClientSessionStartReq_target_identities(const s2a_ClientSessionStartReq *msg, size_t *len) { return (const s2a_Identity* const*)_upb_array_accessor(msg, UPB_SIZE(36, 56), len); }
+UPB_INLINE const s2a_Identity* s2a_ClientSessionStartReq_local_identity(const s2a_ClientSessionStartReq *msg) { return UPB_FIELD_AT(msg, const s2a_Identity*, UPB_SIZE(24, 32)); }
+UPB_INLINE upb_strview s2a_ClientSessionStartReq_target_name(const s2a_ClientSessionStartReq *msg) { return UPB_FIELD_AT(msg, upb_strview, UPB_SIZE(16, 16)); }
 
 UPB_INLINE upb_strview* s2a_ClientSessionStartReq_mutable_application_protocols(s2a_ClientSessionStartReq *msg, size_t *len) {
-  return (upb_strview*)_upb_array_mutable_accessor(msg, UPB_SIZE(12, 24), len);
+  return (upb_strview*)_upb_array_mutable_accessor(msg, UPB_SIZE(28, 40), len);
 }
 UPB_INLINE upb_strview* s2a_ClientSessionStartReq_resize_application_protocols(s2a_ClientSessionStartReq *msg, size_t len, upb_arena *arena) {
-  return (upb_strview*)_upb_array_resize_accessor(msg, UPB_SIZE(12, 24), len, UPB_SIZE(8, 16), UPB_TYPE_STRING, arena);
+  return (upb_strview*)_upb_array_resize_accessor(msg, UPB_SIZE(28, 40), len, UPB_SIZE(8, 16), UPB_TYPE_STRING, arena);
 }
 UPB_INLINE bool s2a_ClientSessionStartReq_add_application_protocols(s2a_ClientSessionStartReq *msg, upb_strview val, upb_arena *arena) {
   return _upb_array_append_accessor(
-      msg, UPB_SIZE(12, 24), UPB_SIZE(8, 16), UPB_TYPE_STRING, &val, arena);
+      msg, UPB_SIZE(28, 40), UPB_SIZE(8, 16), UPB_TYPE_STRING, &val, arena);
 }
-UPB_INLINE int32_t* s2a_ClientSessionStartReq_mutable_tls_versions(s2a_ClientSessionStartReq *msg, size_t *len) {
-  return (int32_t*)_upb_array_mutable_accessor(msg, UPB_SIZE(16, 32), len);
+UPB_INLINE void s2a_ClientSessionStartReq_set_min_tls_version(s2a_ClientSessionStartReq *msg, int32_t value) {
+  UPB_FIELD_AT(msg, int32_t, UPB_SIZE(0, 0)) = value;
 }
-UPB_INLINE int32_t* s2a_ClientSessionStartReq_resize_tls_versions(s2a_ClientSessionStartReq *msg, size_t len, upb_arena *arena) {
-  return (int32_t*)_upb_array_resize_accessor(msg, UPB_SIZE(16, 32), len, UPB_SIZE(8, 8), UPB_TYPE_ENUM, arena);
-}
-UPB_INLINE bool s2a_ClientSessionStartReq_add_tls_versions(s2a_ClientSessionStartReq *msg, int32_t val, upb_arena *arena) {
-  return _upb_array_append_accessor(
-      msg, UPB_SIZE(16, 32), UPB_SIZE(8, 8), UPB_TYPE_ENUM, &val, arena);
+UPB_INLINE void s2a_ClientSessionStartReq_set_max_tls_version(s2a_ClientSessionStartReq *msg, int32_t value) {
+  UPB_FIELD_AT(msg, int32_t, UPB_SIZE(8, 8)) = value;
 }
 UPB_INLINE int32_t* s2a_ClientSessionStartReq_mutable_tls_ciphersuites(s2a_ClientSessionStartReq *msg, size_t *len) {
-  return (int32_t*)_upb_array_mutable_accessor(msg, UPB_SIZE(20, 40), len);
+  return (int32_t*)_upb_array_mutable_accessor(msg, UPB_SIZE(32, 48), len);
 }
 UPB_INLINE int32_t* s2a_ClientSessionStartReq_resize_tls_ciphersuites(s2a_ClientSessionStartReq *msg, size_t len, upb_arena *arena) {
-  return (int32_t*)_upb_array_resize_accessor(msg, UPB_SIZE(20, 40), len, UPB_SIZE(8, 8), UPB_TYPE_ENUM, arena);
+  return (int32_t*)_upb_array_resize_accessor(msg, UPB_SIZE(32, 48), len, UPB_SIZE(8, 8), UPB_TYPE_ENUM, arena);
 }
 UPB_INLINE bool s2a_ClientSessionStartReq_add_tls_ciphersuites(s2a_ClientSessionStartReq *msg, int32_t val, upb_arena *arena) {
   return _upb_array_append_accessor(
-      msg, UPB_SIZE(20, 40), UPB_SIZE(8, 8), UPB_TYPE_ENUM, &val, arena);
+      msg, UPB_SIZE(32, 48), UPB_SIZE(8, 8), UPB_TYPE_ENUM, &val, arena);
 }
 UPB_INLINE s2a_Identity** s2a_ClientSessionStartReq_mutable_target_identities(s2a_ClientSessionStartReq *msg, size_t *len) {
-  return (s2a_Identity**)_upb_array_mutable_accessor(msg, UPB_SIZE(24, 48), len);
+  return (s2a_Identity**)_upb_array_mutable_accessor(msg, UPB_SIZE(36, 56), len);
 }
 UPB_INLINE s2a_Identity** s2a_ClientSessionStartReq_resize_target_identities(s2a_ClientSessionStartReq *msg, size_t len, upb_arena *arena) {
-  return (s2a_Identity**)_upb_array_resize_accessor(msg, UPB_SIZE(24, 48), len, UPB_SIZE(4, 8), UPB_TYPE_MESSAGE, arena);
+  return (s2a_Identity**)_upb_array_resize_accessor(msg, UPB_SIZE(36, 56), len, UPB_SIZE(4, 8), UPB_TYPE_MESSAGE, arena);
 }
 UPB_INLINE struct s2a_Identity* s2a_ClientSessionStartReq_add_target_identities(s2a_ClientSessionStartReq *msg, upb_arena *arena) {
   struct s2a_Identity* sub = (struct s2a_Identity*)upb_msg_new(&s2a_Identity_msginit, arena);
   bool ok = _upb_array_append_accessor(
-      msg, UPB_SIZE(24, 48), UPB_SIZE(4, 8), UPB_TYPE_MESSAGE, &sub, arena);
+      msg, UPB_SIZE(36, 56), UPB_SIZE(4, 8), UPB_TYPE_MESSAGE, &sub, arena);
   if (!ok) return NULL;
   return sub;
 }
 UPB_INLINE void s2a_ClientSessionStartReq_set_local_identity(s2a_ClientSessionStartReq *msg, s2a_Identity* value) {
-  UPB_FIELD_AT(msg, s2a_Identity*, UPB_SIZE(8, 16)) = value;
+  UPB_FIELD_AT(msg, s2a_Identity*, UPB_SIZE(24, 32)) = value;
 }
 UPB_INLINE struct s2a_Identity* s2a_ClientSessionStartReq_mutable_local_identity(s2a_ClientSessionStartReq *msg, upb_arena *arena) {
   struct s2a_Identity* sub = (struct s2a_Identity*)s2a_ClientSessionStartReq_local_identity(msg);
@@ -214,7 +211,7 @@ UPB_INLINE struct s2a_Identity* s2a_ClientSessionStartReq_mutable_local_identity
   return sub;
 }
 UPB_INLINE void s2a_ClientSessionStartReq_set_target_name(s2a_ClientSessionStartReq *msg, upb_strview value) {
-  UPB_FIELD_AT(msg, upb_strview, UPB_SIZE(0, 0)) = value;
+  UPB_FIELD_AT(msg, upb_strview, UPB_SIZE(16, 16)) = value;
 }
 
 /* s2a.ServerSessionStartReq */
@@ -231,57 +228,54 @@ UPB_INLINE char *s2a_ServerSessionStartReq_serialize(const s2a_ServerSessionStar
   return upb_encode(msg, &s2a_ServerSessionStartReq_msginit, arena, len);
 }
 
-UPB_INLINE upb_strview const* s2a_ServerSessionStartReq_application_protocols(const s2a_ServerSessionStartReq *msg, size_t *len) { return (upb_strview const*)_upb_array_accessor(msg, UPB_SIZE(8, 16), len); }
-UPB_INLINE int32_t const* s2a_ServerSessionStartReq_tls_versions(const s2a_ServerSessionStartReq *msg, size_t *len) { return (int32_t const*)_upb_array_accessor(msg, UPB_SIZE(12, 24), len); }
-UPB_INLINE int32_t const* s2a_ServerSessionStartReq_tls_ciphersuites(const s2a_ServerSessionStartReq *msg, size_t *len) { return (int32_t const*)_upb_array_accessor(msg, UPB_SIZE(16, 32), len); }
-UPB_INLINE const s2a_Identity* const* s2a_ServerSessionStartReq_local_identities(const s2a_ServerSessionStartReq *msg, size_t *len) { return (const s2a_Identity* const*)_upb_array_accessor(msg, UPB_SIZE(20, 40), len); }
-UPB_INLINE upb_strview s2a_ServerSessionStartReq_in_bytes(const s2a_ServerSessionStartReq *msg) { return UPB_FIELD_AT(msg, upb_strview, UPB_SIZE(0, 0)); }
+UPB_INLINE upb_strview const* s2a_ServerSessionStartReq_application_protocols(const s2a_ServerSessionStartReq *msg, size_t *len) { return (upb_strview const*)_upb_array_accessor(msg, UPB_SIZE(24, 32), len); }
+UPB_INLINE int32_t s2a_ServerSessionStartReq_min_tls_version(const s2a_ServerSessionStartReq *msg) { return UPB_FIELD_AT(msg, int32_t, UPB_SIZE(0, 0)); }
+UPB_INLINE int32_t s2a_ServerSessionStartReq_max_tls_version(const s2a_ServerSessionStartReq *msg) { return UPB_FIELD_AT(msg, int32_t, UPB_SIZE(8, 8)); }
+UPB_INLINE int32_t const* s2a_ServerSessionStartReq_tls_ciphersuites(const s2a_ServerSessionStartReq *msg, size_t *len) { return (int32_t const*)_upb_array_accessor(msg, UPB_SIZE(28, 40), len); }
+UPB_INLINE const s2a_Identity* const* s2a_ServerSessionStartReq_local_identities(const s2a_ServerSessionStartReq *msg, size_t *len) { return (const s2a_Identity* const*)_upb_array_accessor(msg, UPB_SIZE(32, 48), len); }
+UPB_INLINE upb_strview s2a_ServerSessionStartReq_in_bytes(const s2a_ServerSessionStartReq *msg) { return UPB_FIELD_AT(msg, upb_strview, UPB_SIZE(16, 16)); }
 
 UPB_INLINE upb_strview* s2a_ServerSessionStartReq_mutable_application_protocols(s2a_ServerSessionStartReq *msg, size_t *len) {
-  return (upb_strview*)_upb_array_mutable_accessor(msg, UPB_SIZE(8, 16), len);
+  return (upb_strview*)_upb_array_mutable_accessor(msg, UPB_SIZE(24, 32), len);
 }
 UPB_INLINE upb_strview* s2a_ServerSessionStartReq_resize_application_protocols(s2a_ServerSessionStartReq *msg, size_t len, upb_arena *arena) {
-  return (upb_strview*)_upb_array_resize_accessor(msg, UPB_SIZE(8, 16), len, UPB_SIZE(8, 16), UPB_TYPE_STRING, arena);
+  return (upb_strview*)_upb_array_resize_accessor(msg, UPB_SIZE(24, 32), len, UPB_SIZE(8, 16), UPB_TYPE_STRING, arena);
 }
 UPB_INLINE bool s2a_ServerSessionStartReq_add_application_protocols(s2a_ServerSessionStartReq *msg, upb_strview val, upb_arena *arena) {
   return _upb_array_append_accessor(
-      msg, UPB_SIZE(8, 16), UPB_SIZE(8, 16), UPB_TYPE_STRING, &val, arena);
+      msg, UPB_SIZE(24, 32), UPB_SIZE(8, 16), UPB_TYPE_STRING, &val, arena);
 }
-UPB_INLINE int32_t* s2a_ServerSessionStartReq_mutable_tls_versions(s2a_ServerSessionStartReq *msg, size_t *len) {
-  return (int32_t*)_upb_array_mutable_accessor(msg, UPB_SIZE(12, 24), len);
+UPB_INLINE void s2a_ServerSessionStartReq_set_min_tls_version(s2a_ServerSessionStartReq *msg, int32_t value) {
+  UPB_FIELD_AT(msg, int32_t, UPB_SIZE(0, 0)) = value;
 }
-UPB_INLINE int32_t* s2a_ServerSessionStartReq_resize_tls_versions(s2a_ServerSessionStartReq *msg, size_t len, upb_arena *arena) {
-  return (int32_t*)_upb_array_resize_accessor(msg, UPB_SIZE(12, 24), len, UPB_SIZE(8, 8), UPB_TYPE_ENUM, arena);
-}
-UPB_INLINE bool s2a_ServerSessionStartReq_add_tls_versions(s2a_ServerSessionStartReq *msg, int32_t val, upb_arena *arena) {
-  return _upb_array_append_accessor(
-      msg, UPB_SIZE(12, 24), UPB_SIZE(8, 8), UPB_TYPE_ENUM, &val, arena);
+UPB_INLINE void s2a_ServerSessionStartReq_set_max_tls_version(s2a_ServerSessionStartReq *msg, int32_t value) {
+  UPB_FIELD_AT(msg, int32_t, UPB_SIZE(8, 8)) = value;
 }
 UPB_INLINE int32_t* s2a_ServerSessionStartReq_mutable_tls_ciphersuites(s2a_ServerSessionStartReq *msg, size_t *len) {
-  return (int32_t*)_upb_array_mutable_accessor(msg, UPB_SIZE(16, 32), len);
+  return (int32_t*)_upb_array_mutable_accessor(msg, UPB_SIZE(28, 40), len);
 }
 UPB_INLINE int32_t* s2a_ServerSessionStartReq_resize_tls_ciphersuites(s2a_ServerSessionStartReq *msg, size_t len, upb_arena *arena) {
-  return (int32_t*)_upb_array_resize_accessor(msg, UPB_SIZE(16, 32), len, UPB_SIZE(8, 8), UPB_TYPE_ENUM, arena);
+  return (int32_t*)_upb_array_resize_accessor(msg, UPB_SIZE(28, 40), len, UPB_SIZE(8, 8), UPB_TYPE_ENUM, arena);
 }
 UPB_INLINE bool s2a_ServerSessionStartReq_add_tls_ciphersuites(s2a_ServerSessionStartReq *msg, int32_t val, upb_arena *arena) {
   return _upb_array_append_accessor(
-      msg, UPB_SIZE(16, 32), UPB_SIZE(8, 8), UPB_TYPE_ENUM, &val, arena);
+      msg, UPB_SIZE(28, 40), UPB_SIZE(8, 8), UPB_TYPE_ENUM, &val, arena);
 }
 UPB_INLINE s2a_Identity** s2a_ServerSessionStartReq_mutable_local_identities(s2a_ServerSessionStartReq *msg, size_t *len) {
-  return (s2a_Identity**)_upb_array_mutable_accessor(msg, UPB_SIZE(20, 40), len);
+  return (s2a_Identity**)_upb_array_mutable_accessor(msg, UPB_SIZE(32, 48), len);
 }
 UPB_INLINE s2a_Identity** s2a_ServerSessionStartReq_resize_local_identities(s2a_ServerSessionStartReq *msg, size_t len, upb_arena *arena) {
-  return (s2a_Identity**)_upb_array_resize_accessor(msg, UPB_SIZE(20, 40), len, UPB_SIZE(4, 8), UPB_TYPE_MESSAGE, arena);
+  return (s2a_Identity**)_upb_array_resize_accessor(msg, UPB_SIZE(32, 48), len, UPB_SIZE(4, 8), UPB_TYPE_MESSAGE, arena);
 }
 UPB_INLINE struct s2a_Identity* s2a_ServerSessionStartReq_add_local_identities(s2a_ServerSessionStartReq *msg, upb_arena *arena) {
   struct s2a_Identity* sub = (struct s2a_Identity*)upb_msg_new(&s2a_Identity_msginit, arena);
   bool ok = _upb_array_append_accessor(
-      msg, UPB_SIZE(20, 40), UPB_SIZE(4, 8), UPB_TYPE_MESSAGE, &sub, arena);
+      msg, UPB_SIZE(32, 48), UPB_SIZE(4, 8), UPB_TYPE_MESSAGE, &sub, arena);
   if (!ok) return NULL;
   return sub;
 }
 UPB_INLINE void s2a_ServerSessionStartReq_set_in_bytes(s2a_ServerSessionStartReq *msg, upb_strview value) {
-  UPB_FIELD_AT(msg, upb_strview, UPB_SIZE(0, 0)) = value;
+  UPB_FIELD_AT(msg, upb_strview, UPB_SIZE(16, 16)) = value;
 }
 
 /* s2a.SessionNextReq */

@@ -43,37 +43,39 @@ static const upb_msglayout *const s2a_ClientSessionStartReq_submsgs[2] = {
   &s2a_Identity_msginit,
 };
 
-static const upb_msglayout_field s2a_ClientSessionStartReq__fields[6] = {
-  {1, UPB_SIZE(12, 24), 0, 0, 9, 3},
-  {2, UPB_SIZE(16, 32), 0, 0, 14, 3},
-  {3, UPB_SIZE(20, 40), 0, 0, 14, 3},
-  {4, UPB_SIZE(24, 48), 0, 0, 11, 3},
-  {5, UPB_SIZE(8, 16), 0, 0, 11, 1},
-  {6, UPB_SIZE(0, 0), 0, 0, 9, 1},
+static const upb_msglayout_field s2a_ClientSessionStartReq__fields[7] = {
+  {1, UPB_SIZE(28, 40), 0, 0, 9, 3},
+  {2, UPB_SIZE(0, 0), 0, 0, 14, 1},
+  {3, UPB_SIZE(8, 8), 0, 0, 14, 1},
+  {4, UPB_SIZE(32, 48), 0, 0, 14, 3},
+  {5, UPB_SIZE(36, 56), 0, 0, 11, 3},
+  {6, UPB_SIZE(24, 32), 0, 0, 11, 1},
+  {7, UPB_SIZE(16, 16), 0, 0, 9, 1},
 };
 
 const upb_msglayout s2a_ClientSessionStartReq_msginit = {
   &s2a_ClientSessionStartReq_submsgs[0],
   &s2a_ClientSessionStartReq__fields[0],
-  UPB_SIZE(32, 64), 6, false,
+  UPB_SIZE(40, 64), 7, false,
 };
 
 static const upb_msglayout *const s2a_ServerSessionStartReq_submsgs[1] = {
   &s2a_Identity_msginit,
 };
 
-static const upb_msglayout_field s2a_ServerSessionStartReq__fields[5] = {
-  {1, UPB_SIZE(8, 16), 0, 0, 9, 3},
-  {2, UPB_SIZE(12, 24), 0, 0, 14, 3},
-  {3, UPB_SIZE(16, 32), 0, 0, 14, 3},
-  {4, UPB_SIZE(20, 40), 0, 0, 11, 3},
-  {5, UPB_SIZE(0, 0), 0, 0, 12, 1},
+static const upb_msglayout_field s2a_ServerSessionStartReq__fields[6] = {
+  {1, UPB_SIZE(24, 32), 0, 0, 9, 3},
+  {2, UPB_SIZE(0, 0), 0, 0, 14, 1},
+  {3, UPB_SIZE(8, 8), 0, 0, 14, 1},
+  {4, UPB_SIZE(28, 40), 0, 0, 14, 3},
+  {5, UPB_SIZE(32, 48), 0, 0, 11, 3},
+  {6, UPB_SIZE(16, 16), 0, 0, 12, 1},
 };
 
 const upb_msglayout s2a_ServerSessionStartReq_msginit = {
   &s2a_ServerSessionStartReq_submsgs[0],
   &s2a_ServerSessionStartReq__fields[0],
-  UPB_SIZE(24, 48), 5, false,
+  UPB_SIZE(40, 64), 6, false,
 };
 
 static const upb_msglayout_field s2a_SessionNextReq__fields[1] = {

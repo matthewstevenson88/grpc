@@ -978,7 +978,8 @@ S2ADecryptStatus s2a_unprotect_record(s2a_crypter* crypter,
   GPR_ASSERT(error_details != nullptr);
 
   size_t tag_size;
-  grpc_status_code tag_status = s2a_tag_size(crypter->ciphersuite, &tag_size, error_details);
+  grpc_status_code tag_status =
+      s2a_tag_size(crypter->ciphersuite, &tag_size, error_details);
   if (tag_status != GRPC_STATUS_OK) {
     return S2ADecryptStatus::INTERNAL_ERROR;
   }
