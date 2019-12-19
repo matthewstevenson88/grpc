@@ -59,7 +59,7 @@ static s2a_tsi_handshaker_config* s2a_tsi_handshaker_config_setup(
   config->options->add_supported_ciphersuite(kTlsAes256GcmSha384);
   config->options->add_supported_ciphersuite(kTlsChacha20Poly1305Sha256);
   config->options->add_target_service_account("target_service_account");
-  config->channel = ::grpc_core::New<grpc_channel>();
+  config->channel = new grpc_channel();
   char* error_details = nullptr;
   tsi_result handshaker_result = s2a_tsi_handshaker_create(
       config->options, kS2AHandshakerClientTestTargetName, is_client,
@@ -75,7 +75,7 @@ static void s2a_tsi_handshaker_config_destroy(
     return;
   }
   grpc_s2a_credentials_options_destroy(config->options);
-  ::grpc_core::Delete<grpc_channel>(config->channel);
+  delete config->channel;
   tsi_handshaker_destroy(config->handshaker);
   delete config;
   config = nullptr;

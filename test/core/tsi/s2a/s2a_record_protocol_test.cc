@@ -146,7 +146,7 @@ static grpc_status_code setup_crypter(uint16_t ciphersuite,
 
 static void s2a_test_incorrect_tls_version() {
   s2a_crypter* crypter = nullptr;
-  grpc_channel* channel = grpc_core::New<grpc_channel>();
+  grpc_channel* channel = new grpc_channel();
   char* error_details = nullptr;
   uint8_t in_traffic_secret[32] = "in_traffic_secret";
   uint8_t out_traffic_secret[32] = "out_traffic_secret";
@@ -159,12 +159,12 @@ static void s2a_test_incorrect_tls_version() {
 
   // Cleanup.
   gpr_free(error_details);
-  grpc_core::Delete<grpc_channel>(channel);
+  delete channel;
 }
 
 static void s2a_test_incorrect_key_size() {
   s2a_crypter* crypter = nullptr;
-  grpc_channel* channel = grpc_core::New<grpc_channel>();
+  grpc_channel* channel = new grpc_channel();
   char* error_details = nullptr;
   std::vector<uint8_t> in_traffic_secret(kSha256DigestLength - 1, 0);
   std::vector<uint8_t> out_traffic_secret(kSha256DigestLength + 1, 0);
@@ -178,12 +178,12 @@ static void s2a_test_incorrect_key_size() {
   // Cleanup.
   s2a_crypter_destroy(crypter);
   gpr_free(error_details);
-  grpc_core::Delete<grpc_channel>(channel);
+  delete channel;
 }
 
 static void s2a_test_create_crypter_success(uint16_t ciphersuite) {
   s2a_crypter* crypter = nullptr;
-  grpc_channel* channel = grpc_core::New<grpc_channel>();
+  grpc_channel* channel = new grpc_channel();
   char* error_details = nullptr;
   grpc_status_code status =
       setup_crypter(ciphersuite, channel, &crypter, &error_details);
@@ -194,7 +194,7 @@ static void s2a_test_create_crypter_success(uint16_t ciphersuite) {
     // Cleanup.
     s2a_crypter_destroy(crypter);
     gpr_free(error_details);
-    grpc_core::Delete<grpc_channel>(channel);
+    delete channel;
     return;
   }
   GPR_ASSERT(status == GRPC_STATUS_OK);
@@ -277,12 +277,12 @@ static void s2a_test_create_crypter_success(uint16_t ciphersuite) {
 
   // Cleanup.
   s2a_crypter_destroy(crypter);
-  grpc_core::Delete<grpc_channel>(channel);
+  delete channel;
 }
 
 static void s2a_test_encrypt_record_bad_size(uint16_t ciphersuite) {
   s2a_crypter* crypter = nullptr;
-  grpc_channel* channel = grpc_core::New<grpc_channel>();
+  grpc_channel* channel = new grpc_channel();
   char* error_details = nullptr;
   grpc_status_code status =
       setup_crypter(ciphersuite, channel, &crypter, &error_details);
@@ -293,7 +293,7 @@ static void s2a_test_encrypt_record_bad_size(uint16_t ciphersuite) {
     // Cleanup.
     s2a_crypter_destroy(crypter);
     gpr_free(error_details);
-    grpc_core::Delete<grpc_channel>(channel);
+    delete channel;
     return;
   }
   GPR_ASSERT(status == GRPC_STATUS_OK);
@@ -330,13 +330,13 @@ static void s2a_test_encrypt_record_bad_size(uint16_t ciphersuite) {
 
   // Cleanup.
   s2a_crypter_destroy(crypter);
-  grpc_core::Delete<grpc_channel>(channel);
+  delete channel;
   gpr_free(error_details);
 }
 
 static void s2a_test_encrypt_record_success(uint16_t ciphersuite) {
   s2a_crypter* crypter = nullptr;
-  grpc_channel* channel = grpc_core::New<grpc_channel>();
+  grpc_channel* channel = new grpc_channel();
   char* error_details = nullptr;
   grpc_status_code status =
       setup_crypter(ciphersuite, channel, &crypter, &error_details);
@@ -347,7 +347,7 @@ static void s2a_test_encrypt_record_success(uint16_t ciphersuite) {
     // Cleanup.
     s2a_crypter_destroy(crypter);
     gpr_free(error_details);
-    grpc_core::Delete<grpc_channel>(channel);
+    delete channel;
     return;
   }
   GPR_ASSERT(status == GRPC_STATUS_OK);
@@ -377,12 +377,12 @@ static void s2a_test_encrypt_record_success(uint16_t ciphersuite) {
 
   // Cleanup.
   s2a_crypter_destroy(crypter);
-  grpc_core::Delete<grpc_channel>(channel);
+  delete channel;
 }
 
 static void s2a_test_encrypt_three_records(uint16_t ciphersuite) {
   s2a_crypter* crypter = nullptr;
-  grpc_channel* channel = grpc_core::New<grpc_channel>();
+  grpc_channel* channel = new grpc_channel();
   char* error_details = nullptr;
   grpc_status_code status =
       setup_crypter(ciphersuite, channel, &crypter, &error_details);
@@ -393,7 +393,7 @@ static void s2a_test_encrypt_three_records(uint16_t ciphersuite) {
     // Cleanup.
     s2a_crypter_destroy(crypter);
     gpr_free(error_details);
-    grpc_core::Delete<grpc_channel>(channel);
+    delete channel;
     return;
   }
   GPR_ASSERT(status == GRPC_STATUS_OK);
@@ -436,12 +436,12 @@ static void s2a_test_encrypt_three_records(uint16_t ciphersuite) {
 
   // Cleanup.
   s2a_crypter_destroy(crypter);
-  grpc_core::Delete<grpc_channel>(channel);
+  delete channel;
 }
 
 static void s2a_test_encrypt_empty_plaintext(uint16_t ciphersuite) {
   s2a_crypter* crypter = nullptr;
-  grpc_channel* channel = grpc_core::New<grpc_channel>();
+  grpc_channel* channel = new grpc_channel();
   char* error_details = nullptr;
   grpc_status_code status =
       setup_crypter(ciphersuite, channel, &crypter, &error_details);
@@ -452,7 +452,7 @@ static void s2a_test_encrypt_empty_plaintext(uint16_t ciphersuite) {
     // Cleanup.
     s2a_crypter_destroy(crypter);
     gpr_free(error_details);
-    grpc_core::Delete<grpc_channel>(channel);
+    delete channel;
     return;
   }
   GPR_ASSERT(status == GRPC_STATUS_OK);
@@ -487,12 +487,12 @@ static void s2a_test_encrypt_empty_plaintext(uint16_t ciphersuite) {
 
   // Cleanup.
   s2a_crypter_destroy(crypter);
-  grpc_core::Delete<grpc_channel>(channel);
+  delete channel;
 }
 
 static void s2a_test_decrypt_record_success(uint16_t ciphersuite) {
   s2a_crypter* crypter = nullptr;
-  grpc_channel* channel = grpc_core::New<grpc_channel>();
+  grpc_channel* channel = new grpc_channel();
   char* error_details = nullptr;
   grpc_status_code status =
       setup_crypter(ciphersuite, channel, &crypter, &error_details);
@@ -503,7 +503,7 @@ static void s2a_test_decrypt_record_success(uint16_t ciphersuite) {
     // Cleanup.
     s2a_crypter_destroy(crypter);
     gpr_free(error_details);
-    grpc_core::Delete<grpc_channel>(channel);
+    delete channel;
     return;
   }
   GPR_ASSERT(status == GRPC_STATUS_OK);
@@ -544,12 +544,12 @@ static void s2a_test_decrypt_record_success(uint16_t ciphersuite) {
 
   // Cleanup.
   s2a_crypter_destroy(crypter);
-  grpc_core::Delete<grpc_channel>(channel);
+  delete channel;
 }
 
 static void s2a_test_decrypt_record_with_padding(uint16_t ciphersuite) {
   s2a_crypter* crypter = nullptr;
-  grpc_channel* channel = grpc_core::New<grpc_channel>();
+  grpc_channel* channel = new grpc_channel();
   char* error_details = nullptr;
   grpc_status_code status =
       setup_crypter(ciphersuite, channel, &crypter, &error_details);
@@ -560,7 +560,7 @@ static void s2a_test_decrypt_record_with_padding(uint16_t ciphersuite) {
     // Cleanup.
     s2a_crypter_destroy(crypter);
     gpr_free(error_details);
-    grpc_core::Delete<grpc_channel>(channel);
+    delete channel;
     return;
   }
   GPR_ASSERT(status == GRPC_STATUS_OK);
@@ -601,12 +601,12 @@ static void s2a_test_decrypt_record_with_padding(uint16_t ciphersuite) {
 
   // Cleanup.
   s2a_crypter_destroy(crypter);
-  grpc_core::Delete<grpc_channel>(channel);
+  delete channel;
 }
 
 static void s2a_test_decrypt_large_record(uint16_t ciphersuite) {
   s2a_crypter* crypter = nullptr;
-  grpc_channel* channel = grpc_core::New<grpc_channel>();
+  grpc_channel* channel = new grpc_channel();
   char* error_details = nullptr;
   grpc_status_code status =
       setup_crypter(ciphersuite, channel, &crypter, &error_details);
@@ -617,7 +617,7 @@ static void s2a_test_decrypt_large_record(uint16_t ciphersuite) {
     // Cleanup.
     s2a_crypter_destroy(crypter);
     gpr_free(error_details);
-    grpc_core::Delete<grpc_channel>(channel);
+    delete channel;
     return;
   }
   GPR_ASSERT(status == GRPC_STATUS_OK);
@@ -660,7 +660,7 @@ static void s2a_test_decrypt_large_record(uint16_t ciphersuite) {
   // Cleanup.
   gpr_free(error_details);
   s2a_crypter_destroy(crypter);
-  grpc_core::Delete<grpc_channel>(channel);
+  delete channel;
 }
 
 enum class TlsAlertType {
@@ -672,7 +672,7 @@ enum class TlsAlertType {
 static void s2a_test_decrypt_alert(uint16_t ciphersuite,
                                    TlsAlertType alert_type) {
   s2a_crypter* crypter = nullptr;
-  grpc_channel* channel = grpc_core::New<grpc_channel>();
+  grpc_channel* channel = new grpc_channel();
   char* error_details = nullptr;
   grpc_status_code status =
       setup_crypter(ciphersuite, channel, &crypter, &error_details);
@@ -683,7 +683,7 @@ static void s2a_test_decrypt_alert(uint16_t ciphersuite,
     // Cleanup.
     s2a_crypter_destroy(crypter);
     gpr_free(error_details);
-    grpc_core::Delete<grpc_channel>(channel);
+    delete channel;
     return;
   }
   GPR_ASSERT(status == GRPC_STATUS_OK);
@@ -762,13 +762,13 @@ static void s2a_test_decrypt_alert(uint16_t ciphersuite,
 
   // Cleanup.
   s2a_crypter_destroy(crypter);
-  grpc_core::Delete<grpc_channel>(channel);
+  delete channel;
 }
 
 static void s2a_test_roundtrips(uint16_t ciphersuite) {
   s2a_crypter* in_crypter = nullptr;
   s2a_crypter* out_crypter = nullptr;
-  grpc_channel* channel = grpc_core::New<grpc_channel>();
+  grpc_channel* channel = new grpc_channel();
   char* error_details = nullptr;
   grpc_status_code in_status =
       setup_crypter(ciphersuite, channel, &in_crypter, &error_details);
@@ -779,7 +779,7 @@ static void s2a_test_roundtrips(uint16_t ciphersuite) {
     // Cleanup.
     s2a_crypter_destroy(in_crypter);
     gpr_free(error_details);
-    grpc_core::Delete<grpc_channel>(channel);
+    delete channel;
     return;
   }
   grpc_status_code out_status =
@@ -796,12 +796,12 @@ static void s2a_test_roundtrips(uint16_t ciphersuite) {
   // Cleanup.
   s2a_crypter_destroy(in_crypter);
   s2a_crypter_destroy(out_crypter);
-  grpc_core::Delete<grpc_channel>(channel);
+  delete channel;
 }
 
 static void s2a_test_key_update(uint16_t ciphersuite) {
   s2a_crypter* crypter = nullptr;
-  grpc_channel* channel = grpc_core::New<grpc_channel>();
+  grpc_channel* channel = new grpc_channel();
   char* error_details = nullptr;
   grpc_status_code status =
       setup_crypter(ciphersuite, channel, &crypter, &error_details);
@@ -812,7 +812,7 @@ static void s2a_test_key_update(uint16_t ciphersuite) {
     // Cleanup.
     s2a_crypter_destroy(crypter);
     gpr_free(error_details);
-    grpc_core::Delete<grpc_channel>(channel);
+    delete channel;
     return;
   }
   GPR_ASSERT(status == GRPC_STATUS_OK);
@@ -893,7 +893,7 @@ static void s2a_test_key_update(uint16_t ciphersuite) {
 
   /** Cleanup. **/
   s2a_crypter_destroy(crypter);
-  grpc_core::Delete<grpc_channel>(channel);
+  delete channel;
 }
 
 int main(int argc, char** argv) {
