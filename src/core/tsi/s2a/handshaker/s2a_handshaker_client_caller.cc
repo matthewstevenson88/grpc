@@ -34,9 +34,6 @@ namespace experimental {
 
 const size_t kHandshakerClientOpNum = 4;
 
-/** The implementation of |make_grpc_call| is nearly identical to that of its
- *  ALTS counterpart, the |make_grpc_call| method in alts_handshaker_client.cc.
- */
 tsi_result S2AHandshakerClient::MakeGrpcCall(bool is_start) {
   grpc_op ops[kHandshakerClientOpNum];
   memset(ops, 0, sizeof(ops));
@@ -84,8 +81,6 @@ tsi_result S2AHandshakerClient::MakeGrpcCall(bool is_start) {
   return TSI_OK;
 }
 
-/** The implementation of this method is nearly identical to its ALTS
- *  counterpart, |maybe_complete_tsi_next| in alts_handshaker_client.cc. **/
 void S2AHandshakerClient::MaybeCompleteTsiNext(
     bool receive_status_finished,
     s2a_recv_message_result* pending_recv_message_result) {

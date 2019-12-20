@@ -111,6 +111,11 @@ class S2AHandshakerClient {
    *  no further handshaker requests will be scheduled with the S2A. **/
   void Shutdown();
 
+  /** This method determines if the handshaker client has the final result of
+   *  the handshake, in which case it updates |pending_recv_message_result_| and
+   *  returns. Otherwise, it invokes the callback function |cb_| using the
+   *  pending message result. When this method is called by |HandleResponse|,
+   *  |cb_| is populated by the TSI next callback. **/
   void MaybeCompleteTsiNext(
       bool receive_status_finished,
       s2a_recv_message_result* pending_recv_message_result);
@@ -129,7 +134,8 @@ class S2AHandshakerClient {
   }
 
   /** These methods are exposed for testing purposes only. If |is_test_| is
-   *  false, then these methods do nothing or return nullptr. **/
+   *  false, then these methods either do nothing or return nullptr, depending
+   *  on the return type of the method. **/
   void set_grpc_caller_for_testing(s2a_grpc_caller caller);
   grpc_metadata_array* initial_metadata_for_testing();
   grpc_byte_buffer** recv_buffer_addr_for_testing();
@@ -143,6 +149,8 @@ class S2AHandshakerClient {
   /** This method makes a call to the S2A service. **/
   tsi_result MakeGrpcCall(bool is_start);
 
+  /** This method makes a call to the S2A service, unless
+   *  |no_calls_for_testing_| is true. **/
   tsi_result MakeGrpcCallUtil(bool is_start);
 
   /** This method populates a |s2a_recv_message_result| instance using the
