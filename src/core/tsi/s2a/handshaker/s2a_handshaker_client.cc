@@ -34,12 +34,10 @@ namespace grpc_core {
 namespace experimental {
 
 tsi_result S2AHandshakerClient::MakeGrpcCallUtil(bool is_start) {
-  if (!no_calls_for_testing_) {
-    tsi_result call_result = MakeGrpcCall(is_start);
-    if (call_result != TSI_OK) {
-      gpr_log(GPR_ERROR, kS2AMakeGrpcCallFailed);
-      return call_result;
-    }
+  tsi_result call_result = MakeGrpcCall(is_start);
+  if (call_result != TSI_OK) {
+    gpr_log(GPR_ERROR, kS2AMakeGrpcCallFailed);
+    return call_result;
   }
   return TSI_OK;
 }
@@ -333,12 +331,6 @@ void S2AHandshakerClient::on_status_received_for_testing(
     handshake_status_code_ = status;
     handshake_status_details_ = grpc_empty_slice();
     grpc_core::Closure::Run(DEBUG_LOCATION, &on_status_received_, error);
-  }
-}
-
-void S2AHandshakerClient::set_no_calls_for_testing(bool no_calls) {
-  if (is_test_) {
-    no_calls_for_testing_ = no_calls;
   }
 }
 

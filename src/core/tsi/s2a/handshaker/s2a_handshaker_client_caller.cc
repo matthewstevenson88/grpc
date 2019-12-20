@@ -28,9 +28,10 @@
 namespace grpc_core {
 namespace experimental {
 
-/** This file contains the implementation details of the |make_grpc_call| member
- *  function of the |S2AHandshakerClient| class. This method enables the S2A
- *  handshaker client to make a gRPC call to the S2A service. **/
+/** This file contains the implementation details of the |MakeGrpcCall| and
+ *  |HandleResponse| member functions of the |S2AHandshakerClient| class.
+ *  This method enables the S2A handshaker client to make a gRPC call to
+ *  the S2A service. **/
 
 const size_t kHandshakerClientOpNum = 4;
 

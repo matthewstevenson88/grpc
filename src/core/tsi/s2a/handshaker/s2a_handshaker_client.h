@@ -111,11 +111,12 @@ class S2AHandshakerClient {
    *  no further handshaker requests will be scheduled with the S2A. **/
   void Shutdown();
 
-  /** This method determines if the handshaker client has the final result of
-   *  the handshake, in which case it updates |pending_recv_message_result_| and
-   *  returns. Otherwise, it invokes the callback function |cb_| using the
-   *  pending message result. When this method is called by |HandleResponse|,
-   *  |cb_| is populated by the TSI next callback. **/
+  /** If this handshaker client has the final result of the handshake or if an
+   *  error has occurred, then:
+   *  - if |receive_status_finished| is true, then this method invokes |cb_|;
+   *  - if |receive_status_finished| is false, then this method does nothing.
+   *  On the other hand, if the final result of the handshake has not yet been
+   *  received and no error has occured, then this method invokes |cb_|. **/
   void MaybeCompleteTsiNext(
       bool receive_status_finished,
       s2a_recv_message_result* pending_recv_message_result);
@@ -133,9 +134,12 @@ class S2AHandshakerClient {
     return handshake_status_details_;
   }
 
-  /** These methods are exposed for testing purposes only. If |is_test_| is
-   *  false, then these methods either do nothing or return nullptr, depending
-   *  on the return type of the method. **/
+  /** These methods are exposed for testing purposes only. If |is_test_| is set
+   *  to true, then the method accesses the appropriate private member variable.
+   *  If |is_test_| is set to false, then:
+   *  - if the method has a void return type, then the method does nothing;
+   *  - if the method returns a pointer, then the method does nothing and
+   *    returns nullptr. **/
   void set_grpc_caller_for_testing(s2a_grpc_caller caller);
   grpc_metadata_array* initial_metadata_for_testing();
   grpc_byte_buffer** recv_buffer_addr_for_testing();
@@ -143,14 +147,13 @@ class S2AHandshakerClient {
   grpc_closure* closure_for_testing();
   void on_status_received_for_testing(grpc_status_code status,
                                       grpc_error* error);
-  void set_no_calls_for_testing(bool no_calls);
 
  private:
   /** This method makes a call to the S2A service. **/
   tsi_result MakeGrpcCall(bool is_start);
 
-  /** This method makes a call to the S2A service, unless
-   *  |no_calls_for_testing_| is true. **/
+  /** This method makes a call to the S2A service, and logs any errors that
+   *  occur. **/
   tsi_result MakeGrpcCallUtil(bool is_start);
 
   /** This method populates a |s2a_recv_message_result| instance using the
@@ -232,10 +235,6 @@ class S2AHandshakerClient {
   /** This variable should be set to true iff the S2A handshaker client instance
    *  is instantiated as part of a test. **/
   bool is_test_ = false;
-  /** If this variable is set to true, then the method |make_grpc_call| will not
-   *  be called when handshake messages are being constructed. This enables unit
-   *  testing for the methods that construct these handshake messages. **/
-  bool no_calls_for_testing_ = false;
 };
 
 /** This method populates |client| with an instance of the
