@@ -32,7 +32,6 @@ grpc_core::RefCountedPtr<grpc_auth_context> grpc_s2a_auth_context_from_tsi_peer(
         "Invalid nullptr arguments to |grpc_s2a_auth_context_from_tsi_peer|.");
     return nullptr;
   }
-
   /** Validate certificate type. **/
   const tsi_peer_property* cert_type_prop =
       tsi_peer_get_property_by_name(peer, TSI_CERTIFICATE_TYPE_PEER_PROPERTY);
@@ -42,7 +41,6 @@ grpc_core::RefCountedPtr<grpc_auth_context> grpc_s2a_auth_context_from_tsi_peer(
     gpr_log(GPR_ERROR, "Invalid or missing certificate type property.");
     return nullptr;
   }
-
   /** Validate S2A Context. **/
   const tsi_peer_property* s2a_context_property =
       tsi_peer_get_property_by_name(peer, kTsiS2AContext);
@@ -50,7 +48,6 @@ grpc_core::RefCountedPtr<grpc_auth_context> grpc_s2a_auth_context_from_tsi_peer(
     gpr_log(GPR_ERROR, "Missing S2A context property.");
     return nullptr;
   }
-
   /** Create auth context. **/
   auto ctx = grpc_core::MakeRefCounted<grpc_auth_context>(nullptr);
   grpc_auth_context_add_cstring_property(
