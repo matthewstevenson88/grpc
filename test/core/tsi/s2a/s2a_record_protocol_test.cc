@@ -17,9 +17,9 @@
  */
 
 #include <gmock/gmock.h>
-#include <gtest/gtest.h>
 #include <grpc/support/alloc.h>
 #include <grpc/support/log.h>
+#include <gtest/gtest.h>
 #include <openssl/sha.h>
 #include <openssl/ssl.h>
 #include <openssl/ssl3.h>
@@ -43,9 +43,7 @@ class S2ACrypterTest : public TestWithParam<uint16_t> {
  protected:
   S2ACrypterTest() {}
 
-  void SetUp() override {
-    channel_ = new grpc_channel();
-  }
+  void SetUp() override { channel_ = new grpc_channel(); }
 
   void TearDown() override {
     if (error_details_ != nullptr) {
@@ -80,11 +78,15 @@ class S2ACrypterTest : public TestWithParam<uint16_t> {
         abort();
     }
     bool is_chacha_poly = (GetParam() == kTlsChacha20Poly1305Sha256);
-    grpc_status_code expected_status = is_chacha_poly ? GRPC_STATUS_UNIMPLEMENTED : GRPC_STATUS_OK;
-    const char* expected_error_details = is_chacha_poly ? kS2AChachaPolyUnimplemented : nullptr;
+    grpc_status_code expected_status =
+        is_chacha_poly ? GRPC_STATUS_UNIMPLEMENTED : GRPC_STATUS_OK;
+    const char* expected_error_details =
+        is_chacha_poly ? kS2AChachaPolyUnimplemented : nullptr;
     EXPECT_EQ(s2a_crypter_create(
-      /*TLS 1.3=*/ 0, GetParam(), traffic_secret, traffic_secret_size,
-      traffic_secret, traffic_secret_size, channel_, crypter, &error_details_), expected_status);
+                  /*TLS 1.3=*/0, GetParam(), traffic_secret,
+                  traffic_secret_size, traffic_secret, traffic_secret_size,
+                  channel_, crypter, &error_details_),
+              expected_status);
     if (is_chacha_poly) {
       EXPECT_EQ(strcmp(error_details_, expected_error_details), 0);
       return false;
@@ -93,22 +95,22 @@ class S2ACrypterTest : public TestWithParam<uint16_t> {
     return true;
   }
 
-  bool InitializeCrypter() {
-    return InitializeCrypterFromPointer(&crypter_);
-  }
+  bool InitializeCrypter() { return InitializeCrypterFromPointer(&crypter_); }
 
   grpc_channel* channel_ = nullptr;
   char* error_details_ = nullptr;
   s2a_crypter* crypter_ = nullptr;
 };
 
-INSTANTIATE_TEST_SUITE_P(S2ACrypterTest, S2ACrypterTest, Values(kTlsAes128GcmSha256, kTlsAes256GcmSha384, kTlsChacha20Poly1305Sha256));
+INSTANTIATE_TEST_SUITE_P(S2ACrypterTest, S2ACrypterTest,
+                         Values(kTlsAes128GcmSha256, kTlsAes256GcmSha384,
+                                kTlsChacha20Poly1305Sha256));
 
 TEST_P(S2ACrypterTest, IncorrectTLSVersion) {
   uint8_t in_traffic_secret[32] = "in_traffic_secret";
   uint8_t out_traffic_secret[32] = "out_traffic_secret";
   grpc_status_code status = s2a_crypter_create(
-      /*TLS 1.2=*/ 1, kTlsAes128GcmSha256, in_traffic_secret,
+      /*TLS 1.2=*/1, kTlsAes128GcmSha256, in_traffic_secret,
       kSha256DigestLength, out_traffic_secret, kSha256DigestLength, channel_,
       &crypter_, &error_details_);
   EXPECT_EQ(status, GRPC_STATUS_FAILED_PRECONDITION);
@@ -129,7 +131,9 @@ TEST_P(S2ACrypterTest, IncorrectKeySize) {
 }
 
 TEST_P(S2ACrypterTest, CreateSuccess) {
-  if (!InitializeCrypter()) { return; }
+  if (!InitializeCrypter()) {
+    return;
+  }
 
   gsec_aead_crypter* in_crypter = s2a_in_aead_crypter_for_testing(crypter_);
   gsec_aead_crypter* out_crypter = s2a_out_aead_crypter_for_testing(crypter_);
@@ -201,7 +205,9 @@ TEST_P(S2ACrypterTest, CreateSuccess) {
 }
 
 TEST_P(S2ACrypterTest, EncryptRecordBadSize) {
-  if (!InitializeCrypter()) { return; }
+  if (!InitializeCrypter()) {
+    return;
+  }
 
   /** Test the case when the memory allocated for the record is insufficient.**/
   std::vector<uint8_t> test_plaintext = {'1', '2', '3', '4', '5', '6'};
@@ -234,7 +240,9 @@ TEST_P(S2ACrypterTest, EncryptRecordBadSize) {
 }
 
 TEST_P(S2ACrypterTest, EncryptRecordSuccess) {
-  if (!InitializeCrypter()) { return; }
+  if (!InitializeCrypter()) {
+    return;
+  }
 
   size_t max_record_overhead;
   grpc_status_code overhead_status =
@@ -260,7 +268,9 @@ TEST_P(S2ACrypterTest, EncryptRecordSuccess) {
 }
 
 TEST_P(S2ACrypterTest, EncryptThreeRecords) {
-  if (!InitializeCrypter()) { return; }
+  if (!InitializeCrypter()) {
+    return;
+  }
 
   size_t max_record_overhead;
   grpc_status_code overhead_status =
@@ -299,7 +309,9 @@ TEST_P(S2ACrypterTest, EncryptThreeRecords) {
 }
 
 TEST_P(S2ACrypterTest, EncryptEmptyPlaintext) {
-  if (!InitializeCrypter()) { return; }
+  if (!InitializeCrypter()) {
+    return;
+  }
 
   size_t max_record_overhead;
   grpc_status_code overhead_status =
@@ -330,7 +342,9 @@ TEST_P(S2ACrypterTest, EncryptEmptyPlaintext) {
 }
 
 TEST_P(S2ACrypterTest, DecryptRecordSuccess) {
-  if (!InitializeCrypter()) { return; }
+  if (!InitializeCrypter()) {
+    return;
+  }
 
   std::vector<uint8_t> record;
   switch (GetParam()) {
@@ -364,7 +378,9 @@ TEST_P(S2ACrypterTest, DecryptRecordSuccess) {
 }
 
 TEST_P(S2ACrypterTest, DecryptRecordWithPadding) {
-  if (!InitializeCrypter()) { return; }
+  if (!InitializeCrypter()) {
+    return;
+  }
 
   std::vector<uint8_t> record;
   switch (GetParam()) {
@@ -398,7 +414,9 @@ TEST_P(S2ACrypterTest, DecryptRecordWithPadding) {
 }
 
 TEST_P(S2ACrypterTest, DecryptLargeRecord) {
-  if (!InitializeCrypter()) { return; }
+  if (!InitializeCrypter()) {
+    return;
+  }
 
   /** Construct a TLS record whose plaintext is larger than is allowed. **/
   size_t tag_size;
@@ -425,14 +443,16 @@ TEST_P(S2ACrypterTest, DecryptLargeRecord) {
   std::vector<uint8_t> plaintext(plaintext_allocated_size, 0);
   size_t plaintext_size;
   S2ADecryptStatus decrypt_status = s2a_decrypt(
-      crypter_, oversize_record.data(), oversize_record.size(), plaintext.data(),
-      plaintext.size(), &plaintext_size, &error_details_);
+      crypter_, oversize_record.data(), oversize_record.size(),
+      plaintext.data(), plaintext.size(), &plaintext_size, &error_details_);
   EXPECT_EQ(decrypt_status, S2ADecryptStatus::ALERT_RECORD_OVERFLOW);
   EXPECT_EQ(strcmp(error_details_, kS2ARecordExceedMaxSize), 0);
 }
 
 TEST_P(S2ACrypterTest, DecryptAlertCloseNotify) {
-  if (!InitializeCrypter()) { return; }
+  if (!InitializeCrypter()) {
+    return;
+  }
 
   std::vector<uint8_t> record;
   switch (GetParam()) {
@@ -461,7 +481,9 @@ TEST_P(S2ACrypterTest, DecryptAlertCloseNotify) {
 }
 
 TEST_P(S2ACrypterTest, DecryptAlertOther) {
-  if (!InitializeCrypter()) { return; }
+  if (!InitializeCrypter()) {
+    return;
+  }
 
   std::vector<uint8_t> record;
   switch (GetParam()) {
@@ -490,7 +512,9 @@ TEST_P(S2ACrypterTest, DecryptAlertOther) {
 }
 
 TEST_P(S2ACrypterTest, DecryptAlertSmall) {
-  if (!InitializeCrypter()) { return; }
+  if (!InitializeCrypter()) {
+    return;
+  }
 
   std::vector<uint8_t> record;
   switch (GetParam()) {
@@ -520,7 +544,9 @@ TEST_P(S2ACrypterTest, DecryptAlertSmall) {
 }
 
 TEST_P(S2ACrypterTest, Roundtrips) {
-  if (!InitializeCrypter()) { return; }
+  if (!InitializeCrypter()) {
+    return;
+  }
 
   s2a_crypter* peer_crypter = nullptr;
   InitializeCrypterFromPointer(&peer_crypter);
@@ -536,7 +562,9 @@ TEST_P(S2ACrypterTest, Roundtrips) {
 }
 
 TEST_P(S2ACrypterTest, KeyUpdate) {
-  if (!InitializeCrypter()) { return; }
+  if (!InitializeCrypter()) {
+    return;
+  }
 
   /** Setup for encryption of key update message. **/
   iovec plaintext_vec = {
@@ -560,7 +588,8 @@ TEST_P(S2ACrypterTest, KeyUpdate) {
       record_vec, &record_bytes_written, &error_details_);
   EXPECT_EQ(write_key_update_status, GRPC_STATUS_OK);
   EXPECT_EQ(error_details_, nullptr);
-  EXPECT_EQ(record_bytes_written, expected_message_size(s2a_test_data::key_update_message.size()));
+  EXPECT_EQ(record_bytes_written,
+            expected_message_size(s2a_test_data::key_update_message.size()));
 
   /** Setup for decryption of key update message. **/
   iovec record_header_vec = {record_vec.iov_base, SSL3_RT_HEADER_LENGTH};
@@ -582,23 +611,30 @@ TEST_P(S2ACrypterTest, KeyUpdate) {
       unprotected_vec, &unprotected_bytes_written, &error_details_);
   EXPECT_EQ(read_key_update_status, S2ADecryptStatus::OK);
   EXPECT_EQ(error_details_, nullptr);
-  EXPECT_EQ(unprotected_bytes_written, s2a_test_data::key_update_message.size());
+  EXPECT_EQ(unprotected_bytes_written,
+            s2a_test_data::key_update_message.size());
 
   /** Verify correctness. **/
   uint8_t* expected_traffic_secret;
   size_t expected_traffic_secret_size;
   switch (GetParam()) {
     case kTlsAes128GcmSha256:
-      expected_traffic_secret = s2a_test_data::aes_128_gcm_advanced_traffic_secret.data();
-      expected_traffic_secret_size = s2a_test_data::aes_128_gcm_advanced_traffic_secret.size();
+      expected_traffic_secret =
+          s2a_test_data::aes_128_gcm_advanced_traffic_secret.data();
+      expected_traffic_secret_size =
+          s2a_test_data::aes_128_gcm_advanced_traffic_secret.size();
       break;
     case kTlsAes256GcmSha384:
-      expected_traffic_secret = s2a_test_data::aes_256_gcm_advanced_traffic_secret.data();
-      expected_traffic_secret_size = s2a_test_data::aes_256_gcm_advanced_traffic_secret.size();
+      expected_traffic_secret =
+          s2a_test_data::aes_256_gcm_advanced_traffic_secret.data();
+      expected_traffic_secret_size =
+          s2a_test_data::aes_256_gcm_advanced_traffic_secret.size();
       break;
     case kTlsChacha20Poly1305Sha256:
-      expected_traffic_secret = s2a_test_data::chacha_poly_advanced_traffic_secret.data();
-      expected_traffic_secret_size = s2a_test_data::chacha_poly_advanced_traffic_secret.size();
+      expected_traffic_secret =
+          s2a_test_data::chacha_poly_advanced_traffic_secret.data();
+      expected_traffic_secret_size =
+          s2a_test_data::chacha_poly_advanced_traffic_secret.size();
       break;
   }
   check_half_connection_for_testing(
@@ -610,7 +646,7 @@ TEST_P(S2ACrypterTest, KeyUpdate) {
   EXPECT_EQ(plaintext, s2a_test_data::key_update_message);
 }
 
-} // namespace testing
+}  // namespace testing
 
 int main(int argc, char** argv) {
   grpc_init();
