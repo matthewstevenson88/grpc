@@ -103,4 +103,3 @@ grpc_cc_test(
         "//:tsi",
     ],
 )
-
