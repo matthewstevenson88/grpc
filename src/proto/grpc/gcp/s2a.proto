@@ -15,8 +15,8 @@ enum Ciphersuite {
 
 // The TLS versions supported by S2A's handshaker module.
 enum TLSVersion {
-  TLS1_3 = 0;
-  TLS1_2 = 1;
+  TLS1_2 = 0;
+  TLS1_3 = 1;
 }
 
 message Identity {
@@ -36,47 +36,57 @@ message ClientSessionStartReq {
   // The application protocols supported by the client, e.g., "grpc".
   repeated string application_protocols = 1;
 
-  // (Optional) The TLS version numbers that the S2A's handshaker module will
-  // use to set up the session. If this field is not provided, S2A will use all
-  // versions it supports in the TLS handshake.
-  repeated TLSVersion tls_versions = 2;
+  // (Optional) The minimum TLS version number that the S2A's handshaker module
+  // will use to set up the session. If this field is not provided, S2A will use
+  // the minimum version it supports.
+  TLSVersion min_tls_version = 2;
+
+  // (Optional) The maximum TLS version number that the S2A's handshaker module
+  // will use to set up the session. If this field is not provided, S2A will use
+  // the maximum version it supports.
+  TLSVersion max_tls_version = 3;
 
   // The TLS ciphersuites that the client is willing to support.
-  repeated Ciphersuite tls_ciphersuites = 3;
+  repeated Ciphersuite tls_ciphersuites = 4;
 
   // (Optional) Describes which server identities are acceptable by the client.
   // If target identities are provided and none of them matches the peer
   // identity of the server, session setup fails.
-  repeated Identity target_identities = 4;
+  repeated Identity target_identities = 5;
 
   // (Optional) Application may specify a local identity. Otherwise, S2A chooses
   // a default local identity. If a default identity cannot be determined,
   // session setup fails.
-  Identity local_identity = 5;
+  Identity local_identity = 6;
 
   // (Optional) If target name is provided, server authorization check might be
   // performed by S2A if it is configured to do so. This check is intended to
   // verify that the peer authenticated identity is authorized to run a service
   // with the target name. If this field is populated it will be used in the SNI
   // extension.
-  string target_name = 6;
+  string target_name = 7;
 }
 
 message ServerSessionStartReq {
   // The application protocols supported by the server, e.g., "grpc".
   repeated string application_protocols = 1;
 
-  // (Optional) The TLS version numbers that the S2A's handshaker module will
-  // use to set up the session. If this field is not provided, S2A will use all
-  // versions it supports in the TLS handshake.
-  repeated TLSVersion tls_versions = 2;
+  // (Optional) The minimum TLS version number that the S2A's handshaker module
+  // will use to set up the session. If this field is not provided, S2A will use
+  // the minimum version it supports.
+  TLSVersion min_tls_version = 2;
+
+  // (Optional) The maximum TLS version number that the S2A's handshaker module
+  // will use to set up the session. If this field is not provided, S2A will use
+  // the maximum version it supports.
+  TLSVersion max_tls_version = 3;
 
   // The TLS ciphersuites that the server is willing to support.
-  repeated Ciphersuite tls_ciphersuites = 3;
+  repeated Ciphersuite tls_ciphersuites = 4;
 
   // (Optional) A list of local identities supported by the server, if
   // specified. Otherwise, S2A chooses a default local identity.
-  repeated Identity local_identities = 4;
+  repeated Identity local_identities = 5;
 
   // The byte representation of the first handshake message received from the
   // client peer. It is possible that this first message is split into multiple
@@ -85,7 +95,7 @@ message ServerSessionStartReq {
   // Specifically, if the client peer is using S2A, this field contains the
   // bytes in the out_frames field of SessionResp message that the client peer
   // received from its S2A after initiating the handshake.
-  bytes in_bytes = 5;
+  bytes in_bytes = 6;
 }
 
 message SessionNextReq {

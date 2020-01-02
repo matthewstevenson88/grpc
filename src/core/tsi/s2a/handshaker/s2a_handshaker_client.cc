@@ -54,11 +54,9 @@ grpc_byte_buffer* S2AHandshakerClient::SerializedStartClient() {
   s2a_ClientSessionStartReq_add_application_protocols(
       start_client, upb_strview_makez(kS2AApplicationProtocol), arena.ptr());
 
-  /** Set TLS version. **/
-  int32_t* tls_versions = s2a_ClientSessionStartReq_resize_tls_versions(
-      start_client, /*len=*/1, arena.ptr());
-  GPR_ASSERT(tls_versions != nullptr);
-  tls_versions[0] = s2a_TLS1_3;
+  /** Set min and max TLS version. **/
+  s2a_ClientSessionStartReq_set_min_tls_version(start_client, s2a_TLS1_3);
+  s2a_ClientSessionStartReq_set_max_tls_version(start_client, s2a_TLS1_3);
 
   /** Set supported TLS ciphersuites. **/
   int32_t* tls_ciphersuites = s2a_ClientSessionStartReq_resize_tls_ciphersuites(
@@ -112,11 +110,9 @@ grpc_byte_buffer* S2AHandshakerClient::SerializedStartServer(
   s2a_ServerSessionStartReq_add_application_protocols(
       start_server, upb_strview_makez(kS2AApplicationProtocol), arena.ptr());
 
-  /** Set TLS version. **/
-  int32_t* tls_versions = s2a_ServerSessionStartReq_resize_tls_versions(
-      start_server, /*len=*/1, arena.ptr());
-  GPR_ASSERT(tls_versions != nullptr);
-  tls_versions[0] = s2a_TLS1_3;
+  /** Set min and max TLS version. **/
+  s2a_ServerSessionStartReq_set_min_tls_version(start_server, s2a_TLS1_3);
+  s2a_ServerSessionStartReq_set_max_tls_version(start_server, s2a_TLS1_3);
 
   /** Set supported TLS ciphersuites. **/
   int32_t* tls_ciphersuites = s2a_ServerSessionStartReq_resize_tls_ciphersuites(
@@ -176,7 +172,7 @@ tsi_result S2AHandshakerClient::Next(grpc_slice* bytes_received) {
   }
   grpc_byte_buffer_destroy(send_buffer_);
   send_buffer_ = buffer;
-  return MakeGrpcCallUtil(/*is_start=*/false);
+  return MakeGrpcCallUtil(/*is_start=*/true);
 }
 
 /** ------------------- Callback methods. -------------------------------- **/
@@ -194,14 +190,53 @@ static void S2AOnStatusReceived(void* arg, grpc_error* error) {
             grpc_error_string(error));
     gpr_free(status_details);
   }
-  client->MaybeCompleteTsiNext(/* receive_status_finished=*/true,
-                               /* pending_recv_message_result=*/nullptr);
+  client->MaybeCompleteTsiNext(/*receive_status_finished=*/true,
+                               /*pending_recv_message_result=*/nullptr);
   client->Unref();
 }
 
 /** ------------------- Create, shutdown, & destroy methods. ------------- **/
 
 S2AHandshakerClient::S2AHandshakerClient(
+    s2a_tsi_handshaker* handshaker, grpc_channel* channel,
+    grpc_pollset_set* interested_parties,
+    const grpc_s2a_credentials_options* options, const grpc_slice& target_name,
+    grpc_iomgr_cb_func grpc_cb, tsi_handshaker_on_next_done_cb cb,
+    void* user_data, bool is_client)
+    : handshaker_(handshaker),
+      cb_(cb),
+      user_data_(user_data),
+      send_buffer_(nullptr),
+      recv_buffer_(nullptr),
+      grpc_caller_(grpc_call_start_batch_and_execute),
+      target_name_(grpc_slice_copy(target_name)),
+      recv_bytes_(grpc_empty_slice()),
+      is_client_(is_client),
+      buffer_size_(kS2AInitialBufferSize),
+      handshake_status_details_(grpc_empty_slice()),
+      options_(options) {
+  gpr_mu_init(&mu_);
+  gpr_ref_init(&refs_, 1);
+  grpc_metadata_array_init(&recv_initial_metadata_);
+  buffer_ = static_cast<uint8_t*>(gpr_zalloc(buffer_size_));
+  grpc_slice slice =
+      grpc_slice_from_copied_string(options->handshaker_service_url().c_str());
+  call_ = (options->handshaker_service_url().compare(
+               kS2AHandshakerServiceUrlForTesting) == 0)
+              ? nullptr
+              : grpc_channel_create_pollset_set_call(
+                    channel, /*parent_call=*/nullptr, GRPC_PROPAGATE_DEFAULTS,
+                    interested_parties,
+                    grpc_slice_from_static_string(kS2AServiceMethod), &slice,
+                    GRPC_MILLIS_INF_FUTURE, /*reserved=*/nullptr);
+  GRPC_CLOSURE_INIT(&on_handshaker_service_resp_recv_, grpc_cb, this,
+                    grpc_schedule_on_exec_ctx);
+  GRPC_CLOSURE_INIT(&on_status_received_, S2AOnStatusReceived, this,
+                    grpc_schedule_on_exec_ctx);
+  grpc_slice_unref_internal(slice);
+}
+
+tsi_result s2a_handshaker_client_create(
     s2a_tsi_handshaker* handshaker, grpc_channel* channel,
     grpc_pollset_set* interested_parties,
     const grpc_s2a_credentials_options* options, const grpc_slice& target_name,

@@ -102,6 +102,20 @@ std::vector<uint8_t> chacha_poly_traffic_secret = {
     0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b,
     0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b, 0x6b};
 
+/** The following vectors are the new traffic secret obtaing from "kkkk...k"
+ *  after advancing once. **/
+std::vector<uint8_t> aes_128_gcm_advanced_traffic_secret = {
+    243, 139, 148, 85,  234, 88, 113, 35, 90,  105, 252, 55, 97,  12, 108, 161,
+    33,  87,  121, 230, 107, 69, 160, 71, 215, 57,  1,   17, 224, 0,  129, 196};
+std::vector<uint8_t> aes_256_gcm_advanced_traffic_secret = {
+    1,   108, 131, 93,  182, 100, 190, 181, 82,  106, 155, 179,
+    217, 164, 251, 166, 62,  103, 37,  93,  207, 164, 96,  161,
+    20,  217, 241, 239, 154, 154, 31,  104, 90,  81,  135, 57,
+    245, 87,  208, 230, 111, 219, 137, 189, 175, 162, 98,  87};
+std::vector<uint8_t> chacha_poly_advanced_traffic_secret = {
+    243, 139, 148, 85,  234, 88, 113, 35, 90,  105, 252, 55, 97,  12, 108, 161,
+    33,  87,  121, 230, 107, 69, 160, 71, 215, 57,  1,   17, 224, 0,  129, 196};
+
 static grpc_status_code setup_crypter(uint16_t ciphersuite,
                                       grpc_channel* channel,
                                       s2a_crypter** crypter,
@@ -110,16 +124,16 @@ static grpc_status_code setup_crypter(uint16_t ciphersuite,
   size_t traffic_secret_size;
   switch (ciphersuite) {
     case kTlsAes128GcmSha256:
-      traffic_secret = aes_128_gcm_traffic_secret.data();
-      traffic_secret_size = aes_128_gcm_traffic_secret.size();
+      traffic_secret = s2a_test_data::aes_128_gcm_traffic_secret.data();
+      traffic_secret_size = s2a_test_data::aes_128_gcm_traffic_secret.size();
       break;
     case kTlsAes256GcmSha384:
-      traffic_secret = aes_256_gcm_traffic_secret.data();
-      traffic_secret_size = aes_256_gcm_traffic_secret.size();
+      traffic_secret = s2a_test_data::aes_256_gcm_traffic_secret.data();
+      traffic_secret_size = s2a_test_data::aes_256_gcm_traffic_secret.size();
       break;
     case kTlsChacha20Poly1305Sha256:
-      traffic_secret = chacha_poly_traffic_secret.data();
-      traffic_secret_size = chacha_poly_traffic_secret.size();
+      traffic_secret = s2a_test_data::chacha_poly_traffic_secret.data();
+      traffic_secret_size = s2a_test_data::chacha_poly_traffic_secret.size();
       break;
     default:
       gpr_log(GPR_ERROR, kS2AUnsupportedCiphersuite);
@@ -132,7 +146,7 @@ static grpc_status_code setup_crypter(uint16_t ciphersuite,
 
 static void s2a_test_incorrect_tls_version() {
   s2a_crypter* crypter = nullptr;
-  grpc_channel* channel = grpc_core::New<grpc_channel>();
+  grpc_channel* channel = new grpc_channel();
   char* error_details = nullptr;
   uint8_t in_traffic_secret[32] = "in_traffic_secret";
   uint8_t out_traffic_secret[32] = "out_traffic_secret";
@@ -145,12 +159,12 @@ static void s2a_test_incorrect_tls_version() {
 
   // Cleanup.
   gpr_free(error_details);
-  grpc_core::Delete<grpc_channel>(channel);
+  delete channel;
 }
 
 static void s2a_test_incorrect_key_size() {
   s2a_crypter* crypter = nullptr;
-  grpc_channel* channel = grpc_core::New<grpc_channel>();
+  grpc_channel* channel = new grpc_channel();
   char* error_details = nullptr;
   std::vector<uint8_t> in_traffic_secret(kSha256DigestLength - 1, 0);
   std::vector<uint8_t> out_traffic_secret(kSha256DigestLength + 1, 0);
@@ -164,12 +178,12 @@ static void s2a_test_incorrect_key_size() {
   // Cleanup.
   s2a_crypter_destroy(crypter);
   gpr_free(error_details);
-  grpc_core::Delete<grpc_channel>(channel);
+  delete channel;
 }
 
 static void s2a_test_create_crypter_success(uint16_t ciphersuite) {
   s2a_crypter* crypter = nullptr;
-  grpc_channel* channel = grpc_core::New<grpc_channel>();
+  grpc_channel* channel = new grpc_channel();
   char* error_details = nullptr;
   grpc_status_code status =
       setup_crypter(ciphersuite, channel, &crypter, &error_details);
@@ -180,14 +194,14 @@ static void s2a_test_create_crypter_success(uint16_t ciphersuite) {
     // Cleanup.
     s2a_crypter_destroy(crypter);
     gpr_free(error_details);
-    grpc_core::Delete<grpc_channel>(channel);
+    delete channel;
     return;
   }
   GPR_ASSERT(status == GRPC_STATUS_OK);
   GPR_ASSERT(error_details == nullptr);
 
-  gsec_aead_crypter* in_crypter = s2a_in_aead_crypter(crypter);
-  gsec_aead_crypter* out_crypter = s2a_out_aead_crypter(crypter);
+  gsec_aead_crypter* in_crypter = s2a_in_aead_crypter_for_testing(crypter);
+  gsec_aead_crypter* out_crypter = s2a_out_aead_crypter_for_testing(crypter);
   GPR_ASSERT(in_crypter != nullptr);
   GPR_ASSERT(out_crypter != nullptr);
 
@@ -245,13 +259,16 @@ static void s2a_test_create_crypter_success(uint16_t ciphersuite) {
 
   switch (ciphersuite) {
     case kTlsAes128GcmSha256:
-      verify_half_connections(ciphersuite, crypter, aes_128_gcm_traffic_secret);
+      verify_half_connections(ciphersuite, crypter,
+                              s2a_test_data::aes_128_gcm_traffic_secret);
       break;
     case kTlsAes256GcmSha384:
-      verify_half_connections(ciphersuite, crypter, aes_256_gcm_traffic_secret);
+      verify_half_connections(ciphersuite, crypter,
+                              s2a_test_data::aes_256_gcm_traffic_secret);
       break;
     case kTlsChacha20Poly1305Sha256:
-      verify_half_connections(ciphersuite, crypter, chacha_poly_traffic_secret);
+      verify_half_connections(ciphersuite, crypter,
+                              s2a_test_data::chacha_poly_traffic_secret);
       break;
     default:
       gpr_log(GPR_ERROR, kS2AUnsupportedCiphersuite);
@@ -260,12 +277,12 @@ static void s2a_test_create_crypter_success(uint16_t ciphersuite) {
 
   // Cleanup.
   s2a_crypter_destroy(crypter);
-  grpc_core::Delete<grpc_channel>(channel);
+  delete channel;
 }
 
 static void s2a_test_encrypt_record_bad_size(uint16_t ciphersuite) {
   s2a_crypter* crypter = nullptr;
-  grpc_channel* channel = grpc_core::New<grpc_channel>();
+  grpc_channel* channel = new grpc_channel();
   char* error_details = nullptr;
   grpc_status_code status =
       setup_crypter(ciphersuite, channel, &crypter, &error_details);
@@ -276,7 +293,7 @@ static void s2a_test_encrypt_record_bad_size(uint16_t ciphersuite) {
     // Cleanup.
     s2a_crypter_destroy(crypter);
     gpr_free(error_details);
-    grpc_core::Delete<grpc_channel>(channel);
+    delete channel;
     return;
   }
   GPR_ASSERT(status == GRPC_STATUS_OK);
@@ -313,13 +330,13 @@ static void s2a_test_encrypt_record_bad_size(uint16_t ciphersuite) {
 
   // Cleanup.
   s2a_crypter_destroy(crypter);
-  grpc_core::Delete<grpc_channel>(channel);
+  delete channel;
   gpr_free(error_details);
 }
 
 static void s2a_test_encrypt_record_success(uint16_t ciphersuite) {
   s2a_crypter* crypter = nullptr;
-  grpc_channel* channel = grpc_core::New<grpc_channel>();
+  grpc_channel* channel = new grpc_channel();
   char* error_details = nullptr;
   grpc_status_code status =
       setup_crypter(ciphersuite, channel, &crypter, &error_details);
@@ -330,7 +347,7 @@ static void s2a_test_encrypt_record_success(uint16_t ciphersuite) {
     // Cleanup.
     s2a_crypter_destroy(crypter);
     gpr_free(error_details);
-    grpc_core::Delete<grpc_channel>(channel);
+    delete channel;
     return;
   }
   GPR_ASSERT(status == GRPC_STATUS_OK);
@@ -360,12 +377,12 @@ static void s2a_test_encrypt_record_success(uint16_t ciphersuite) {
 
   // Cleanup.
   s2a_crypter_destroy(crypter);
-  grpc_core::Delete<grpc_channel>(channel);
+  delete channel;
 }
 
 static void s2a_test_encrypt_three_records(uint16_t ciphersuite) {
   s2a_crypter* crypter = nullptr;
-  grpc_channel* channel = grpc_core::New<grpc_channel>();
+  grpc_channel* channel = new grpc_channel();
   char* error_details = nullptr;
   grpc_status_code status =
       setup_crypter(ciphersuite, channel, &crypter, &error_details);
@@ -376,7 +393,7 @@ static void s2a_test_encrypt_three_records(uint16_t ciphersuite) {
     // Cleanup.
     s2a_crypter_destroy(crypter);
     gpr_free(error_details);
-    grpc_core::Delete<grpc_channel>(channel);
+    delete channel;
     return;
   }
   GPR_ASSERT(status == GRPC_STATUS_OK);
@@ -419,12 +436,12 @@ static void s2a_test_encrypt_three_records(uint16_t ciphersuite) {
 
   // Cleanup.
   s2a_crypter_destroy(crypter);
-  grpc_core::Delete<grpc_channel>(channel);
+  delete channel;
 }
 
 static void s2a_test_encrypt_empty_plaintext(uint16_t ciphersuite) {
   s2a_crypter* crypter = nullptr;
-  grpc_channel* channel = grpc_core::New<grpc_channel>();
+  grpc_channel* channel = new grpc_channel();
   char* error_details = nullptr;
   grpc_status_code status =
       setup_crypter(ciphersuite, channel, &crypter, &error_details);
@@ -435,7 +452,7 @@ static void s2a_test_encrypt_empty_plaintext(uint16_t ciphersuite) {
     // Cleanup.
     s2a_crypter_destroy(crypter);
     gpr_free(error_details);
-    grpc_core::Delete<grpc_channel>(channel);
+    delete channel;
     return;
   }
   GPR_ASSERT(status == GRPC_STATUS_OK);
@@ -456,8 +473,7 @@ static void s2a_test_encrypt_empty_plaintext(uint16_t ciphersuite) {
       s2a_encrypt(crypter, test_plaintext.data(), /** plaintext size **/ 1,
                   record.data(), record.size(), &record_size, &error_details);
   GPR_ASSERT(bad_encrypt_status == GRPC_STATUS_INVALID_ARGUMENT);
-  int correct_error_message = strcmp(error_details, kS2APlaintextNullptr);
-  GPR_ASSERT(correct_error_message == 0);
+  GPR_ASSERT(strcmp(error_details, kS2APlaintextNullptr) == 0);
   gpr_free(error_details);
   error_details = nullptr;
 
@@ -471,12 +487,12 @@ static void s2a_test_encrypt_empty_plaintext(uint16_t ciphersuite) {
 
   // Cleanup.
   s2a_crypter_destroy(crypter);
-  grpc_core::Delete<grpc_channel>(channel);
+  delete channel;
 }
 
 static void s2a_test_decrypt_record_success(uint16_t ciphersuite) {
   s2a_crypter* crypter = nullptr;
-  grpc_channel* channel = grpc_core::New<grpc_channel>();
+  grpc_channel* channel = new grpc_channel();
   char* error_details = nullptr;
   grpc_status_code status =
       setup_crypter(ciphersuite, channel, &crypter, &error_details);
@@ -487,7 +503,7 @@ static void s2a_test_decrypt_record_success(uint16_t ciphersuite) {
     // Cleanup.
     s2a_crypter_destroy(crypter);
     gpr_free(error_details);
-    grpc_core::Delete<grpc_channel>(channel);
+    delete channel;
     return;
   }
   GPR_ASSERT(status == GRPC_STATUS_OK);
@@ -496,13 +512,13 @@ static void s2a_test_decrypt_record_success(uint16_t ciphersuite) {
   std::vector<uint8_t> record;
   switch (ciphersuite) {
     case kTlsAes128GcmSha256:
-      record = aes_128_gcm_decrypt_record_1;
+      record = s2a_test_data::aes_128_gcm_decrypt_record_1;
       break;
     case kTlsAes256GcmSha384:
-      record = aes_256_gcm_decrypt_record_1;
+      record = s2a_test_data::aes_256_gcm_decrypt_record_1;
       break;
     case kTlsChacha20Poly1305Sha256:
-      record = chacha_poly_decrypt_record_1;
+      record = s2a_test_data::chacha_poly_decrypt_record_1;
       break;
   }
 
@@ -524,16 +540,16 @@ static void s2a_test_decrypt_record_success(uint16_t ciphersuite) {
   GPR_ASSERT(error_details == nullptr);
   GPR_ASSERT(plaintext_size == 6);
   plaintext.resize(plaintext_size);
-  GPR_ASSERT(plaintext == decrypt_plaintext_1);
+  GPR_ASSERT(plaintext == s2a_test_data::decrypt_plaintext_1);
 
   // Cleanup.
   s2a_crypter_destroy(crypter);
-  grpc_core::Delete<grpc_channel>(channel);
+  delete channel;
 }
 
 static void s2a_test_decrypt_record_with_padding(uint16_t ciphersuite) {
   s2a_crypter* crypter = nullptr;
-  grpc_channel* channel = grpc_core::New<grpc_channel>();
+  grpc_channel* channel = new grpc_channel();
   char* error_details = nullptr;
   grpc_status_code status =
       setup_crypter(ciphersuite, channel, &crypter, &error_details);
@@ -544,7 +560,7 @@ static void s2a_test_decrypt_record_with_padding(uint16_t ciphersuite) {
     // Cleanup.
     s2a_crypter_destroy(crypter);
     gpr_free(error_details);
-    grpc_core::Delete<grpc_channel>(channel);
+    delete channel;
     return;
   }
   GPR_ASSERT(status == GRPC_STATUS_OK);
@@ -585,12 +601,12 @@ static void s2a_test_decrypt_record_with_padding(uint16_t ciphersuite) {
 
   // Cleanup.
   s2a_crypter_destroy(crypter);
-  grpc_core::Delete<grpc_channel>(channel);
+  delete channel;
 }
 
 static void s2a_test_decrypt_large_record(uint16_t ciphersuite) {
   s2a_crypter* crypter = nullptr;
-  grpc_channel* channel = grpc_core::New<grpc_channel>();
+  grpc_channel* channel = new grpc_channel();
   char* error_details = nullptr;
   grpc_status_code status =
       setup_crypter(ciphersuite, channel, &crypter, &error_details);
@@ -601,7 +617,7 @@ static void s2a_test_decrypt_large_record(uint16_t ciphersuite) {
     // Cleanup.
     s2a_crypter_destroy(crypter);
     gpr_free(error_details);
-    grpc_core::Delete<grpc_channel>(channel);
+    delete channel;
     return;
   }
   GPR_ASSERT(status == GRPC_STATUS_OK);
@@ -609,11 +625,10 @@ static void s2a_test_decrypt_large_record(uint16_t ciphersuite) {
 
   /** Construct a TLS record whose plaintext is larger than is allowed. **/
   size_t tag_size;
-  gsec_aead_crypter_tag_length(s2a_in_aead_crypter(crypter), &tag_size,
-                               /** error details **/ nullptr);
-  size_t oversize_payload_size = /** ciphertext **/ SSL3_RT_MAX_PLAIN_LENGTH +
-                                 /** extra **/ 15 + /** record type **/ 1 +
-                                 tag_size;
+  gsec_aead_crypter_tag_length(s2a_in_aead_crypter_for_testing(crypter),
+                               &tag_size, &error_details);
+  size_t oversize_payload_size = /* ciphertext=*/SSL3_RT_MAX_PLAIN_LENGTH +
+                                 /* extra=*/15 + /* record type=*/1 + tag_size;
   size_t oversize_record_size = SSL3_RT_HEADER_LENGTH + oversize_payload_size;
   std::vector<uint8_t> oversize_record(oversize_record_size, 0);
   oversize_record[0] = SSL3_RT_APPLICATION_DATA;
@@ -645,7 +660,7 @@ static void s2a_test_decrypt_large_record(uint16_t ciphersuite) {
   // Cleanup.
   gpr_free(error_details);
   s2a_crypter_destroy(crypter);
-  grpc_core::Delete<grpc_channel>(channel);
+  delete channel;
 }
 
 enum class TlsAlertType {
@@ -657,7 +672,7 @@ enum class TlsAlertType {
 static void s2a_test_decrypt_alert(uint16_t ciphersuite,
                                    TlsAlertType alert_type) {
   s2a_crypter* crypter = nullptr;
-  grpc_channel* channel = grpc_core::New<grpc_channel>();
+  grpc_channel* channel = new grpc_channel();
   char* error_details = nullptr;
   grpc_status_code status =
       setup_crypter(ciphersuite, channel, &crypter, &error_details);
@@ -668,7 +683,7 @@ static void s2a_test_decrypt_alert(uint16_t ciphersuite,
     // Cleanup.
     s2a_crypter_destroy(crypter);
     gpr_free(error_details);
-    grpc_core::Delete<grpc_channel>(channel);
+    delete channel;
     return;
   }
   GPR_ASSERT(status == GRPC_STATUS_OK);
@@ -679,39 +694,39 @@ static void s2a_test_decrypt_alert(uint16_t ciphersuite,
     case kTlsAes128GcmSha256: {
       switch (alert_type) {
         case TlsAlertType::close_notify:
-          record = aes_128_gcm_decrypt_close_notify;
+          record = s2a_test_data::aes_128_gcm_decrypt_close_notify;
           break;
         case TlsAlertType::other:
-          record = aes_128_gcm_decrypt_alert_other;
+          record = s2a_test_data::aes_128_gcm_decrypt_alert_other;
           break;
         case TlsAlertType::small:
-          record = aes_128_gcm_decrypt_alert_small;
+          record = s2a_test_data::aes_128_gcm_decrypt_alert_small;
           break;
       }
     } break;
     case kTlsAes256GcmSha384: {
       switch (alert_type) {
         case TlsAlertType::close_notify:
-          record = aes_256_gcm_decrypt_close_notify;
+          record = s2a_test_data::aes_256_gcm_decrypt_close_notify;
           break;
         case TlsAlertType::other:
-          record = aes_256_gcm_decrypt_alert_other;
+          record = s2a_test_data::aes_256_gcm_decrypt_alert_other;
           break;
         case TlsAlertType::small:
-          record = aes_256_gcm_decrypt_alert_small;
+          record = s2a_test_data::aes_256_gcm_decrypt_alert_small;
           break;
       }
     } break;
     case kTlsChacha20Poly1305Sha256: {
       switch (alert_type) {
         case TlsAlertType::close_notify:
-          record = chacha_poly_decrypt_close_notify;
+          record = s2a_test_data::chacha_poly_decrypt_close_notify;
           break;
         case TlsAlertType::other:
-          record = chacha_poly_decrypt_alert_other;
+          record = s2a_test_data::chacha_poly_decrypt_alert_other;
           break;
         case TlsAlertType::small:
-          record = chacha_poly_decrypt_alert_small;
+          record = s2a_test_data::chacha_poly_decrypt_alert_small;
           break;
       }
     } break;
@@ -747,13 +762,13 @@ static void s2a_test_decrypt_alert(uint16_t ciphersuite,
 
   // Cleanup.
   s2a_crypter_destroy(crypter);
-  grpc_core::Delete<grpc_channel>(channel);
+  delete channel;
 }
 
 static void s2a_test_roundtrips(uint16_t ciphersuite) {
   s2a_crypter* in_crypter = nullptr;
   s2a_crypter* out_crypter = nullptr;
-  grpc_channel* channel = grpc_core::New<grpc_channel>();
+  grpc_channel* channel = new grpc_channel();
   char* error_details = nullptr;
   grpc_status_code in_status =
       setup_crypter(ciphersuite, channel, &in_crypter, &error_details);
@@ -764,7 +779,7 @@ static void s2a_test_roundtrips(uint16_t ciphersuite) {
     // Cleanup.
     s2a_crypter_destroy(in_crypter);
     gpr_free(error_details);
-    grpc_core::Delete<grpc_channel>(channel);
+    delete channel;
     return;
   }
   grpc_status_code out_status =
@@ -775,11 +790,110 @@ static void s2a_test_roundtrips(uint16_t ciphersuite) {
   send_message(s2a_test_data::test_message_1, in_crypter, out_crypter);
   send_message(s2a_test_data::test_message_2, out_crypter, in_crypter);
   send_message(s2a_test_data::test_message_3, out_crypter, in_crypter);
+  send_message(s2a_test_data::test_message_4, in_crypter, out_crypter);
+  send_message(s2a_test_data::test_message_5, out_crypter, in_crypter);
 
   // Cleanup.
   s2a_crypter_destroy(in_crypter);
   s2a_crypter_destroy(out_crypter);
-  grpc_core::Delete<grpc_channel>(channel);
+  delete channel;
+}
+
+static void s2a_test_key_update(uint16_t ciphersuite) {
+  s2a_crypter* crypter = nullptr;
+  grpc_channel* channel = new grpc_channel();
+  char* error_details = nullptr;
+  grpc_status_code status =
+      setup_crypter(ciphersuite, channel, &crypter, &error_details);
+  if (ciphersuite == kTlsChacha20Poly1305Sha256) {
+    GPR_ASSERT(status == GRPC_STATUS_UNIMPLEMENTED);
+    GPR_ASSERT(strcmp(error_details, kS2AChachaPolyUnimplemented) == 0);
+
+    // Cleanup.
+    s2a_crypter_destroy(crypter);
+    gpr_free(error_details);
+    delete channel;
+    return;
+  }
+  GPR_ASSERT(status == GRPC_STATUS_OK);
+  GPR_ASSERT(error_details == nullptr);
+
+  /** Setup for encryption of key update message. **/
+  iovec plaintext_vec = {
+      reinterpret_cast<void*>(s2a_test_data::key_update_message.data()),
+      s2a_test_data::key_update_message.size()};
+
+  size_t max_record_overhead;
+  grpc_status_code overhead_status =
+      s2a_max_record_overhead(*crypter, &max_record_overhead, &error_details);
+  GPR_ASSERT(overhead_status == GRPC_STATUS_OK);
+  GPR_ASSERT(error_details == nullptr);
+  size_t record_allocated_size =
+      s2a_test_data::key_update_message.size() + max_record_overhead;
+  std::vector<uint8_t> record(record_allocated_size, 0);
+  iovec record_vec = {(void*)record.data(), record.size()};
+  size_t record_bytes_written;
+
+  /** Encrypt key update message. **/
+  grpc_status_code write_key_update_status = s2a_write_tls13_record(
+      crypter, SSL3_RT_HANDSHAKE, &plaintext_vec, /* plaintext_vec length=*/1,
+      record_vec, &record_bytes_written, &error_details);
+  GPR_ASSERT(write_key_update_status == GRPC_STATUS_OK);
+  GPR_ASSERT(error_details == nullptr);
+  GPR_ASSERT(record_bytes_written ==
+             expected_message_size(s2a_test_data::key_update_message.size()));
+
+  /** Setup for decryption of key update message. **/
+  iovec record_header_vec = {record_vec.iov_base, SSL3_RT_HEADER_LENGTH};
+  iovec protected_vec = {
+      reinterpret_cast<uint8_t*>(record_vec.iov_base) + SSL3_RT_HEADER_LENGTH,
+      record.size() - SSL3_RT_HEADER_LENGTH};
+  size_t plaintext_size;
+  grpc_status_code plaintext_status = s2a_max_plaintext_size(
+      *crypter, record_bytes_written, &plaintext_size, &error_details);
+  GPR_ASSERT(plaintext_status == GRPC_STATUS_OK);
+  GPR_ASSERT(error_details == nullptr);
+  std::vector<uint8_t> plaintext(plaintext_size, 0);
+  iovec unprotected_vec = {(void*)plaintext.data(), plaintext.size()};
+  size_t unprotected_bytes_written;
+
+  /** Decrypt key update message. **/
+  S2ADecryptStatus read_key_update_status = s2a_decrypt_record(
+      crypter, record_header_vec, &protected_vec, /* protected_vec length=*/1,
+      unprotected_vec, &unprotected_bytes_written, &error_details);
+  GPR_ASSERT(read_key_update_status == S2ADecryptStatus::OK);
+  GPR_ASSERT(error_details == nullptr);
+  GPR_ASSERT(unprotected_bytes_written ==
+             s2a_test_data::key_update_message.size());
+
+  /** Verify correctness. **/
+  uint8_t* expected_traffic_secret;
+  size_t expected_traffic_secret_size;
+  switch (ciphersuite) {
+    case kTlsAes128GcmSha256:
+      expected_traffic_secret = aes_128_gcm_advanced_traffic_secret.data();
+      expected_traffic_secret_size = aes_128_gcm_advanced_traffic_secret.size();
+      break;
+    case kTlsAes256GcmSha384:
+      expected_traffic_secret = aes_256_gcm_advanced_traffic_secret.data();
+      expected_traffic_secret_size = aes_256_gcm_advanced_traffic_secret.size();
+      break;
+    case kTlsChacha20Poly1305Sha256:
+      expected_traffic_secret = chacha_poly_advanced_traffic_secret.data();
+      expected_traffic_secret_size = chacha_poly_advanced_traffic_secret.size();
+      break;
+  }
+  check_half_connection_for_testing(
+      crypter, /* in=*/true, /* expected sequence=*/0,
+      expected_traffic_secret_size, expected_traffic_secret,
+      /* verify_nonce=*/false, /* expected_nonce_size=*/0,
+      /* expected_nonce=*/nullptr, SSL3_RT_HEADER_LENGTH);
+  plaintext.resize(unprotected_bytes_written);
+  GPR_ASSERT(plaintext == s2a_test_data::key_update_message);
+
+  /** Cleanup. **/
+  s2a_crypter_destroy(crypter);
+  delete channel;
 }
 
 int main(int argc, char** argv) {
@@ -803,6 +917,7 @@ int main(int argc, char** argv) {
     for (size_t j = 0; j < number_alert_types; j++) {
       s2a_test_decrypt_alert(ciphersuite[i], alert[j]);
     }
+    s2a_test_key_update(ciphersuite[i]);
     s2a_test_roundtrips(ciphersuite[i]);
   }
   return 0;

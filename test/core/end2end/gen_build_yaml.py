@@ -1,4 +1,3 @@
-#!/usr/bin/env python2.7
 # Copyright 2015 gRPC authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,6 +15,7 @@
 
 """Generates the appropriate build.json data for all the end2end tests."""
 
+from __future__ import print_function
 
 import yaml
 import collections
@@ -75,7 +75,7 @@ END2END_FIXTURES = {
         ci_mac=False, tracing=True, large_writes=False, exclude_iomgrs=['uv']),
     'h2_ssl': default_secure_fixture_options,
     'h2_ssl_cred_reload': default_secure_fixture_options,
-    'h2_spiffe': default_secure_fixture_options,
+    'h2_tls': default_secure_fixture_options,
     'h2_local_uds': local_fixture_options,
     'h2_local_ipv4': local_fixture_options,
     'h2_local_ipv6': local_fixture_options,
@@ -405,7 +405,7 @@ def main():
           for t in END2END_TESTS.keys()
       )
   }
-  print yaml.dump(json)
+  print(yaml.dump(json))
 
 
 if __name__ == '__main__':
