@@ -16,10 +16,10 @@
  *
  */
 
+#include "src/core/tsi/s2a/handshaker/s2a_handshaker_client.h"
 #include <grpc/support/alloc.h>
 #include <grpc/support/log.h>
 #include "src/core/lib/surface/channel.h"
-#include "src/core/tsi/s2a/handshaker/s2a_handshaker_client.h"
 #include "src/core/tsi/s2a/handshaker/s2a_handshaker_util.h"
 #include "src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.h"
 #include "src/core/tsi/s2a/s2a_constants.h"
@@ -120,12 +120,14 @@ static grpc_call_error check_client_start_success(grpc_call* /*call*/,
   GPR_ASSERT(upb_strview_eql(application_protocols[0],
                              upb_strview_makez(kS2AApplicationProtocol)));
 
-  GPR_ASSERT(s2a_ClientSessionStartReq_min_tls_version(request) == s2a_TLS1_3);
-  GPR_ASSERT(s2a_ClientSessionStartReq_max_tls_version(request) == s2a_TLS1_3);
+  GPR_ASSERT(s2a_ClientSessionStartReq_min_tls_version(client_start) ==
+             s2a_TLS1_3);
+  GPR_ASSERT(s2a_ClientSessionStartReq_max_tls_version(client_start) ==
+             s2a_TLS1_3);
 
   size_t tls_ciphersuites_size;
   const int* tls_ciphersuites = s2a_ClientSessionStartReq_tls_ciphersuites(
-      request, &tls_ciphersuites_size);
+      client_start, &tls_ciphersuites_size);
   GPR_ASSERT(tls_ciphersuites_size == 3);
   GPR_ASSERT(tls_ciphersuites != nullptr);
   GPR_ASSERT(tls_ciphersuites[0] == kTlsAes128GcmSha256);
@@ -134,7 +136,7 @@ static grpc_call_error check_client_start_success(grpc_call* /*call*/,
 
   size_t target_identities_size;
   const s2a_Identity* const* target_identities =
-      s2a_ClientSessionStartReq_target_identities(request,
+      s2a_ClientSessionStartReq_target_identities(client_start,
                                                   &target_identities_size);
   GPR_ASSERT(target_identities_size == 1);
   GPR_ASSERT(target_identities != nullptr);
@@ -173,20 +175,15 @@ static grpc_call_error check_server_start_success(grpc_call* /*call*/,
   GPR_ASSERT(upb_strview_eql(application_protocols[0],
                              upb_strview_makez(kS2AApplicationProtocol)));
 
-  size_t tls_versions_size;
-  const int* tls_versions =
-      s2a_ServerSessionStartReq_tls_versions(server_start, &tls_versions_size);
-  GPR_ASSERT(tls_versions_size == 1);
-  GPR_ASSERT(tls_versions != nullptr);
-  GPR_ASSERT(tls_versions[0] == s2a_TLS1_3);
+  GPR_ASSERT(s2a_ServerSessionStartReq_min_tls_version(server_start) ==
+             s2a_TLS1_3);
+  GPR_ASSERT(s2a_ServerSessionStartReq_max_tls_version(server_start) ==
+             s2a_TLS1_3);
 
   size_t tls_ciphersuites_size;
   const int* tls_ciphersuites = s2a_ServerSessionStartReq_tls_ciphersuites(
       server_start, &tls_ciphersuites_size);
   GPR_ASSERT(tls_ciphersuites_size == 3);
-  GPR_ASSERT(tls_versions != nullptr);
-  GPR_ASSERT(s2a_ServerSessionStartReq_min_tls_version(request) == s2a_TLS1_3);
-  GPR_ASSERT(s2a_ServerSessionStartReq_max_tls_version(request) == s2a_TLS1_3);
   GPR_ASSERT(tls_ciphersuites[0] == kTlsAes128GcmSha256);
   GPR_ASSERT(tls_ciphersuites[1] == kTlsAes256GcmSha384);
   GPR_ASSERT(tls_ciphersuites[2] == kTlsChacha20Poly1305Sha256);
