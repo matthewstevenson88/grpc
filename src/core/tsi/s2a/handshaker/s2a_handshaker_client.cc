@@ -33,6 +33,15 @@
 namespace grpc_core {
 namespace experimental {
 
+tsi_result S2AHandshakerClient::MakeGrpcCallUtil(bool is_start) {
+  tsi_result call_result = MakeGrpcCall(is_start);
+  if (call_result != TSI_OK) {
+    gpr_log(GPR_ERROR, kS2AMakeGrpcCallFailed);
+    return call_result;
+  }
+  return TSI_OK;
+}
+
 /** ------------ Preparation of client start messages. --------------- **/
 
 grpc_byte_buffer* S2AHandshakerClient::SerializedStartClient() {
@@ -45,11 +54,9 @@ grpc_byte_buffer* S2AHandshakerClient::SerializedStartClient() {
   s2a_ClientSessionStartReq_add_application_protocols(
       start_client, upb_strview_makez(kS2AApplicationProtocol), arena.ptr());
 
-  /** Set TLS version. **/
-  int32_t* tls_versions = s2a_ClientSessionStartReq_resize_tls_versions(
-      start_client, /*len=*/1, arena.ptr());
-  GPR_ASSERT(tls_versions != nullptr);
-  tls_versions[0] = s2a_TLS1_3;
+  /** Set min and max TLS version. **/
+  s2a_ClientSessionStartReq_set_min_tls_version(start_client, s2a_TLS1_3);
+  s2a_ClientSessionStartReq_set_max_tls_version(start_client, s2a_TLS1_3);
 
   /** Set supported TLS ciphersuites. **/
   int32_t* tls_ciphersuites = s2a_ClientSessionStartReq_resize_tls_ciphersuites(
@@ -86,11 +93,7 @@ tsi_result S2AHandshakerClient::ClientStart() {
   }
   grpc_byte_buffer_destroy(send_buffer_);
   send_buffer_ = buffer;
-  tsi_result call_result = MakeGrpcCall(/*is_start=*/true);
-  if (call_result != TSI_OK) {
-    gpr_log(GPR_ERROR, kS2AMakeGrpcCallFailed);
-  }
-  return call_result;
+  return MakeGrpcCallUtil(/*is_start=*/true);
 }
 
 /** ------------ Preparation of server start messages. --------------- **/
@@ -107,11 +110,9 @@ grpc_byte_buffer* S2AHandshakerClient::SerializedStartServer(
   s2a_ServerSessionStartReq_add_application_protocols(
       start_server, upb_strview_makez(kS2AApplicationProtocol), arena.ptr());
 
-  /** Set TLS version. **/
-  int32_t* tls_versions = s2a_ServerSessionStartReq_resize_tls_versions(
-      start_server, /*len=*/1, arena.ptr());
-  GPR_ASSERT(tls_versions != nullptr);
-  tls_versions[0] = s2a_TLS1_3;
+  /** Set min and max TLS version. **/
+  s2a_ServerSessionStartReq_set_min_tls_version(start_server, s2a_TLS1_3);
+  s2a_ServerSessionStartReq_set_max_tls_version(start_server, s2a_TLS1_3);
 
   /** Set supported TLS ciphersuites. **/
   int32_t* tls_ciphersuites = s2a_ServerSessionStartReq_resize_tls_ciphersuites(
@@ -140,11 +141,7 @@ tsi_result S2AHandshakerClient::ServerStart(grpc_slice* bytes_received) {
   }
   grpc_byte_buffer_destroy(send_buffer_);
   send_buffer_ = buffer;
-  tsi_result call_result = MakeGrpcCall(/*is_start=*/true);
-  if (call_result != TSI_OK) {
-    gpr_log(GPR_ERROR, kS2AMakeGrpcCallFailed);
-  }
-  return call_result;
+  return MakeGrpcCallUtil(/*is_start=*/true);
 }
 
 /** ------------ Preparation of next messages. --------------- **/
@@ -175,18 +172,27 @@ tsi_result S2AHandshakerClient::Next(grpc_slice* bytes_received) {
   }
   grpc_byte_buffer_destroy(send_buffer_);
   send_buffer_ = buffer;
-  tsi_result call_result = MakeGrpcCall(/*is_start=*/false);
-  if (call_result != TSI_OK) {
-    gpr_log(GPR_ERROR, kS2AMakeGrpcCallFailed);
-  }
-  return call_result;
+  return MakeGrpcCallUtil(/*is_start=*/false);
 }
 
 /** ------------------- Callback methods. -------------------------------- **/
 
 static void S2AOnStatusReceived(void* arg, grpc_error* error) {
-  // TODO(mattstev): implement.
-  return;
+  S2AHandshakerClient* client = static_cast<S2AHandshakerClient*>(arg);
+  GPR_ASSERT(client != nullptr);
+  if (client->handshake_status_code() != GRPC_STATUS_OK) {
+    char* status_details =
+        grpc_slice_to_c_string(client->handshake_status_details());
+    gpr_log(GPR_INFO,
+            "S2AHandshakerClient:%p on_status_received status:%d "
+            "details:|%s| error:|%s|",
+            client, client->handshake_status_code(), status_details,
+            grpc_error_string(error));
+    gpr_free(status_details);
+  }
+  client->MaybeCompleteTsiNext(/*receive_status_finished=*/true,
+                               /*pending_recv_message_result=*/nullptr);
+  client->Unref();
 }
 
 /** ------------------- Create, shutdown, & destroy methods. ------------- **/
@@ -196,7 +202,7 @@ S2AHandshakerClient::S2AHandshakerClient(
     grpc_pollset_set* interested_parties,
     const grpc_s2a_credentials_options* options, const grpc_slice& target_name,
     grpc_iomgr_cb_func grpc_cb, tsi_handshaker_on_next_done_cb cb,
-    void* user_data, bool is_client)
+    void* user_data, bool is_client, bool is_test)
     : handshaker_(handshaker),
       cb_(cb),
       user_data_(user_data),
@@ -208,9 +214,11 @@ S2AHandshakerClient::S2AHandshakerClient(
       is_client_(is_client),
       buffer_size_(kS2AInitialBufferSize),
       handshake_status_details_(grpc_empty_slice()),
-      options_(options) {
+      options_(options),
+      is_test_(is_test) {
   gpr_mu_init(&mu_);
-  gpr_ref_init(&refs_, 1);
+  refs_ = static_cast<gpr_refcount*>(gpr_zalloc(sizeof(gpr_refcount)));
+  gpr_ref_init(refs_, 1);
   grpc_metadata_array_init(&recv_initial_metadata_);
   buffer_ = static_cast<uint8_t*>(gpr_zalloc(buffer_size_));
   grpc_slice slice =
@@ -230,20 +238,21 @@ S2AHandshakerClient::S2AHandshakerClient(
   grpc_slice_unref_internal(slice);
 }
 
-tsi_result s2a_handshaker_client_create(
+tsi_result S2AHandshakerClientCreate(
     s2a_tsi_handshaker* handshaker, grpc_channel* channel,
     grpc_pollset_set* interested_parties,
     const grpc_s2a_credentials_options* options, const grpc_slice& target_name,
     grpc_iomgr_cb_func grpc_cb, tsi_handshaker_on_next_done_cb cb,
-    void* user_data, bool is_client, S2AHandshakerClient** client) {
+    void* user_data, bool is_client, bool is_test,
+    S2AHandshakerClient** client) {
   if (channel == nullptr || client == nullptr ||
       options->handshaker_service_url().empty()) {
     gpr_log(GPR_ERROR, kS2AHandshakerClientNullptrArguments);
     return TSI_INVALID_ARGUMENT;
   }
-  *client =
-      new S2AHandshakerClient(handshaker, channel, interested_parties, options,
-                              target_name, grpc_cb, cb, user_data, is_client);
+  *client = new S2AHandshakerClient(handshaker, channel, interested_parties,
+                                    options, target_name, grpc_cb, cb,
+                                    user_data, is_client, is_test);
   return TSI_OK;
 }
 
@@ -259,18 +268,17 @@ static void S2AHandshakerCallUnref(void* arg, grpc_error* error) {
   grpc_call_unref(call);
 }
 
-S2AHandshakerClient::~S2AHandshakerClient() {
-  if (gpr_unref(&refs_)) {
+void S2AHandshakerClient::Unref() {
+  if (gpr_unref(refs_)) {
     if (call_ != nullptr) {
       grpc_core::ExecCtx::Run(DEBUG_LOCATION,
                               GRPC_CLOSURE_CREATE(S2AHandshakerCallUnref, call_,
                                                   grpc_schedule_on_exec_ctx),
                               GRPC_ERROR_NONE);
     }
+    gpr_free(refs_);
     grpc_byte_buffer_destroy(send_buffer_);
     grpc_byte_buffer_destroy(recv_buffer_);
-    send_buffer_ = nullptr;
-    recv_buffer_ = nullptr;
     grpc_metadata_array_destroy(&recv_initial_metadata_);
     grpc_slice_unref_internal(recv_bytes_);
     grpc_slice_unref_internal(target_name_);
@@ -280,7 +288,9 @@ S2AHandshakerClient::~S2AHandshakerClient() {
   }
 }
 
-void s2a_handshaker_client_destroy(S2AHandshakerClient* client) {
+S2AHandshakerClient::~S2AHandshakerClient() { Unref(); }
+
+void S2AHandshakerClientDestroy(S2AHandshakerClient* client) {
   if (client == nullptr) {
     return;
   }
@@ -289,8 +299,43 @@ void s2a_handshaker_client_destroy(S2AHandshakerClient* client) {
 
 /** ------------------- Testing methods. -------------------------- **/
 
-grpc_byte_buffer* S2AHandshakerClient::get_send_buffer_for_testing() {
-  return send_buffer_;
+void S2AHandshakerClient::set_grpc_caller_for_testing(s2a_grpc_caller caller) {
+  if (is_test_) {
+    grpc_caller_ = caller;
+  }
+}
+
+grpc_metadata_array* S2AHandshakerClient::initial_metadata_for_testing() {
+  return is_test_ ? &recv_initial_metadata_ : nullptr;
+}
+
+grpc_byte_buffer** S2AHandshakerClient::recv_buffer_addr_for_testing() {
+  return is_test_ ? &recv_buffer_ : nullptr;
+}
+
+grpc_byte_buffer* S2AHandshakerClient::send_buffer_for_testing() {
+  return is_test_ ? send_buffer_ : nullptr;
+}
+
+grpc_closure* S2AHandshakerClient::closure_for_testing() {
+  return is_test_ ? &on_handshaker_service_resp_recv_ : nullptr;
+}
+
+void S2AHandshakerClient::on_status_received_for_testing(
+    grpc_status_code status, grpc_error* error) {
+  if (is_test_) {
+    handshake_status_code_ = status;
+    handshake_status_details_ = grpc_empty_slice();
+    grpc_core::Closure::Run(DEBUG_LOCATION, &on_status_received_, error);
+  }
+}
+
+void s2a_handshaker_client_on_status_received_for_testing(
+    S2AHandshakerClient* client, grpc_status_code status, grpc_error* error) {
+  if (client == nullptr) {
+    return;
+  }
+  client->on_status_received_for_testing(status, error);
 }
 
 }  // namespace experimental
