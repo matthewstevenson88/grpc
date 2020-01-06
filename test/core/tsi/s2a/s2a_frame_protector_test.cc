@@ -66,42 +66,45 @@ static void s2a_zero_copy_grpc_protector_create_test(uint16_t ciphersuite) {
   /** Attempt to create an s2a_zero_copy_grpc_protector instance using
    *  nullptr arguments. **/
   tsi_result create_result = s2a_zero_copy_grpc_protector_create(
-      /* tls_version=*/0, ciphersuite, traffic_secret, traffic_secret_size,
-      traffic_secret, traffic_secret_size, channel, /* protector=*/nullptr);
+      /*tls_version=*/0, ciphersuite, traffic_secret, traffic_secret_size,
+      traffic_secret, traffic_secret_size, channel,
+      /*max_protected_frame_size=*/nullptr, /*protector=*/nullptr);
   GPR_ASSERT(create_result == TSI_INVALID_ARGUMENT);
 
   create_result = s2a_zero_copy_grpc_protector_create(
-      /* tls_version=*/0, ciphersuite, /* in_traffic_secret=*/nullptr,
+      /*tls_version=*/0, ciphersuite, /*in_traffic_secret=*/nullptr,
       traffic_secret_size, traffic_secret, traffic_secret_size, channel,
-      &protector);
+      /*max_protected_frame_size=*/nullptr, &protector);
   GPR_ASSERT(create_result == TSI_INVALID_ARGUMENT);
 
   create_result = s2a_zero_copy_grpc_protector_create(
-      /* tls_version=*/0, ciphersuite, traffic_secret, traffic_secret_size,
-      /* out_traffic_secret=*/nullptr, traffic_secret_size, channel,
-      &protector);
+      /*tls_version=*/0, ciphersuite, traffic_secret, traffic_secret_size,
+      /*out_traffic_secret=*/nullptr, traffic_secret_size, channel,
+      /*max_protected_frame_size=*/nullptr, &protector);
   GPR_ASSERT(create_result == TSI_INVALID_ARGUMENT);
 
   create_result = s2a_zero_copy_grpc_protector_create(
-      /* tls_version=*/0, ciphersuite, traffic_secret, traffic_secret_size,
+      /*tls_version=*/0, ciphersuite, traffic_secret, traffic_secret_size,
       traffic_secret, traffic_secret_size,
-      /* channel=*/nullptr, &protector);
+      /*channel=*/nullptr, /*max_protected_frame_size=*/nullptr, &protector);
   GPR_ASSERT(create_result == TSI_INVALID_ARGUMENT);
   GPR_ASSERT(protector == nullptr);
 
   /** Attempt to create an s2a_zero_copy_grpc_protector instance using
    *  an invalid TLS version. **/
   create_result = s2a_zero_copy_grpc_protector_create(
-      /* tls_version=*/1, ciphersuite, traffic_secret, traffic_secret_size,
-      traffic_secret, traffic_secret_size, channel, &protector);
+      /*tls_version=*/1, ciphersuite, traffic_secret, traffic_secret_size,
+      traffic_secret, traffic_secret_size, channel,
+      /*max_protected_frame_size=*/nullptr, &protector);
   GPR_ASSERT(create_result == TSI_FAILED_PRECONDITION);
   GPR_ASSERT(protector == nullptr);
 
   /** Attempt to create an s2a_zero_copy_grpc_protector instance using
    *  incorrect key sizes. **/
   create_result = s2a_zero_copy_grpc_protector_create(
-      /* tls_version=*/0, ciphersuite, traffic_secret, traffic_secret_size,
-      traffic_secret, traffic_secret_size + 1, channel, &protector);
+      /*tls_version=*/0, ciphersuite, traffic_secret, traffic_secret_size,
+      traffic_secret, traffic_secret_size + 1, channel,
+      /*max_protected_frame_size=*/nullptr, &protector);
   if (ciphersuite == kTlsChacha20Poly1305Sha256) {
     GPR_ASSERT(create_result == TSI_UNIMPLEMENTED);
   } else {
@@ -110,15 +113,17 @@ static void s2a_zero_copy_grpc_protector_create_test(uint16_t ciphersuite) {
   GPR_ASSERT(protector == nullptr);
 
   create_result = s2a_zero_copy_grpc_protector_create(
-      /* tls_version=*/0, ciphersuite, traffic_secret, traffic_secret_size + 1,
-      traffic_secret, traffic_secret_size, channel, &protector);
+      /*tls_version=*/0, ciphersuite, traffic_secret, traffic_secret_size + 1,
+      traffic_secret, traffic_secret_size, channel,
+      /*max_protected_frame_size=*/nullptr, &protector);
   GPR_ASSERT(create_result == TSI_FAILED_PRECONDITION);
   GPR_ASSERT(protector == nullptr);
 
   /** Successfully create an s2a_zero_copy_grpc_protector instance. **/
   create_result = s2a_zero_copy_grpc_protector_create(
-      /* tls_version=*/0, ciphersuite, traffic_secret, traffic_secret_size,
-      traffic_secret, traffic_secret_size, channel, &protector);
+      /*tls_version=*/0, ciphersuite, traffic_secret, traffic_secret_size,
+      traffic_secret, traffic_secret_size, channel,
+      /*max_protected_frame_size=*/nullptr, &protector);
   if (ciphersuite == kTlsChacha20Poly1305Sha256) {
     /** The CHACHA-POLY ciphersuite is not yet supported. **/
     GPR_ASSERT(create_result == TSI_UNIMPLEMENTED);
@@ -162,8 +167,9 @@ static tsi_result setup_protector(uint16_t ciphersuite, grpc_channel* channel,
       return TSI_UNIMPLEMENTED;
   }
   return s2a_zero_copy_grpc_protector_create(
-      /* TLS 1.3=*/0, ciphersuite, traffic_secret, traffic_secret_size,
-      traffic_secret, traffic_secret_size, channel, protector);
+      /*TLS 1.3=*/0, ciphersuite, traffic_secret, traffic_secret_size,
+      traffic_secret, traffic_secret_size, channel,
+      /*max_protected_frame_size=*/nullptr, protector);
 }
 
 static void s2a_zero_copy_grpc_protector_small_protect_test(
@@ -239,8 +245,8 @@ static void s2a_zero_copy_grpc_protector_empty_protect_test(
   }
   GPR_ASSERT(create_result == TSI_OK);
 
-  grpc_slice test_slice = grpc_slice_from_static_buffer(/* source=*/nullptr,
-                                                        /* length=*/0);
+  grpc_slice test_slice = grpc_slice_from_static_buffer(/*source=*/nullptr,
+                                                        /*length=*/0);
   grpc_slice_buffer plaintext_buffer;
   grpc_slice_buffer_init(&plaintext_buffer);
   grpc_slice_buffer_add(&plaintext_buffer, test_slice);
@@ -252,7 +258,7 @@ static void s2a_zero_copy_grpc_protector_empty_protect_test(
   GPR_ASSERT(record_buffer.count == 1);
   uint8_t* record = GRPC_SLICE_START_PTR(record_buffer.slices[0]);
   size_t record_size = GRPC_SLICE_LENGTH(record_buffer.slices[0]);
-  GPR_ASSERT(record_size == expected_message_size(/* plaintext_size=*/0));
+  GPR_ASSERT(record_size == expected_message_size(/*plaintext_size=*/0));
   uint8_t* correct_record;
   switch (ciphersuite) {
     case kTlsAes128GcmSha256:
@@ -338,7 +344,7 @@ static void s2a_zero_copy_grpc_protector_unprotect_test(uint16_t ciphersuite) {
   grpc_core::ExecCtx::Get()->Flush();
 }
 
-int main(int /** argc **/, char** /** argv **/) {
+int main(int /*argc*/, char** /*argv*/) {
   const size_t number_ciphersuites = 3;
   uint16_t ciphersuite[number_ciphersuites] = {
       kTlsAes128GcmSha256, kTlsAes256GcmSha384, kTlsChacha20Poly1305Sha256};

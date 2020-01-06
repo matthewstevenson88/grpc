@@ -150,6 +150,36 @@ class S2AHandshakerClient {
   grpc_closure* closure_for_testing();
   void on_status_received_for_testing(grpc_status_code status,
                                       grpc_error* error);
+  void ref_for_testing();
+
+  /** If |is_test_| is set to true, then this method populates the private
+   * member fields of this handshaker client instance usnig the arguments. If
+   * |is_test_| is false, then this method does nothing. **/
+  void SetFieldsForTesting(s2a_tsi_handshaker* handshaker,
+                           tsi_handshaker_on_next_done_cb cb, void* user_data,
+                           grpc_byte_buffer* recv_buffer,
+                           grpc_status_code status);
+
+ protected:
+  /** If |is_test_| is set to true, then this method verifies that the arguments
+   *  match the corresponding private member fields of this handshaker client
+   *  instance. If |is_test_| is false, then this method does nothing. **/
+  void CheckFieldsForTesting(tsi_handshaker_on_next_done_cb cb, void* user_data,
+                             bool has_sent_start_message,
+                             grpc_slice* recv_bytes);
+
+  /** These methods are exposed for testing purposes only. If |is_test_| is set
+   *  to true, then the method accesses the appropriate private member variable.
+   *  If |is_test_| is set to false, then:
+   *  - if the method has a void return type, then the method does nothing;
+   *  - if the method has a boolean return type, then the method returns false;
+   *  - if the method returns a pointer, then the method does nothing and
+   *    returns nullptr. **/
+  s2a_tsi_handshaker* handshaker_for_testing();
+  bool is_client_for_testing();
+  void set_cb_for_testing(tsi_handshaker_on_next_done_cb cb);
+  /** The caller must not pass in nullptr for |recv_bytes|. **/
+  void set_recv_bytes_for_testing(grpc_slice* recv_bytes);
 
  private:
   /** This method makes a call to the S2A service. **/
@@ -183,6 +213,7 @@ class S2AHandshakerClient {
   gpr_refcount* refs_ = nullptr;
   /** The S2A TSI handshaker that instantiates this S2A handshaker client. **/
   s2a_tsi_handshaker* handshaker_ = nullptr;
+  grpc_channel* channel_ = nullptr;
   grpc_call* call_ = nullptr;
   s2a_grpc_caller grpc_caller_ = nullptr;
   /** A gRPC closure to be scheduled when the response from handshaker service

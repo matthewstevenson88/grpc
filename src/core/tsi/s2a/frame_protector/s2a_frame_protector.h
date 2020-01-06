@@ -37,6 +37,10 @@
  *  - channel: an open channel to the S2A; the s2a_zero_copy_grpc_protector does
  *    not take ownership of the channel, and the caller must not pass in nullptr
  *    for this argument.
+ *  - max_protected_frame_size: an in/out parameter that indicates the max frame
+ *    size to be used by the frame protector. If it is nullptr, then the default
+ *    frame size will be used. Otherwise, the provided frame size will be
+ *    adjusted (if not falling into a valid frame range) and used.
  *  - protector: a pointer to an s2a_zero_copy_grpc_protector instance,
  *    which will be populated by the method. The caller must not pass in nullptr
  *    for this argument.
@@ -47,6 +51,6 @@ tsi_result s2a_zero_copy_grpc_protector_create(
     uint16_t tls_version, uint16_t tls_ciphersuite, uint8_t* in_traffic_secret,
     size_t in_traffic_secret_size, uint8_t* out_traffic_secret,
     size_t out_traffic_secret_size, grpc_channel* channel,
-    tsi_zero_copy_grpc_protector** protector);
+    size_t* max_protected_frame_size, tsi_zero_copy_grpc_protector** protector);
 
 #endif  // GRPC_CORE_TSI_FRAME_PROTECTOR_S2A_FRAME_PROTECTOR_H

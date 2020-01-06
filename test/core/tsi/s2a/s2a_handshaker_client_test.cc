@@ -144,7 +144,7 @@ static grpc_call_error check_client_start_success(grpc_call* /*call*/,
   GPR_ASSERT(upb_strview_eql(s2a_Identity_spiffe_id(*target_identities),
                              upb_strview_makez("target_service_account")));
 
-  GPR_ASSERT(validate_op(client, op, nops, /* is_start=*/true));
+  GPR_ASSERT(validate_op(client, op, nops, /*is_start=*/true));
   return GRPC_CALL_OK;
 }
 
@@ -192,7 +192,7 @@ static grpc_call_error check_server_start_success(grpc_call* /*call*/,
   GPR_ASSERT(upb_strview_eql(
       in_bytes, upb_strview_makez(kS2AHandshakerClientTestOutFrame)));
 
-  GPR_ASSERT(validate_op(client, op, nops, /* is_start=*/true));
+  GPR_ASSERT(validate_op(client, op, nops, /*is_start=*/true));
   return GRPC_CALL_OK;
 }
 
@@ -212,7 +212,7 @@ static grpc_call_error check_next_success(grpc_call* /*call*/,
   upb_strview in_bytes = s2a_SessionNextReq_in_bytes(next);
   GPR_ASSERT(upb_strview_eql(
       in_bytes, upb_strview_makez(kS2AHandshakerClientTestOutFrame)));
-  GPR_ASSERT(validate_op(client, op, nops, false /* is_start */));
+  GPR_ASSERT(validate_op(client, op, nops, /*is_start=*/false));
   return GRPC_CALL_OK;
 }
 
@@ -244,34 +244,34 @@ static s2a_handshaker_client_test_config* s2a_create_config() {
 
   char* error_details = nullptr;
   tsi_result client_handshaker_result = s2a_tsi_handshaker_create(
-      config->options, kS2AHandshakerClientTestTargetName, /* is_client=*/true,
-      /* interested_parties=*/nullptr, &(config->client_tsi_handshaker),
-      &error_details);
+      config->options, kS2AHandshakerClientTestTargetName, /*is_client=*/true,
+      /*interested_parties=*/nullptr, /*is_test=*/true,
+      &(config->client_tsi_handshaker), &error_details);
   GPR_ASSERT(client_handshaker_result == TSI_OK);
   GPR_ASSERT(error_details == nullptr);
 
   tsi_result server_handshaker_result = s2a_tsi_handshaker_create(
-      config->options, kS2AHandshakerClientTestTargetName, /* is_client=*/false,
-      /* interested_parties=*/nullptr, &(config->server_tsi_handshaker),
-      &error_details);
+      config->options, kS2AHandshakerClientTestTargetName, /*is_client=*/false,
+      /*interested_parties=*/nullptr, /*is_test=*/true,
+      &(config->server_tsi_handshaker), &error_details);
   GPR_ASSERT(server_handshaker_result == TSI_OK);
   GPR_ASSERT(error_details == nullptr);
 
   tsi_result client_result = S2AHandshakerClientCreate(
       reinterpret_cast<s2a_tsi_handshaker*>(config->client_tsi_handshaker),
-      config->channel, /* interested_parties=*/nullptr, config->options,
+      config->channel, /*interested_parties=*/nullptr, config->options,
       grpc_slice_from_static_string(kS2AHandshakerClientTestTargetName),
-      /* grpc_cb=*/nullptr, /* cb=*/nullptr, /* user_data=*/nullptr,
-      /* is_client=*/true, /* is_test=*/true, &(config->client));
+      /*grpc_cb=*/nullptr, /*cb=*/nullptr, /*user_data=*/nullptr,
+      /*is_client=*/true, /*is_test=*/true, &(config->client));
   GPR_ASSERT(client_result == TSI_OK);
   GPR_ASSERT(config->client != nullptr);
 
   tsi_result server_result = S2AHandshakerClientCreate(
       reinterpret_cast<s2a_tsi_handshaker*>(config->server_tsi_handshaker),
-      config->channel, /* interested_parties=*/nullptr, config->options,
+      config->channel, /*interested_parties=*/nullptr, config->options,
       grpc_slice_from_static_string(kS2AHandshakerClientTestTargetName),
-      /* grpc_cb=*/nullptr, /* cb=*/nullptr, /* user_data=*/nullptr,
-      /* is_client=*/false, /* is_test=*/true, &(config->server));
+      /*grpc_cb=*/nullptr, /*cb=*/nullptr, /*user_data=*/nullptr,
+      /*is_client=*/false, /*is_test=*/true, &(config->server));
   GPR_ASSERT(server_result == TSI_OK);
   GPR_ASSERT(config->server != nullptr);
 

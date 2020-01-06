@@ -206,8 +206,8 @@ void S2AHandshakerClient::HandleResponse(bool is_ok) {
 
   tsi_handshaker_result* result = nullptr;
   if (s2a_SessionResp_result(response)) {
-    tsi_result create_result =
-        s2a_tsi_handshaker_result_create(response, is_client_, &result);
+    tsi_result create_result = s2a_tsi_handshaker_result_create(
+        response, channel_, is_client_, &result);
     if (create_result != TSI_OK) {
       gpr_log(GPR_ERROR,
               "The |s2a_tsi_handshaker_result_create| method failed.");
