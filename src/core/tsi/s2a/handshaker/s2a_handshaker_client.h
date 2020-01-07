@@ -42,6 +42,11 @@ struct s2a_tsi_handshaker;
 typedef grpc_call_error (*s2a_grpc_caller)(grpc_call* call, const grpc_op* ops,
                                            size_t nops, grpc_closure* tag);
 
+/** The following 3 functions are used for testing purposes only. **/
+typedef tsi_result (*s2a_mock_client_start)(void* client);
+typedef tsi_result (*s2a_mock_server_start)(void* client, grpc_slice* bytes_received);
+typedef tsi_result (*s2a_mock_next)(void* client, grpc_slice* bytes_received);
+
 /** A struct that stores the handshake result sent by the S2A service. **/
 struct s2a_recv_message_result {
   tsi_result status;
@@ -153,12 +158,16 @@ class S2AHandshakerClient {
   void ref_for_testing();
 
   /** If |is_test_| is set to true, then this method populates the private
-   * member fields of this handshaker client instance usnig the arguments. If
-   * |is_test_| is false, then this method does nothing. **/
+   *  member fields of this handshaker client instance usnig the arguments. If
+   *  |is_test_| is false, then this method does nothing. **/
   void SetFieldsForTesting(s2a_tsi_handshaker* handshaker,
                            tsi_handshaker_on_next_done_cb cb, void* user_data,
                            grpc_byte_buffer* recv_buffer,
                            grpc_status_code status);
+
+  void set_mock_client_start_for_testing(s2a_mock_client_start client_start);
+  void set_mock_server_start_for_testing(s2a_mock_server_start server_start);
+  void set_mock_next_for_testing(s2a_mock_next next);
 
  protected:
   /** If |is_test_| is set to true, then this method verifies that the arguments
@@ -266,6 +275,11 @@ class S2AHandshakerClient {
   /** This variable should be set to true iff the S2A handshaker client instance
    *  is instantiated as part of a test. **/
   bool is_test_ = false;
+  /** The 3 functions pointers below are used to call the handshake operations
+   *  implemented by a mock handshaker client. **/
+  s2a_mock_client_start client_start_ = nullptr;
+  s2a_mock_server_start server_start_ = nullptr;
+  s2a_mock_next next_ = nullptr;
 };
 
 /** This method populates |client| with an instance of the

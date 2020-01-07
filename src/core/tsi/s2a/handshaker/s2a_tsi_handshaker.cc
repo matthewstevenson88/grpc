@@ -203,7 +203,8 @@ static tsi_result handshaker_next(
     gpr_log(GPR_ERROR, "Invalid nullptr arguments to |handshaker_next|.");
     return TSI_INVALID_ARGUMENT;
   }
-  return TSI_UNIMPLEMENTED;
+  // TODO: take out this line
+  GPR_ASSERT(user_data == nullptr);
   s2a_tsi_handshaker* handshaker = reinterpret_cast<s2a_tsi_handshaker*>(self);
   {
     grpc_core::MutexLock lock(&handshaker->mu);

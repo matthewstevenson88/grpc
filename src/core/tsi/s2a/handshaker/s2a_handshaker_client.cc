@@ -87,6 +87,7 @@ grpc_byte_buffer* S2AHandshakerClient::SerializedStartClient() {
 }
 
 tsi_result S2AHandshakerClient::ClientStart() {
+  if (is_test_ && client_start_ != nullptr) { return client_start_(this); }
   grpc_byte_buffer* buffer = SerializedStartClient();
   if (buffer == nullptr) {
     gpr_log(GPR_ERROR, kS2AGetSerializedStartClientFailed);
@@ -135,6 +136,7 @@ grpc_byte_buffer* S2AHandshakerClient::SerializedStartServer(
 
 tsi_result S2AHandshakerClient::ServerStart(grpc_slice* bytes_received) {
   GPR_ASSERT(bytes_received != nullptr);
+  if (is_test_ && server_start_ != nullptr) { return server_start_(this, bytes_received); }
   grpc_byte_buffer* buffer = SerializedStartServer(bytes_received);
   if (buffer == nullptr) {
     gpr_log(GPR_ERROR, kS2AGetSerializedStartServerFailed);
@@ -164,6 +166,7 @@ grpc_byte_buffer* S2AHandshakerClient::SerializedNext(
 
 tsi_result S2AHandshakerClient::Next(grpc_slice* bytes_received) {
   GPR_ASSERT(bytes_received != nullptr);
+  if (is_test_ && next_ != nullptr) { return next_(this, bytes_received); }
   grpc_slice_unref_internal(recv_bytes_);
   recv_bytes_ = grpc_slice_ref_internal(*bytes_received);
   grpc_byte_buffer* buffer = SerializedNext(bytes_received);
@@ -362,7 +365,10 @@ void S2AHandshakerClient::CheckFieldsForTesting(
     return;
   }
   GPR_ASSERT(cb_ = cb);
-  GPR_ASSERT(user_data_ = user_data);
+  // TODO: take out these two lines
+  GPR_ASSERT(user_data == nullptr);
+  GPR_ASSERT(user_data_ == nullptr);
+  GPR_ASSERT(user_data_ == user_data);
   GPR_ASSERT(handshaker_ != nullptr);
   GPR_ASSERT(s2a_tsi_handshaker_has_sent_start_message_for_testing(
                  handshaker_) == has_sent_start_message);
@@ -406,6 +412,21 @@ void S2AHandshakerClient::ref_for_testing() {
     return;
   }
   gpr_ref(refs_);
+}
+
+void S2AHandshakerClient::set_mock_client_start_for_testing(s2a_mock_client_start client_start) {
+  if (!is_test_) { return; }
+  client_start_ = client_start;
+}
+
+void S2AHandshakerClient::set_mock_server_start_for_testing(s2a_mock_server_start server_start) {
+  if (!is_test_) { return; }
+  server_start_ = server_start;
+}
+
+void S2AHandshakerClient::set_mock_next_for_testing(s2a_mock_next next) {
+  if (!is_test_) { return; }
+  next_ = next;
 }
 
 }  // namespace experimental
