@@ -155,7 +155,6 @@ void S2AHandshakerClient::HandleResponse(bool is_ok) {
   if (!is_ok || status_ != GRPC_STATUS_OK) {
     gpr_log(GPR_ERROR,
             "The gRPC call made to the S2A handshaker service failed.");
-    GPR_ASSERT(0 == 1);
     HandleResponseDone(TSI_INTERNAL_ERROR, /* bytes_to_send=*/nullptr,
                        /* bytes_to_send_size=*/0,
                        /* result=*/nullptr);
@@ -164,7 +163,6 @@ void S2AHandshakerClient::HandleResponse(bool is_ok) {
   if (recv_buffer_ == nullptr) {
     gpr_log(GPR_ERROR,
             "The |recv_buffer_| buffer is nullptr in |handle_response|.");
-    GPR_ASSERT(0 == 1);
     HandleResponseDone(TSI_INTERNAL_ERROR, /* bytes_to_send=*/nullptr,
                        /* bytes_to_send_size=*/0,
                        /* result=*/nullptr);
@@ -180,7 +178,6 @@ void S2AHandshakerClient::HandleResponse(bool is_ok) {
   /** Invalid handshaker response check. **/
   if (response == nullptr) {
     gpr_log(GPR_ERROR, "The |s2a_deserialize_session_resp| method failed.");
-    GPR_ASSERT(0 == 1);
     HandleResponseDone(TSI_DATA_CORRUPTED, /* bytes_to_send=*/nullptr,
                        /* bytes_to_send_size=*/0,
                        /* result=*/nullptr);
@@ -189,7 +186,6 @@ void S2AHandshakerClient::HandleResponse(bool is_ok) {
   const s2a_SessionStatus* session_status = s2a_SessionResp_status(response);
   if (session_status == nullptr) {
     gpr_log(GPR_ERROR, "No status in the |SessionResp|.");
-    GPR_ASSERT(0 == 1);
     HandleResponseDone(TSI_DATA_CORRUPTED, /* bytes_to_send=*/nullptr,
                        /* bytes_to_send_size=*/0,
                        /* result=*/nullptr);
@@ -224,7 +220,6 @@ void S2AHandshakerClient::HandleResponse(bool is_ok) {
   grpc_status_code code =
       static_cast<grpc_status_code>(s2a_SessionStatus_code(session_status));
   if (code != GRPC_STATUS_OK) {
-    GPR_ASSERT(0 == 1);
     upb_strview details = s2a_SessionStatus_details(session_status);
     if (details.size > 0) {
       char* error_details = (char*)gpr_zalloc(details.size + 1);

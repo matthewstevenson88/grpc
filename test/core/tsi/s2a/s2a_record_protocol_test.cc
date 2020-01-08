@@ -83,7 +83,7 @@ class S2ACrypterTest : public TestWithParam<uint16_t> {
     const char* expected_error_details =
         is_chacha_poly ? kS2AChachaPolyUnimplemented : nullptr;
     EXPECT_EQ(s2a_crypter_create(
-                  /*TLS 1.3=*/0, GetParam(), traffic_secret,
+                  /*TLS 1.3=*/1, GetParam(), traffic_secret,
                   traffic_secret_size, traffic_secret, traffic_secret_size,
                   channel_, crypter, &error_details_),
               expected_status);
@@ -110,7 +110,7 @@ TEST_P(S2ACrypterTest, IncorrectTLSVersion) {
   uint8_t in_traffic_secret[32] = "in_traffic_secret";
   uint8_t out_traffic_secret[32] = "out_traffic_secret";
   grpc_status_code status = s2a_crypter_create(
-      /*TLS 1.2=*/1, kTlsAes128GcmSha256, in_traffic_secret,
+      /*TLS 1.2=*/0, kTlsAes128GcmSha256, in_traffic_secret,
       kSha256DigestLength, out_traffic_secret, kSha256DigestLength, channel_,
       &crypter_, &error_details_);
   EXPECT_EQ(status, GRPC_STATUS_FAILED_PRECONDITION);
@@ -123,7 +123,7 @@ TEST_P(S2ACrypterTest, IncorrectKeySize) {
   std::vector<uint8_t> in_traffic_secret(kSha256DigestLength - 1, 0);
   std::vector<uint8_t> out_traffic_secret(kSha256DigestLength + 1, 0);
   grpc_status_code status = s2a_crypter_create(
-      /** TLS 1.3 **/ 0, kTlsAes128GcmSha256, in_traffic_secret.data(),
+      /*TLS 1.3=*/1, kTlsAes128GcmSha256, in_traffic_secret.data(),
       in_traffic_secret.size(), out_traffic_secret.data(),
       out_traffic_secret.size(), channel_, &crypter_, &error_details_);
   EXPECT_EQ(status, GRPC_STATUS_FAILED_PRECONDITION);

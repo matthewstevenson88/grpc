@@ -44,7 +44,8 @@ typedef grpc_call_error (*s2a_grpc_caller)(grpc_call* call, const grpc_op* ops,
 
 /** The following 3 functions are used for testing purposes only. **/
 typedef tsi_result (*s2a_mock_client_start)(void* client);
-typedef tsi_result (*s2a_mock_server_start)(void* client, grpc_slice* bytes_received);
+typedef tsi_result (*s2a_mock_server_start)(void* client,
+                                            grpc_slice* bytes_received);
 typedef tsi_result (*s2a_mock_next)(void* client, grpc_slice* bytes_received);
 
 /** A struct that stores the handshake result sent by the S2A service. **/

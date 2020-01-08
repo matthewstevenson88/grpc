@@ -66,25 +66,25 @@ static void s2a_zero_copy_grpc_protector_create_test(uint16_t ciphersuite) {
   /** Attempt to create an s2a_zero_copy_grpc_protector instance using
    *  nullptr arguments. **/
   tsi_result create_result = s2a_zero_copy_grpc_protector_create(
-      /*tls_version=*/0, ciphersuite, traffic_secret, traffic_secret_size,
+      /*tls_version=*/1, ciphersuite, traffic_secret, traffic_secret_size,
       traffic_secret, traffic_secret_size, channel,
       /*max_protected_frame_size=*/nullptr, /*protector=*/nullptr);
   GPR_ASSERT(create_result == TSI_INVALID_ARGUMENT);
 
   create_result = s2a_zero_copy_grpc_protector_create(
-      /*tls_version=*/0, ciphersuite, /*in_traffic_secret=*/nullptr,
+      /*tls_version=*/1, ciphersuite, /*in_traffic_secret=*/nullptr,
       traffic_secret_size, traffic_secret, traffic_secret_size, channel,
       /*max_protected_frame_size=*/nullptr, &protector);
   GPR_ASSERT(create_result == TSI_INVALID_ARGUMENT);
 
   create_result = s2a_zero_copy_grpc_protector_create(
-      /*tls_version=*/0, ciphersuite, traffic_secret, traffic_secret_size,
+      /*tls_version=*/1, ciphersuite, traffic_secret, traffic_secret_size,
       /*out_traffic_secret=*/nullptr, traffic_secret_size, channel,
       /*max_protected_frame_size=*/nullptr, &protector);
   GPR_ASSERT(create_result == TSI_INVALID_ARGUMENT);
 
   create_result = s2a_zero_copy_grpc_protector_create(
-      /*tls_version=*/0, ciphersuite, traffic_secret, traffic_secret_size,
+      /*tls_version=*/1, ciphersuite, traffic_secret, traffic_secret_size,
       traffic_secret, traffic_secret_size,
       /*channel=*/nullptr, /*max_protected_frame_size=*/nullptr, &protector);
   GPR_ASSERT(create_result == TSI_INVALID_ARGUMENT);
@@ -93,7 +93,7 @@ static void s2a_zero_copy_grpc_protector_create_test(uint16_t ciphersuite) {
   /** Attempt to create an s2a_zero_copy_grpc_protector instance using
    *  an invalid TLS version. **/
   create_result = s2a_zero_copy_grpc_protector_create(
-      /*tls_version=*/1, ciphersuite, traffic_secret, traffic_secret_size,
+      /*tls_version=*/0, ciphersuite, traffic_secret, traffic_secret_size,
       traffic_secret, traffic_secret_size, channel,
       /*max_protected_frame_size=*/nullptr, &protector);
   GPR_ASSERT(create_result == TSI_FAILED_PRECONDITION);
@@ -102,7 +102,7 @@ static void s2a_zero_copy_grpc_protector_create_test(uint16_t ciphersuite) {
   /** Attempt to create an s2a_zero_copy_grpc_protector instance using
    *  incorrect key sizes. **/
   create_result = s2a_zero_copy_grpc_protector_create(
-      /*tls_version=*/0, ciphersuite, traffic_secret, traffic_secret_size,
+      /*tls_version=*/1, ciphersuite, traffic_secret, traffic_secret_size,
       traffic_secret, traffic_secret_size + 1, channel,
       /*max_protected_frame_size=*/nullptr, &protector);
   if (ciphersuite == kTlsChacha20Poly1305Sha256) {
@@ -113,7 +113,7 @@ static void s2a_zero_copy_grpc_protector_create_test(uint16_t ciphersuite) {
   GPR_ASSERT(protector == nullptr);
 
   create_result = s2a_zero_copy_grpc_protector_create(
-      /*tls_version=*/0, ciphersuite, traffic_secret, traffic_secret_size + 1,
+      /*tls_version=*/1, ciphersuite, traffic_secret, traffic_secret_size + 1,
       traffic_secret, traffic_secret_size, channel,
       /*max_protected_frame_size=*/nullptr, &protector);
   GPR_ASSERT(create_result == TSI_FAILED_PRECONDITION);
@@ -121,7 +121,7 @@ static void s2a_zero_copy_grpc_protector_create_test(uint16_t ciphersuite) {
 
   /** Successfully create an s2a_zero_copy_grpc_protector instance. **/
   create_result = s2a_zero_copy_grpc_protector_create(
-      /*tls_version=*/0, ciphersuite, traffic_secret, traffic_secret_size,
+      /*tls_version=*/1, ciphersuite, traffic_secret, traffic_secret_size,
       traffic_secret, traffic_secret_size, channel,
       /*max_protected_frame_size=*/nullptr, &protector);
   if (ciphersuite == kTlsChacha20Poly1305Sha256) {
@@ -167,7 +167,7 @@ static tsi_result setup_protector(uint16_t ciphersuite, grpc_channel* channel,
       return TSI_UNIMPLEMENTED;
   }
   return s2a_zero_copy_grpc_protector_create(
-      /*TLS 1.3=*/0, ciphersuite, traffic_secret, traffic_secret_size,
+      /*TLS 1.3=*/1, ciphersuite, traffic_secret, traffic_secret_size,
       traffic_secret, traffic_secret_size, channel,
       /*max_protected_frame_size=*/nullptr, protector);
 }

@@ -70,9 +70,8 @@ static void s2a_tsi_handshaker_create_and_destroy_test() {
 static s2a_SessionResp* s2a_setup_test_session_resp(upb_arena* arena,
                                                     bool has_peer_identity) {
   s2a_SessionState* session_state = s2a_SessionState_new(arena);
-  s2a_SessionState_set_tls_version(session_state, /*TLS 1.3=*/0);
-  s2a_SessionState_set_tls_ciphersuite(
-      session_state, static_cast<int32_t>(kTlsAes128GcmSha256));
+  s2a_SessionState_set_tls_version(session_state, s2a_TLS1_3);
+  s2a_SessionState_set_tls_ciphersuite(session_state, s2a_AES_128_GCM_SHA256);
   s2a_SessionState_set_in_sequence(session_state, 0);
   s2a_SessionState_set_out_sequence(session_state, 0);
   s2a_SessionState_set_in_key(
@@ -133,7 +132,7 @@ static void s2a_tsi_handshaker_result_create_and_destroy_test() {
   s2a_tsi_handshaker_result_set_unused_bytes(handshaker_result, &recv_slice,
                                              /*bytes_consumed=*/0);
   s2a_check_tsi_handshaker_result_for_testing(
-      handshaker_result, /*TLS 1.3=*/0, kTlsAes128GcmSha256,
+      handshaker_result, /*TLS 1.3=*/1, kTlsAes128GcmSha256,
       reinterpret_cast<uint8_t*>(traffic_secret.data()),
       reinterpret_cast<uint8_t*>(traffic_secret.data()), traffic_secret.size(),
       spiffe_id, /*spiffe_id_length=*/9, /*hostname=*/nullptr,

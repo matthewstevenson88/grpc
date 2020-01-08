@@ -118,6 +118,9 @@ typedef tsi_result (*create_mock_handshaker_client)(
 void s2a_tsi_handshaker_set_create_mock_handshaker_client(
     s2a_tsi_handshaker* handshaker, create_mock_handshaker_client create_mock);
 
+void s2a_tsi_handshaker_result_set_channel_for_testing(
+    tsi_handshaker_result* result, grpc_channel* channel);
+
 }  // namespace experimental
 }  // namespace grpc_core
 

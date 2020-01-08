@@ -121,13 +121,12 @@ static tsi_result s2a_tsi_handshaker_continue_handshaker_next(
     size_t received_bytes_size, tsi_handshaker_on_next_done_cb cb,
     void* user_data) {
   GPR_ASSERT(handshaker != nullptr);
-  GPR_ASSERT(handshaker->channel != nullptr);
   if (!handshaker->has_created_handshaker_client) {
     S2AHandshakerClient* client = nullptr;
-    tsi_result client_create_result;
+    tsi_result client_create_result = TSI_OK;
     if (handshaker->is_test) {
       GPR_ASSERT(handshaker->create_mock != nullptr);
-      client_create_result = (handshaker->create_mock)(
+      client_create_result = handshaker->create_mock(
           handshaker, handshaker->channel, handshaker->interested_parties,
           handshaker->options, handshaker->target_name,
           on_handshaker_service_resp_recv, cb, user_data, handshaker->is_client,
@@ -203,8 +202,6 @@ static tsi_result handshaker_next(
     gpr_log(GPR_ERROR, "Invalid nullptr arguments to |handshaker_next|.");
     return TSI_INVALID_ARGUMENT;
   }
-  // TODO: take out this line
-  GPR_ASSERT(user_data == nullptr);
   s2a_tsi_handshaker* handshaker = reinterpret_cast<s2a_tsi_handshaker*>(self);
   {
     grpc_core::MutexLock lock(&handshaker->mu);
@@ -213,7 +210,7 @@ static tsi_result handshaker_next(
       return TSI_HANDSHAKE_SHUTDOWN;
     }
   }
-  if (handshaker->channel == nullptr) {
+  if (handshaker->channel == nullptr && !handshaker->is_test) {
     s2a_tsi_handshaker_continue_handshaker_next_args* args =
         new s2a_tsi_handshaker_continue_handshaker_next_args();
     args->handshaker = handshaker;
@@ -403,7 +400,7 @@ tsi_result s2a_tsi_handshaker_result_create(s2a_SessionResp* response,
                                             grpc_channel* channel,
                                             bool is_client,
                                             tsi_handshaker_result** self) {
-  if (self == nullptr || response == nullptr || channel == nullptr) {
+  if (self == nullptr || response == nullptr) {
     gpr_log(GPR_ERROR, kS2ATsiHandshakerResultNullptrArguments);
     return TSI_INVALID_ARGUMENT;
   }
@@ -452,8 +449,19 @@ tsi_result s2a_tsi_handshaker_result_create(s2a_SessionResp* response,
 
   /** Populate fields of |tsi_result| using |handshake_state|. **/
   tsi_result->tls_version = s2a_SessionState_tls_version(handshake_state);
-  tsi_result->tls_ciphersuite =
-      s2a_SessionState_tls_ciphersuite(handshake_state);
+  switch (s2a_SessionState_tls_ciphersuite(handshake_state)) {
+    case s2a_AES_128_GCM_SHA256:
+      tsi_result->tls_ciphersuite = kTlsAes128GcmSha256;
+      break;
+    case s2a_AES_256_GCM_SHA384:
+      tsi_result->tls_ciphersuite = kTlsAes256GcmSha384;
+      break;
+    case s2a_CHACHA20_POLY1305_SHA256:
+      tsi_result->tls_ciphersuite = kTlsChacha20Poly1305Sha256;
+      break;
+    default:
+      return TSI_FAILED_PRECONDITION;
+  }
   tsi_result->traffic_secret_size = in_traffic_secret.size;
   tsi_result->in_traffic_secret = static_cast<uint8_t*>(
       gpr_zalloc(in_traffic_secret.size * sizeof(uint8_t)));
@@ -570,6 +578,16 @@ void s2a_tsi_handshaker_set_create_mock_handshaker_client(
     return;
   }
   handshaker->create_mock = create_mock;
+}
+
+void s2a_tsi_handshaker_result_set_channel_for_testing(
+    tsi_handshaker_result* result, grpc_channel* channel) {
+  if (result == nullptr) {
+    return;
+  }
+  s2a_tsi_handshaker_result* s2a_result =
+      reinterpret_cast<s2a_tsi_handshaker_result*>(result);
+  s2a_result->channel = channel;
 }
 
 }  // namespace experimental
