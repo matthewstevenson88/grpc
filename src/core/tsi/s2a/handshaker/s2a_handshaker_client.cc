@@ -290,16 +290,18 @@ void S2AHandshakerClient::Unref() {
     gpr_free(buffer_);
     grpc_slice_unref_internal(handshake_status_details_);
     gpr_mu_destroy(&mu_);
+    delete this;
   }
 }
 
-S2AHandshakerClient::~S2AHandshakerClient() { Unref(); }
+S2AHandshakerClient::~S2AHandshakerClient() {}
 
 void S2AHandshakerClientDestroy(S2AHandshakerClient* client) {
   if (client == nullptr) {
     return;
   }
-  delete client;
+  //delete client;
+  client->Unref();
 }
 
 /** ------------------- Testing methods. -------------------------- **/

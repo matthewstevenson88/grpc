@@ -235,7 +235,7 @@ class S2AHandshakerClient {
   grpc_byte_buffer* recv_buffer_ = nullptr;
   /** This status indicates to the |handle_response_done| method whether or not
    *  an error occurred during a previous portion of the handshake. **/
-  grpc_status_code status_;
+  grpc_status_code status_ = GRPC_STATUS_OK;
   /** Initial metadata to be received from handshaker service. **/
   grpc_metadata_array recv_initial_metadata_;
   /** A callback function provided by an application to be invoked when response

@@ -73,7 +73,7 @@ constexpr size_t kS2AMaxFrameSize =
     /*record_header=*/5 + /*max_plaintext_size=*/16 * 1024 + /*tag=*/16;
 
 /** The URL of the S2A handshaker service for testing purposes. **/
-constexpr char kS2AHandshakerServiceUrlForTesting[] = "testing";
+constexpr char kS2AHandshakerServiceUrlForTesting[] = "lame";
 
 /** S2A error messages. **/
 constexpr char kS2AUnsupportedTlsVersion[] =
