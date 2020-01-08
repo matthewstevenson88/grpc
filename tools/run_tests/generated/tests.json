@@ -3020,7 +3020,7 @@
     "exclude_configs": [], 
     "exclude_iomgrs": [], 
     "flaky": false, 
-    "gtest": false, 
+    "gtest": true, 
     "language": "c++", 
     "name": "alts_crypt_test", 
     "platforms": [
