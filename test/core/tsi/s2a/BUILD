@@ -65,6 +65,7 @@ grpc_cc_test(
     name = "s2a_frame_protector_test",
     srcs = ["s2a_frame_protector_test.cc"],
     external_deps = [
+        "gtest",
         "libssl",
     ],
     language = "C++",
