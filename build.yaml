@@ -5708,6 +5708,7 @@ targets:
   - gpr
   - grpc
 - name: s2a_handshaker_client_test
+  gtest: true
   build: test
   language: c++
   src:
