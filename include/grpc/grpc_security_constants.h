@@ -111,6 +111,12 @@ typedef enum {
  */
 typedef enum { UDS = 0, LOCAL_TCP } grpc_local_connect_type;
 
+typedef enum {
+  TLS_AES_128_GCM_SHA256,
+  TLS_AES_256_GCM_SHA384,
+  TLS_CHACHA20_POLY1305_SHA256,
+} grpc_s2a_ciphersuite;
+
 #ifdef __cplusplus
 }
 #endif

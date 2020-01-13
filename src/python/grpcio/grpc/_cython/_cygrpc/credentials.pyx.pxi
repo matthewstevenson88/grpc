@@ -157,6 +157,23 @@ cdef class SSLChannelCredentials(ChannelCredentials):
       return grpc_ssl_credentials_create(
           c_pem_root_certificates, &c_pem_key_certificate_pair, NULL, NULL)
 
+cdef class S2AChannelCredentials(ChannelCredentials):
+
+  def __cinit__(self, handshaker_service_url, supported_ciphersuites, target_service_accounts):
+    self._handshaker_service_url = handshaker_service_url
+    self._supported_ciphersuites = supported_ciphersuites
+    self._target_service_accounts = target_service_accounts
+
+  cdef grpc_channel_credentials *c(self) except *:
+    cdef grpc_s2a_credentials_options *options = grpc_s2a_credentials_options_create()'
+    grpc_s2a_credentials_options_set_handshaker_service_url(options, self._handshaker_service_url)
+    for supported_ciphersuite in self._supported_ciphersuites:
+      grpc_s2a_credentials_options_add_supported_ciphersuite(options, supported_ciphersuite)
+    for target_service_account in self._target_service_accounts:
+      grpc_s2a_credentials_options_add_target_service_account(options, target_service_account)
+    grpc_channel_credentials *creds = grpc_s2a_credentials_create(options)
+    grpc_s2a_credentials_options_destroy(options)
+    return creds
 
 cdef class CompositeChannelCredentials(ChannelCredentials):
 
@@ -349,4 +366,24 @@ def channel_credentials_local(grpc_local_connect_type local_connect_type):
 def server_credentials_local(grpc_local_connect_type local_connect_type):
   cdef ServerCredentials credentials = ServerCredentials()
   credentials.c_credentials = grpc_local_server_credentials_create(local_connect_type)
+  return credentials
+
+class S2ACiphersuite:
+  tls_aes_128_gcm_sha256 = TLS_AES_128_GCM_SHA256
+  tls_aes_256_gcm_sha384 = TLS_AES_256_GCM_SHA384
+  tls_chacha20_poly1305_sha256 = TLS_CHACHA20_POLY1305_SHA256
+
+def s2a_channel_credentials(handshaker_service_url, supported_ciphersuites, target_service_accounts):
+  return S2AChannelCredentials(handshaker_service_url, supported_ciphersuites, target_service_accounts)
+
+def s2a_server_credentials(handshaker_service_url, supported_ciphersuites, target_service_accounts):
+  cdef ServerCredentials credentials = ServerCredentials()
+  cdef grpc_s2a_credentials_options *options = grpc_s2a_credentials_options_create()
+  grpc_s2a_credentials_options_set_handshaker_service_url(options, handshaker_service_url)
+  for supported_ciphersuite in supported_ciphersuites:
+    grpc_s2a_credentials_options_add_supported_ciphersuite(options, supported_ciphersuite)
+  for target_service_account in target_service_accounts:
+    grpc_s2a_credentials_options_add_target_service_account(options, target_service_account)
+  credentials.c_credentials = grpc_s2a_server_credentials_create(options)
+  grpc_s2a_credentials_options_destroy(options)
   return credentials

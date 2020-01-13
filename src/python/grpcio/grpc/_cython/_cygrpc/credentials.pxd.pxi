@@ -67,6 +67,21 @@ cdef class SSLChannelCredentials(ChannelCredentials):
 
   cdef grpc_channel_credentials *c(self) except *
 
+cdef class S2AChannelCredentials(ChannelCredentials):
+
+  cdef readonly object _handshaker_service_url
+  cdef readonly object _supported_ciphersuites
+  cdef readonly object _target_service_accounts
+
+  cdef grpc_channel_credentials *c(self) except *
+
+cdef class S2AServerCredentials(ServerCredentials):
+
+  cdef readonly object _handshaker_service_url
+  cdef readonly object _supported_ciphersuites
+  cdef readonly object _target_service_accounts
+
+  cdef grpc_server_credentials *c(self) except *
 
 cdef class CompositeChannelCredentials(ChannelCredentials):
 

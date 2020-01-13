@@ -1818,6 +1818,51 @@ def local_server_credentials(local_connect_type=LocalConnectionType.LOCAL_TCP):
     return ServerCredentials(
         _cygrpc.server_credentials_local(local_connect_type.value))
 
+@enum.unique
+class S2ACiphersuite(enum.Enum):
+  TLS_AES_128_GCM_SHA256 = _cygrpc.S2ACiphersuite.tls_aes_128_gcm_sha256
+  TLS_AES_256_GCM_SHA384 = _cygrpc.S2ACiphersuite.tls_aes_256_gcm_sha384
+  TLS_CHACHA20_POLY1305_SHA256 = _cygrpc.S2ACiphersuite.tls_chacha20_poly1305_sha256
+
+def s2a_channel_credentials(handshaker_service_url,
+                            supported_ciphersuites,
+                            target_service_accounts=None):
+  """Creates a ChannelCredentials for use with an S2A-enabled Channel.
+
+  Args:
+    handshaker_service_url: The url of the S2A handshaker service url.
+    supported_ciphersuites: An ordered list of S2ACiphersuite enums.
+    target_service_accounts: A list of target service accounts.
+
+  Returns:
+    A ChannelCredentials for use with an S2A-enable Channel.
+  """
+  if handshaker_service_url is None:
+    raise ValueError('A handshaker service url is required.')
+  elif not supported_ciphersuites:
+    raise ValueError('At least one supported ciphersuite is required.')
+  else:
+    return ChannelCredentials(_cygrpc.s2a_channel_credentials(handshaker_service_url, supported_ciphersuites, target_service_accounts))
+
+def s2a_server_credentials(handshaker_service_url,
+                           supported_ciphersuites,
+                           target_service_accounts=None):
+  """Creates a ServerCredentials for use with an S2A-enabled Server.
+
+  Args:
+    handshaker_service_url: The url of the S2A handshaker service url.
+    supported_ciphersuites: An ordered list of S2ACiphersuite enums.
+    target_service_accounts: A list of target service accounts.
+
+  Returns:
+    A ServerCredentials for use with an S2A-enable Server.
+  """
+  if handshaker_service_url is None:
+    raise ValueError('A handshaker service url is required.')
+  elif not supported_ciphersuites:
+    raise ValueError('At least one supported ciphersuite is required.')
+  else:
+    return ServerCredentials(_cygrpc.s2a_server_credentials(handshaker_service_url, supported_ciphersuites, target_service_accounts))
 
 def channel_ready_future(channel):
     """Creates a Future that tracks when a Channel is ready.

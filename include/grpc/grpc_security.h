@@ -707,16 +707,37 @@ namespace experimental {
  *  list of supported ciphersuites or target service accounts. The S2A client
  *  (channel) and server credentials will have their own implementation of this
  *  interface. The APIs listed in this header are thread-compatible. It is used
- *  for experimental purpose for now and subject to change. **/
+ *  for experimental purposes for now and subject to change. **/
 typedef struct grpc_s2a_credentials_options grpc_s2a_credentials_options;
 
 /** This method creates a grpc S2A credentials options instance.
- *  It is used for experimental purpose for now and subject to change. **/
+ *  It is used for experimental purposes for now and subject to change. **/
 GRPCAPI grpc_s2a_credentials_options* grpc_s2a_credentials_options_create(void);
+
+/** Set the handshaker service url field of |options| to and take ownership of
+ *  |handshaker_service_url|. Both parameters should not be NULL. It returns 1
+ *  on success and 0 on failure. It is used for experimental purposes for now
+ *  and subject to change. **/
+GRPCAPI int grpc_s2a_credentials_options_set_handshaker_service_url(
+    grpc_s2a_credentials_options* options, const char* handshaker_service_url);
+
+/** Add |ciphersuite| to the (ordered) list of supported ciphersuites in
+ *  |options|. The |options| argument should not be NULL. It returns 1 on
+ * success and 0 on failure. It is used for experimental purposes for now and
+ * subject to change. **/
+GRPCAPI int grpc_s2a_credentials_options_add_supported_ciphersuite(
+    grpc_s2a_credentials_options* options, grpc_s2a_ciphersuite ciphersuite);
+
+/** Add |target_service_account| to the target service account list of
+ * |options|, which takes ownership of |target_service_account|. Both parameters
+ * should not be NULL. It returns 1 on success and 0 on failure. It is used for
+ * experimental purposes for now and subject to change. **/
+GRPCAPI int grpc_s2a_credentials_options_add_target_service_account(
+    grpc_s2a_credentials_options* options, const char* target_service_account);
 
 /** This method destroys a grpc_s2a_credentials_options instance by
  *  de-allocating all of its occupied memory. It is used for experimental
- * purpose for now and subject to change.
+ *  purposes for now and subject to change.
  *  - options: a grpc_s2a_credentials_options instance that needs to be
  *   destroyed. **/
 GRPCAPI void grpc_s2a_credentials_options_destroy(
