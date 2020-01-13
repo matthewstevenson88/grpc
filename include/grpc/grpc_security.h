@@ -715,24 +715,22 @@ typedef struct grpc_s2a_credentials_options grpc_s2a_credentials_options;
 GRPCAPI grpc_s2a_credentials_options* grpc_s2a_credentials_options_create(void);
 
 /** Set the handshaker service url field of |options| to and take ownership of
- *  |handshaker_service_url|. Both parameters should not be NULL. It returns 1
- *  on success and 0 on failure. It is used for experimental purposes for now
- *  and subject to change. **/
-GRPCAPI int grpc_s2a_credentials_options_set_handshaker_service_url(
+ *  |handshaker_service_url|. Both parameters should not be NULL. It is used
+ *  for experimental purposes for now and subject to change. **/
+GRPCAPI void grpc_s2a_credentials_options_set_handshaker_service_url(
     grpc_s2a_credentials_options* options, const char* handshaker_service_url);
 
 /** Add |ciphersuite| to the (ordered) list of supported ciphersuites in
- *  |options|. The |options| argument should not be NULL. It returns 1 on
- * success and 0 on failure. It is used for experimental purposes for now and
- * subject to change. **/
-GRPCAPI int grpc_s2a_credentials_options_add_supported_ciphersuite(
+ *  |options|. The |options| argument should not be NULL. It is used for
+ *  experimental purposes for now and subject to change. **/
+GRPCAPI void grpc_s2a_credentials_options_add_supported_ciphersuite(
     grpc_s2a_credentials_options* options, grpc_s2a_ciphersuite ciphersuite);
 
 /** Add |target_service_account| to the target service account list of
- * |options|, which takes ownership of |target_service_account|. Both parameters
- * should not be NULL. It returns 1 on success and 0 on failure. It is used for
- * experimental purposes for now and subject to change. **/
-GRPCAPI int grpc_s2a_credentials_options_add_target_service_account(
+ *  |options|, which takes ownership of |target_service_account|. Both
+ * parameters should not be NULL. It is used for experimental purposes for now
+ * and subject to change. **/
+GRPCAPI void grpc_s2a_credentials_options_add_target_service_account(
     grpc_s2a_credentials_options* options, const char* target_service_account);
 
 /** This method destroys a grpc_s2a_credentials_options instance by

@@ -135,6 +135,9 @@ EXPORTS
     grpc_local_credentials_create
     grpc_local_server_credentials_create
     grpc_s2a_credentials_options_create
+    grpc_s2a_credentials_options_set_handshaker_service_url
+    grpc_s2a_credentials_options_add_supported_ciphersuite
+    grpc_s2a_credentials_options_add_target_service_account
     grpc_s2a_credentials_options_destroy
     grpc_s2a_credentials_create
     grpc_s2a_server_credentials_create

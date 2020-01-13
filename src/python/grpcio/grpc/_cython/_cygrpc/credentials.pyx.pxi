@@ -165,13 +165,13 @@ cdef class S2AChannelCredentials(ChannelCredentials):
     self._target_service_accounts = target_service_accounts
 
   cdef grpc_channel_credentials *c(self) except *:
-    cdef grpc_s2a_credentials_options *options = grpc_s2a_credentials_options_create()'
+    cdef grpc_s2a_credentials_options *options = grpc_s2a_credentials_options_create()
     grpc_s2a_credentials_options_set_handshaker_service_url(options, self._handshaker_service_url)
     for supported_ciphersuite in self._supported_ciphersuites:
       grpc_s2a_credentials_options_add_supported_ciphersuite(options, supported_ciphersuite)
     for target_service_account in self._target_service_accounts:
       grpc_s2a_credentials_options_add_target_service_account(options, target_service_account)
-    grpc_channel_credentials *creds = grpc_s2a_credentials_create(options)
+    creds = grpc_s2a_credentials_create(options)
     grpc_s2a_credentials_options_destroy(options)
     return creds
 

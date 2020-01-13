@@ -599,6 +599,22 @@ cdef extern from "grpc/grpc_security.h":
   grpc_server_credentials *grpc_local_server_credentials_create(
     grpc_local_connect_type type)
 
+  ctypedef struct grpc_s2a_credentials_options:
+    pass
+
+  grpc_s2a_credentials_options *grpc_s2a_credentials_options_create()
+
+  void grpc_s2a_credentials_options_set_handshaker_service_url(grpc_s2a_credentials_options *options, const char *handshaker_service_url)
+
+  void grpc_s2a_credentials_options_add_supported_ciphersuite(grpc_s2a_credentials_options *options, grpc_s2a_ciphersuite ciphersuite)
+
+  void grpc_s2a_credentials_options_add_target_service_account(grpc_s2a_credentials_options *options, const char *target_service_account)
+
+  void grpc_s2a_credentials_options_destroy(grpc_s2a_credentials_options *options)
+
+  grpc_channel_credentials *grpc_s2a_credentials_create(const grpc_s2a_credentials_options *options)
+
+  grpc_server_credentials *grpc_s2a_server_credentials_create(const grpc_s2a_credentials_options *options)
 
 cdef extern from "grpc/compression.h":
 
@@ -646,3 +662,9 @@ cdef extern from "grpc/grpc_security_constants.h":
   ctypedef enum grpc_local_connect_type:
     UDS
     LOCAL_TCP
+
+  ctypedef enum grpc_s2a_ciphersuite:
+    TLS_AES_128_GCM_SHA256
+    TLS_AES_256_GCM_SHA384
+    TLS_CHACHA20_POLY1305_SHA256
+

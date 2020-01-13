@@ -83,6 +83,45 @@ grpc_s2a_credentials_options* grpc_s2a_credentials_options_create(void) {
   return new grpc_s2a_credentials_options();
 }
 
+void grpc_s2a_credentials_options_set_handshaker_service_url(
+    grpc_s2a_credentials_options* options, const char* handshaker_service_url) {
+  if (options == nullptr) {
+    return;
+  }
+  options->set_handshaker_service_url(handshaker_service_url);
+}
+
+void grpc_s2a_credentials_options_add_supported_ciphersuite(
+    grpc_s2a_credentials_options* options, grpc_s2a_ciphersuite ciphersuite) {
+  if (options == nullptr) {
+    return;
+  }
+  uint16_t supported_ciphersuite = 0;
+  switch (ciphersuite) {
+    case TLS_AES_128_GCM_SHA256:
+      supported_ciphersuite = kTlsAes128GcmSha256;
+      break;
+    case TLS_AES_256_GCM_SHA384:
+      supported_ciphersuite = kTlsAes256GcmSha384;
+      break;
+    case TLS_CHACHA20_POLY1305_SHA256:
+      supported_ciphersuite = kTlsChacha20Poly1305Sha256;
+      break;
+    default:
+      gpr_log(GPR_ERROR, "Tls ciphersuite not supported.");
+      return;
+  }
+  options->add_supported_ciphersuite(supported_ciphersuite);
+}
+
+void grpc_s2a_credentials_options_add_target_service_account(
+    grpc_s2a_credentials_options* options, const char* target_service_account) {
+  if (options == nullptr) {
+    return;
+  }
+  options->add_target_service_account(target_service_account);
+}
+
 void grpc_s2a_credentials_options_destroy(
     grpc_s2a_credentials_options* options) {
   if (options == nullptr) {

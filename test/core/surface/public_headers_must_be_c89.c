@@ -200,6 +200,9 @@ int main(int argc, char **argv) {
   printf("%lx", (unsigned long) grpc_local_credentials_create);
   printf("%lx", (unsigned long) grpc_local_server_credentials_create);
   printf("%lx", (unsigned long) grpc_s2a_credentials_options_create);
+  printf("%lx", (unsigned long) grpc_s2a_credentials_options_set_handshaker_service_url);
+  printf("%lx", (unsigned long) grpc_s2a_credentials_options_add_supported_ciphersuite);
+  printf("%lx", (unsigned long) grpc_s2a_credentials_options_add_target_service_account);
   printf("%lx", (unsigned long) grpc_s2a_credentials_options_destroy);
   printf("%lx", (unsigned long) grpc_s2a_credentials_create);
   printf("%lx", (unsigned long) grpc_s2a_server_credentials_create);
