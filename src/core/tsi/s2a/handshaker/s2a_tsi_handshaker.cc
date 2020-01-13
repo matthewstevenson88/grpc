@@ -172,8 +172,8 @@ static tsi_result s2a_tsi_handshaker_continue_handshaker_next(
   return ok;
 }
 
-static void s2a_tsi_handshaker_create_channel(void* arg,
-                                              grpc_error* unused_error) {
+static void s2a_tsi_handshaker_create_channel_and_continue_handshaker_next(
+    void* arg, grpc_error* unused_error) {
   GPR_ASSERT(arg != nullptr);
   s2a_tsi_handshaker_continue_handshaker_next_args* next_args =
       static_cast<s2a_tsi_handshaker_continue_handshaker_next_args*>(arg);
@@ -223,8 +223,10 @@ static tsi_result handshaker_next(
     }
     args->cb = cb;
     args->user_data = user_data;
-    GRPC_CLOSURE_INIT(&args->closure, s2a_tsi_handshaker_create_channel, args,
-                      grpc_schedule_on_exec_ctx);
+    GRPC_CLOSURE_INIT(
+        &args->closure,
+        s2a_tsi_handshaker_create_channel_and_continue_handshaker_next, args,
+        grpc_schedule_on_exec_ctx);
     grpc_core::ExecCtx::Run(DEBUG_LOCATION, &args->closure, GRPC_ERROR_NONE);
   } else {
     tsi_result ok = s2a_tsi_handshaker_continue_handshaker_next(

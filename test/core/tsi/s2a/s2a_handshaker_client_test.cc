@@ -240,15 +240,15 @@ class S2AHandshakerClientTest : public Test {
     char* error_details = nullptr;
     tsi_result client_handshaker_result = s2a_tsi_handshaker_create(
         options_, kS2AHandshakerClientTestTargetName, /*is_client=*/true,
-        /*interested_parties=*/nullptr, /*is_test=*/true, &client_tsi_handshaker_,
-        &error_details);
+        /*interested_parties=*/nullptr, /*is_test=*/true,
+        &client_tsi_handshaker_, &error_details);
     EXPECT_EQ(client_handshaker_result, TSI_OK);
     EXPECT_EQ(error_details, nullptr);
 
     tsi_result server_handshaker_result = s2a_tsi_handshaker_create(
         options_, kS2AHandshakerClientTestTargetName, /*is_client=*/false,
-        /*interested_parties=*/nullptr, /*is_test=*/true, &server_tsi_handshaker_,
-        &error_details);
+        /*interested_parties=*/nullptr, /*is_test=*/true,
+        &server_tsi_handshaker_, &error_details);
     EXPECT_EQ(server_handshaker_result, TSI_OK);
     EXPECT_EQ(error_details, nullptr);
 
