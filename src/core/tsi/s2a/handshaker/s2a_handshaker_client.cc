@@ -27,6 +27,7 @@
 #include "src/core/lib/surface/call.h"
 #include "src/core/lib/surface/channel.h"
 #include "src/core/tsi/s2a/handshaker/s2a_handshaker_util.h"
+#include "src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.h"
 #include "src/core/tsi/s2a/s2a_constants.h"
 #include "src/proto/grpc/gcp/s2a.upb.h"
 
@@ -86,6 +87,9 @@ grpc_byte_buffer* S2AHandshakerClient::SerializedStartClient() {
 }
 
 tsi_result S2AHandshakerClient::ClientStart() {
+  if (is_test_ && client_start_ != nullptr) {
+    return client_start_(this);
+  }
   grpc_byte_buffer* buffer = SerializedStartClient();
   if (buffer == nullptr) {
     gpr_log(GPR_ERROR, kS2AGetSerializedStartClientFailed);
@@ -134,6 +138,9 @@ grpc_byte_buffer* S2AHandshakerClient::SerializedStartServer(
 
 tsi_result S2AHandshakerClient::ServerStart(grpc_slice* bytes_received) {
   GPR_ASSERT(bytes_received != nullptr);
+  if (is_test_ && server_start_ != nullptr) {
+    return server_start_(this, bytes_received);
+  }
   grpc_byte_buffer* buffer = SerializedStartServer(bytes_received);
   if (buffer == nullptr) {
     gpr_log(GPR_ERROR, kS2AGetSerializedStartServerFailed);
@@ -163,6 +170,9 @@ grpc_byte_buffer* S2AHandshakerClient::SerializedNext(
 
 tsi_result S2AHandshakerClient::Next(grpc_slice* bytes_received) {
   GPR_ASSERT(bytes_received != nullptr);
+  if (is_test_ && next_ != nullptr) {
+    return next_(this, bytes_received);
+  }
   grpc_slice_unref_internal(recv_bytes_);
   recv_bytes_ = grpc_slice_ref_internal(*bytes_received);
   grpc_byte_buffer* buffer = SerializedNext(bytes_received);
@@ -204,6 +214,7 @@ S2AHandshakerClient::S2AHandshakerClient(
     grpc_iomgr_cb_func grpc_cb, tsi_handshaker_on_next_done_cb cb,
     void* user_data, bool is_client, bool is_test)
     : handshaker_(handshaker),
+      channel_(channel),
       cb_(cb),
       user_data_(user_data),
       send_buffer_(nullptr),
@@ -245,7 +256,7 @@ tsi_result S2AHandshakerClientCreate(
     grpc_iomgr_cb_func grpc_cb, tsi_handshaker_on_next_done_cb cb,
     void* user_data, bool is_client, bool is_test,
     S2AHandshakerClient** client) {
-  if (channel == nullptr || client == nullptr ||
+  if (channel == nullptr || client == nullptr || options == nullptr ||
       options->handshaker_service_url().empty()) {
     gpr_log(GPR_ERROR, kS2AHandshakerClientNullptrArguments);
     return TSI_INVALID_ARGUMENT;
@@ -285,16 +296,18 @@ void S2AHandshakerClient::Unref() {
     gpr_free(buffer_);
     grpc_slice_unref_internal(handshake_status_details_);
     gpr_mu_destroy(&mu_);
+    delete this;
   }
 }
 
-S2AHandshakerClient::~S2AHandshakerClient() { Unref(); }
+S2AHandshakerClient::~S2AHandshakerClient() {}
 
 void S2AHandshakerClientDestroy(S2AHandshakerClient* client) {
   if (client == nullptr) {
     return;
   }
-  delete client;
+  // delete client;
+  client->Unref();
 }
 
 /** ------------------- Testing methods. -------------------------- **/
@@ -336,6 +349,97 @@ void s2a_handshaker_client_on_status_received_for_testing(
     return;
   }
   client->on_status_received_for_testing(status, error);
+}
+
+void S2AHandshakerClient::SetFieldsForTesting(s2a_tsi_handshaker* handshaker,
+                                              tsi_handshaker_on_next_done_cb cb,
+                                              void* user_data,
+                                              grpc_byte_buffer* recv_buffer,
+                                              grpc_status_code status) {
+  if (!is_test_) {
+    return;
+  }
+  handshaker_ = handshaker;
+  cb_ = cb;
+  user_data_ = user_data;
+  recv_buffer_ = recv_buffer;
+  status_ = status;
+}
+
+void S2AHandshakerClient::CheckFieldsForTesting(
+    tsi_handshaker_on_next_done_cb cb, void* user_data,
+    bool has_sent_start_message, grpc_slice* recv_bytes) {
+  if (!is_test_) {
+    return;
+  }
+  GPR_ASSERT(cb_ = cb);
+  GPR_ASSERT(user_data_ == user_data);
+  GPR_ASSERT(handshaker_ != nullptr);
+  GPR_ASSERT(s2a_tsi_handshaker_has_sent_start_message_for_testing(
+                 handshaker_) == has_sent_start_message);
+  if (recv_bytes != nullptr) {
+    GPR_ASSERT(grpc_slice_cmp(recv_bytes_, *recv_bytes) == 0);
+  }
+}
+
+s2a_tsi_handshaker* S2AHandshakerClient::handshaker_for_testing() {
+  if (!is_test_) {
+    return nullptr;
+  }
+  return handshaker_;
+}
+
+bool S2AHandshakerClient::is_client_for_testing() {
+  if (!is_test_) {
+    return false;
+  }
+  return is_client_;
+}
+
+void S2AHandshakerClient::set_cb_for_testing(
+    tsi_handshaker_on_next_done_cb cb) {
+  if (!is_test_) {
+    return;
+  }
+  cb_ = cb;
+}
+
+void S2AHandshakerClient::set_recv_bytes_for_testing(grpc_slice* recv_bytes) {
+  if (!is_test_) {
+    return;
+  }
+  GPR_ASSERT(recv_bytes != nullptr);
+  recv_bytes_ = grpc_slice_ref_internal(*recv_bytes);
+}
+
+void S2AHandshakerClient::ref_for_testing() {
+  if (!is_test_) {
+    return;
+  }
+  gpr_ref(refs_);
+}
+
+void S2AHandshakerClient::set_mock_client_start_for_testing(
+    s2a_mock_client_start client_start) {
+  if (!is_test_) {
+    return;
+  }
+  client_start_ = client_start;
+}
+
+void S2AHandshakerClient::set_mock_server_start_for_testing(
+    s2a_mock_server_start server_start) {
+  if (!is_test_) {
+    return;
+  }
+  server_start_ = server_start;
+}
+
+void S2AHandshakerClient::set_mock_next_for_testing(s2a_mock_next next) {
+  if (!is_test_) {
+    return;
+  }
+  next_ = next;
 }
 
 }  // namespace experimental

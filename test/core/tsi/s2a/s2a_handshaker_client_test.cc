@@ -203,7 +203,7 @@ static grpc_call_error check_next_success(grpc_call* /*call*/,
   upb_strview in_bytes = s2a_SessionNextReq_in_bytes(next);
   GPR_ASSERT(upb_strview_eql(
       in_bytes, upb_strview_makez(kS2AHandshakerClientTestOutFrame)));
-  GPR_ASSERT(validate_op(client, op, nops, false /* is_start */));
+  GPR_ASSERT(validate_op(client, op, nops, /*is_start=*/false));
   return GRPC_CALL_OK;
 }
 
@@ -240,15 +240,15 @@ class S2AHandshakerClientTest : public Test {
     char* error_details = nullptr;
     tsi_result client_handshaker_result = s2a_tsi_handshaker_create(
         options_, kS2AHandshakerClientTestTargetName, /*is_client=*/true,
-        /*interested_parties=*/nullptr, &client_tsi_handshaker_,
-        &error_details);
+        /*interested_parties=*/nullptr, /*is_test=*/true,
+        &client_tsi_handshaker_, &error_details);
     EXPECT_EQ(client_handshaker_result, TSI_OK);
     EXPECT_EQ(error_details, nullptr);
 
     tsi_result server_handshaker_result = s2a_tsi_handshaker_create(
         options_, kS2AHandshakerClientTestTargetName, /*is_client=*/false,
-        /*interested_parties=*/nullptr, &server_tsi_handshaker_,
-        &error_details);
+        /*interested_parties=*/nullptr, /*is_test=*/true,
+        &server_tsi_handshaker_, &error_details);
     EXPECT_EQ(server_handshaker_result, TSI_OK);
     EXPECT_EQ(error_details, nullptr);
 

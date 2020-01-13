@@ -305,7 +305,7 @@ grpc_status_code s2a_crypter_create(
     *error_details = gpr_strdup(kS2ACreateNullptr);
     return GRPC_STATUS_FAILED_PRECONDITION;
   }
-  if (tls_version != 0) {
+  if (tls_version != 1) {
     *error_details = gpr_strdup(kS2AUnsupportedTlsVersion);
     return GRPC_STATUS_FAILED_PRECONDITION;
   }

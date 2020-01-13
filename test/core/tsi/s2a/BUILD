@@ -85,6 +85,7 @@ grpc_cc_test(
     language = "C++",
     deps = [
         "//:s2a_constants",
+        ":s2a_test_data",
         ":s2a_test_util",
         "//:gpr",
         "//:grpc",
@@ -97,6 +98,19 @@ grpc_cc_test(
     srcs = ["s2a_handshaker_client_test.cc"],
     language = "C++",
     external_deps = ["gtest"],
+    deps = [
+        "//:s2a_constants",
+        ":s2a_test_util",
+        "//:gpr",
+        "//:grpc",
+        "//:tsi",
+    ],
+)
+
+grpc_cc_test(
+    name = "s2a_mock_handshake_test",
+    srcs = ["s2a_mock_handshake_test.cc"],
+    language = "C++",
     deps = [
         "//:s2a_constants",
         ":s2a_test_util",

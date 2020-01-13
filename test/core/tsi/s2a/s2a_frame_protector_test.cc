@@ -79,11 +79,11 @@ class S2AFrameProtectorTest : public TestWithParam<uint16_t> {
     }
     bool is_chacha_poly = (GetParam() == kTlsChacha20Poly1305Sha256);
     tsi_result expected_result = is_chacha_poly ? TSI_UNIMPLEMENTED : TSI_OK;
-    EXPECT_EQ(
-        s2a_zero_copy_grpc_protector_create(
-            /* TLS 1.3=*/0, GetParam(), traffic_secret, traffic_secret_size,
-            traffic_secret, traffic_secret_size, channel_, &protector_),
-        expected_result);
+    EXPECT_EQ(s2a_zero_copy_grpc_protector_create(
+                  /*TLS 1.3=*/1, GetParam(), traffic_secret,
+                  traffic_secret_size, traffic_secret, traffic_secret_size,
+                  channel_, /*max_protected_frame_size=*/nullptr, &protector_),
+              expected_result);
     if (is_chacha_poly) {
       return false;
     }
@@ -129,42 +129,45 @@ TEST_P(S2AFrameProtectorTest, Create) {
   /** Attempt to create an s2a_zero_copy_grpc_protector instance using
    *  nullptr arguments. **/
   tsi_result create_result = s2a_zero_copy_grpc_protector_create(
-      /* tls_version=*/0, GetParam(), traffic_secret, traffic_secret_size,
-      traffic_secret, traffic_secret_size, channel_, /* protector=*/nullptr);
+      /*tls_version=*/1, GetParam(), traffic_secret, traffic_secret_size,
+      traffic_secret, traffic_secret_size, channel_,
+      /*max_protected_frame_size=*/nullptr, /*protector=*/nullptr);
   EXPECT_EQ(create_result, TSI_INVALID_ARGUMENT);
 
   create_result = s2a_zero_copy_grpc_protector_create(
-      /* tls_version=*/0, GetParam(), /* in_traffic_secret=*/nullptr,
+      /*tls_version=*/1, GetParam(), /*in_traffic_secret=*/nullptr,
       traffic_secret_size, traffic_secret, traffic_secret_size, channel_,
-      &protector_);
+      /*max_protected_frame_size=*/nullptr, &protector_);
   EXPECT_EQ(create_result, TSI_INVALID_ARGUMENT);
 
   create_result = s2a_zero_copy_grpc_protector_create(
-      /* tls_version=*/0, GetParam(), traffic_secret, traffic_secret_size,
-      /* out_traffic_secret=*/nullptr, traffic_secret_size, channel_,
-      &protector_);
+      /*tls_version=*/1, GetParam(), traffic_secret, traffic_secret_size,
+      /*out_traffic_secret=*/nullptr, traffic_secret_size, channel_,
+      /*max_protected_frame_size=*/nullptr, &protector_);
   EXPECT_EQ(create_result, TSI_INVALID_ARGUMENT);
 
   create_result = s2a_zero_copy_grpc_protector_create(
-      /* tls_version=*/0, GetParam(), traffic_secret, traffic_secret_size,
+      /*tls_version=*/1, GetParam(), traffic_secret, traffic_secret_size,
       traffic_secret, traffic_secret_size,
-      /* channel=*/nullptr, &protector_);
+      /*channel=*/nullptr, /*max_protected_frame_size=*/nullptr, &protector_);
   EXPECT_EQ(create_result, TSI_INVALID_ARGUMENT);
   EXPECT_EQ(protector_, nullptr);
 
   /** Attempt to create an s2a_zero_copy_grpc_protector instance using
    *  an invalid TLS version. **/
   create_result = s2a_zero_copy_grpc_protector_create(
-      /* tls_version=*/1, GetParam(), traffic_secret, traffic_secret_size,
-      traffic_secret, traffic_secret_size, channel_, &protector_);
+      /*tls_version=*/0, GetParam(), traffic_secret, traffic_secret_size,
+      traffic_secret, traffic_secret_size, channel_,
+      /*max_protected_frame_size=*/nullptr, &protector_);
   EXPECT_EQ(create_result, TSI_FAILED_PRECONDITION);
   EXPECT_EQ(protector_, nullptr);
 
   /** Attempt to create an s2a_zero_copy_grpc_protector instance using
    *  incorrect key sizes. **/
   create_result = s2a_zero_copy_grpc_protector_create(
-      /* tls_version=*/0, GetParam(), traffic_secret, traffic_secret_size,
-      traffic_secret, traffic_secret_size + 1, channel_, &protector_);
+      /* tls_version=*/1, GetParam(), traffic_secret, traffic_secret_size,
+      traffic_secret, traffic_secret_size + 1, channel_,
+      /*max_protected_frame_size=*/nullptr, &protector_);
   if (GetParam() == kTlsChacha20Poly1305Sha256) {
     EXPECT_EQ(create_result, TSI_UNIMPLEMENTED);
   } else {
@@ -173,15 +176,17 @@ TEST_P(S2AFrameProtectorTest, Create) {
   EXPECT_EQ(protector_, nullptr);
 
   create_result = s2a_zero_copy_grpc_protector_create(
-      /* tls_version=*/0, GetParam(), traffic_secret, traffic_secret_size + 1,
-      traffic_secret, traffic_secret_size, channel_, &protector_);
+      /* tls_version=*/1, GetParam(), traffic_secret, traffic_secret_size + 1,
+      traffic_secret, traffic_secret_size, channel_,
+      /*max_protected_frame_size=*/nullptr, &protector_);
   EXPECT_EQ(create_result, TSI_FAILED_PRECONDITION);
   EXPECT_EQ(protector_, nullptr);
 
   /** Successfully create an s2a_zero_copy_grpc_protector instance. **/
   create_result = s2a_zero_copy_grpc_protector_create(
-      /* tls_version=*/0, GetParam(), traffic_secret, traffic_secret_size,
-      traffic_secret, traffic_secret_size, channel_, &protector_);
+      /* tls_version=*/1, GetParam(), traffic_secret, traffic_secret_size,
+      traffic_secret, traffic_secret_size, channel_,
+      /*max_protected_frame_size=*/nullptr, &protector_);
   if (GetParam() == kTlsChacha20Poly1305Sha256) {
     /** The CHACHA-POLY ciphersuite is not yet supported. **/
     EXPECT_EQ(create_result, TSI_UNIMPLEMENTED);

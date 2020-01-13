@@ -19,6 +19,13 @@
 #ifndef GRPC_CORE_TSI_S2A_S2A_CONSTANTS_H
 #define GRPC_CORE_TSI_S2A_S2A_CONSTANTS_H
 
+/** The constants used for the TSI peer properties. **/
+constexpr char kGrpcS2ATransportSecurityType[] = "S2A";
+constexpr size_t kTsiS2ANumOfPeerProperties = 2;
+constexpr char kTsiS2ACertificateType[] = "S2A";
+constexpr char kTsiS2AContext[] = "s2a_context";
+constexpr char kTsiS2AServiceAccountPeerProperty[] = "service_account";
+
 /** The following constants are ciphersuite-specific data. **/
 constexpr size_t kEvpAeadAesGcmTagLength = 16;
 constexpr size_t kEvpAeadMaxKeyLength = 80;
@@ -66,7 +73,7 @@ constexpr size_t kS2AMaxFrameSize =
     /*record_header=*/5 + /*max_plaintext_size=*/16 * 1024 + /*tag=*/16;
 
 /** The URL of the S2A handshaker service for testing purposes. **/
-constexpr char kS2AHandshakerServiceUrlForTesting[] = "testing";
+constexpr char kS2AHandshakerServiceUrlForTesting[] = "lame";
 
 /** S2A error messages. **/
 constexpr char kS2AUnsupportedTlsVersion[] =
