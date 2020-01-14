@@ -815,6 +815,7 @@ if(gRPC_BUILD_TESTS)
   add_dependencies(buildtests_cxx ref_counted_ptr_test)
   add_dependencies(buildtests_cxx ref_counted_test)
   add_dependencies(buildtests_cxx retry_throttle_test)
+  add_dependencies(buildtests_cxx s2a_auth_context_test)
   add_dependencies(buildtests_cxx s2a_credentials_test)
   add_dependencies(buildtests_cxx s2a_frame_protector_test)
   add_dependencies(buildtests_cxx s2a_handshaker_client_test)
@@ -1332,6 +1333,7 @@ add_library(grpc
   src/core/lib/security/security_connector/load_system_roots_fallback.cc
   src/core/lib/security/security_connector/load_system_roots_linux.cc
   src/core/lib/security/security_connector/local/local_security_connector.cc
+  src/core/lib/security/security_connector/s2a/s2a_auth_context.cc
   src/core/lib/security/security_connector/s2a/s2a_security_connector.cc
   src/core/lib/security/security_connector/security_connector.cc
   src/core/lib/security/security_connector/ssl/ssl_security_connector.cc
@@ -1860,6 +1862,7 @@ add_library(grpc_cronet
   src/core/lib/security/security_connector/load_system_roots_fallback.cc
   src/core/lib/security/security_connector/load_system_roots_linux.cc
   src/core/lib/security/security_connector/local/local_security_connector.cc
+  src/core/lib/security/security_connector/s2a/s2a_auth_context.cc
   src/core/lib/security/security_connector/s2a/s2a_security_connector.cc
   src/core/lib/security/security_connector/security_connector.cc
   src/core/lib/security/security_connector/ssl/ssl_security_connector.cc
@@ -2020,6 +2023,7 @@ add_library(grpc_test_util
   test/core/end2end/data/server1_key.cc
   test/core/end2end/data/test_root_cert.cc
   test/core/security/oauth2_utils.cc
+  test/core/security/tsi_auth_context_util.cc
   test/core/tsi/s2a/s2a_test_util.cc
   src/core/ext/filters/client_channel/resolver/fake/fake_resolver.cc
   test/core/end2end/cq_verifier.cc
@@ -10202,6 +10206,7 @@ target_link_libraries(alts_security_connector_test
   ${_gRPC_ALLTARGETS_LIBRARIES}
   gpr
   grpc
+  grpc_test_util
   ${_gRPC_GFLAGS_LIBRARIES}
 )
 
@@ -14828,6 +14833,42 @@ target_link_libraries(retry_throttle_test
   grpc_test_util
   grpc
   gpr
+  ${_gRPC_GFLAGS_LIBRARIES}
+)
+
+
+endif()
+if(gRPC_BUILD_TESTS)
+
+add_executable(s2a_auth_context_test
+  test/core/security/s2a_auth_context_test.cc
+  third_party/googletest/googletest/src/gtest-all.cc
+  third_party/googletest/googlemock/src/gmock-all.cc
+)
+
+target_include_directories(s2a_auth_context_test
+  PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${_gRPC_ADDRESS_SORTING_INCLUDE_DIR}
+    ${_gRPC_SSL_INCLUDE_DIR}
+    ${_gRPC_UPB_GENERATED_DIR}
+    ${_gRPC_UPB_GRPC_GENERATED_DIR}
+    ${_gRPC_UPB_INCLUDE_DIR}
+    ${_gRPC_ZLIB_INCLUDE_DIR}
+    third_party/googletest/googletest/include
+    third_party/googletest/googletest
+    third_party/googletest/googlemock/include
+    third_party/googletest/googlemock
+    ${_gRPC_PROTO_GENS_DIR}
+)
+
+target_link_libraries(s2a_auth_context_test
+  ${_gRPC_PROTOBUF_LIBRARIES}
+  ${_gRPC_ALLTARGETS_LIBRARIES}
+  gpr
+  grpc
+  grpc_test_util
   ${_gRPC_GFLAGS_LIBRARIES}
 )
 

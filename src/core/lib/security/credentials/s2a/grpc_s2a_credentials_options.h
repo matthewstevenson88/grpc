@@ -48,6 +48,7 @@ struct grpc_s2a_credentials_options {
    *  does not remove duplicates from the vector, if they exist. See
    *  src/core/tsi/s2a/s2a_constants.h for the ciphersuite constants. **/
   void add_supported_ciphersuite(uint16_t ciphersuite);
+
   /** This API should only be called at the client-side, and any target service
    *  accounts that are added on the server-side will be ignored. This method
    *  adds a target service account to the vector

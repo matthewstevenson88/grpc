@@ -372,6 +372,7 @@ if test "$PHP_GRPC" != "no"; then
     src/core/lib/security/security_connector/load_system_roots_fallback.cc \
     src/core/lib/security/security_connector/load_system_roots_linux.cc \
     src/core/lib/security/security_connector/local/local_security_connector.cc \
+    src/core/lib/security/security_connector/s2a/s2a_auth_context.cc \
     src/core/lib/security/security_connector/s2a/s2a_security_connector.cc \
     src/core/lib/security/security_connector/security_connector.cc \
     src/core/lib/security/security_connector/ssl/ssl_security_connector.cc \

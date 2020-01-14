@@ -1292,6 +1292,7 @@ filegroups:
   - src/core/lib/security/security_connector/load_system_roots.h
   - src/core/lib/security/security_connector/load_system_roots_linux.h
   - src/core/lib/security/security_connector/local/local_security_connector.h
+  - src/core/lib/security/security_connector/s2a/s2a_auth_context.h
   - src/core/lib/security/security_connector/s2a/s2a_security_connector.h
   - src/core/lib/security/security_connector/security_connector.h
   - src/core/lib/security/security_connector/ssl/ssl_security_connector.h
@@ -1330,6 +1331,7 @@ filegroups:
   - src/core/lib/security/security_connector/load_system_roots_fallback.cc
   - src/core/lib/security/security_connector/load_system_roots_linux.cc
   - src/core/lib/security/security_connector/local/local_security_connector.cc
+  - src/core/lib/security/security_connector/s2a/s2a_auth_context.cc
   - src/core/lib/security/security_connector/s2a/s2a_security_connector.cc
   - src/core/lib/security/security_connector/security_connector.cc
   - src/core/lib/security/security_connector/ssl/ssl_security_connector.cc
@@ -1795,6 +1797,7 @@ libs:
   headers:
   - test/core/end2end/data/ssl_test_data.h
   - test/core/security/oauth2_utils.h
+  - test/core/security/tsi_auth_context_util.h
   - test/core/tsi/s2a/s2a_test_data.h
   - test/core/tsi/s2a/s2a_test_util.h
   src:
@@ -1803,6 +1806,7 @@ libs:
   - test/core/end2end/data/server1_key.cc
   - test/core/end2end/data/test_root_cert.cc
   - test/core/security/oauth2_utils.cc
+  - test/core/security/tsi_auth_context_util.cc
   - test/core/tsi/s2a/s2a_test_util.cc
   deps:
   - gpr
@@ -4041,6 +4045,7 @@ targets:
   deps:
   - gpr
   - grpc
+  - grpc_test_util
 - name: alts_tsi_handshaker_test
   build: test
   language: c++
@@ -5689,7 +5694,18 @@ targets:
   - grpc
   - gpr
   uses_polling: false
+- name: s2a_auth_context_test
+  gtest: true
+  build: test
+  language: c++
+  src:
+  - test/core/security/s2a_auth_context_test.cc
+  deps:
+  - gpr
+  - grpc
+  - grpc_test_util
 - name: s2a_credentials_test
+  gtest: true
   build: test
   language: c++
   src:
@@ -5735,6 +5751,7 @@ targets:
   - gpr
   - grpc
 - name: s2a_security_connector_test
+  gtest: true
   build: test
   language: c++
   src:

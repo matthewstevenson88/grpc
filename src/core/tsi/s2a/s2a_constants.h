@@ -21,7 +21,7 @@
 
 /** The constants used for the TSI peer properties. **/
 constexpr char kGrpcS2ATransportSecurityType[] = "S2A";
-constexpr size_t kTsiS2ANumOfPeerProperties = 2;
+constexpr size_t kTsiS2ANumOfPeerProperties = 3;
 constexpr char kTsiS2ACertificateType[] = "S2A";
 constexpr char kTsiS2AContext[] = "s2a_context";
 constexpr char kTsiS2AServiceAccountPeerProperty[] = "service_account";

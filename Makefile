@@ -1277,6 +1277,7 @@ reconnect_interop_server: $(BINDIR)/$(CONFIG)/reconnect_interop_server
 ref_counted_ptr_test: $(BINDIR)/$(CONFIG)/ref_counted_ptr_test
 ref_counted_test: $(BINDIR)/$(CONFIG)/ref_counted_test
 retry_throttle_test: $(BINDIR)/$(CONFIG)/retry_throttle_test
+s2a_auth_context_test: $(BINDIR)/$(CONFIG)/s2a_auth_context_test
 s2a_credentials_test: $(BINDIR)/$(CONFIG)/s2a_credentials_test
 s2a_frame_protector_test: $(BINDIR)/$(CONFIG)/s2a_frame_protector_test
 s2a_handshaker_client_test: $(BINDIR)/$(CONFIG)/s2a_handshaker_client_test
@@ -1754,6 +1755,7 @@ buildtests_cxx: privatelibs_cxx \
   $(BINDIR)/$(CONFIG)/ref_counted_ptr_test \
   $(BINDIR)/$(CONFIG)/ref_counted_test \
   $(BINDIR)/$(CONFIG)/retry_throttle_test \
+  $(BINDIR)/$(CONFIG)/s2a_auth_context_test \
   $(BINDIR)/$(CONFIG)/s2a_credentials_test \
   $(BINDIR)/$(CONFIG)/s2a_frame_protector_test \
   $(BINDIR)/$(CONFIG)/s2a_handshaker_client_test \
@@ -1936,6 +1938,7 @@ buildtests_cxx: privatelibs_cxx \
   $(BINDIR)/$(CONFIG)/ref_counted_ptr_test \
   $(BINDIR)/$(CONFIG)/ref_counted_test \
   $(BINDIR)/$(CONFIG)/retry_throttle_test \
+  $(BINDIR)/$(CONFIG)/s2a_auth_context_test \
   $(BINDIR)/$(CONFIG)/s2a_credentials_test \
   $(BINDIR)/$(CONFIG)/s2a_frame_protector_test \
   $(BINDIR)/$(CONFIG)/s2a_handshaker_client_test \
@@ -2466,6 +2469,8 @@ test_cxx: buildtests_cxx
 	$(Q) $(BINDIR)/$(CONFIG)/ref_counted_test || ( echo test ref_counted_test failed ; exit 1 )
 	$(E) "[RUN]     Testing retry_throttle_test"
 	$(Q) $(BINDIR)/$(CONFIG)/retry_throttle_test || ( echo test retry_throttle_test failed ; exit 1 )
+	$(E) "[RUN]     Testing s2a_auth_context_test"
+	$(Q) $(BINDIR)/$(CONFIG)/s2a_auth_context_test || ( echo test s2a_auth_context_test failed ; exit 1 )
 	$(E) "[RUN]     Testing s2a_credentials_test"
 	$(Q) $(BINDIR)/$(CONFIG)/s2a_credentials_test || ( echo test s2a_credentials_test failed ; exit 1 )
 	$(E) "[RUN]     Testing s2a_frame_protector_test"
@@ -3841,6 +3846,7 @@ LIBGRPC_SRC = \
     src/core/lib/security/security_connector/load_system_roots_fallback.cc \
     src/core/lib/security/security_connector/load_system_roots_linux.cc \
     src/core/lib/security/security_connector/local/local_security_connector.cc \
+    src/core/lib/security/security_connector/s2a/s2a_auth_context.cc \
     src/core/lib/security/security_connector/s2a/s2a_security_connector.cc \
     src/core/lib/security/security_connector/security_connector.cc \
     src/core/lib/security/security_connector/ssl/ssl_security_connector.cc \
@@ -4361,6 +4367,7 @@ LIBGRPC_CRONET_SRC = \
     src/core/lib/security/security_connector/load_system_roots_fallback.cc \
     src/core/lib/security/security_connector/load_system_roots_linux.cc \
     src/core/lib/security/security_connector/local/local_security_connector.cc \
+    src/core/lib/security/security_connector/s2a/s2a_auth_context.cc \
     src/core/lib/security/security_connector/s2a/s2a_security_connector.cc \
     src/core/lib/security/security_connector/security_connector.cc \
     src/core/lib/security/security_connector/ssl/ssl_security_connector.cc \
@@ -4512,6 +4519,7 @@ LIBGRPC_TEST_UTIL_SRC = \
     test/core/end2end/data/server1_key.cc \
     test/core/end2end/data/test_root_cert.cc \
     test/core/security/oauth2_utils.cc \
+    test/core/security/tsi_auth_context_util.cc \
     test/core/tsi/s2a/s2a_test_util.cc \
     src/core/ext/filters/client_channel/resolver/fake/fake_resolver.cc \
     test/core/end2end/cq_verifier.cc \
@@ -14148,16 +14156,16 @@ $(BINDIR)/$(CONFIG)/alts_security_connector_test: protobuf_dep_error
 
 else
 
-$(BINDIR)/$(CONFIG)/alts_security_connector_test: $(PROTOBUF_DEP) $(ALTS_SECURITY_CONNECTOR_TEST_OBJS) $(LIBDIR)/$(CONFIG)/libgpr.a $(LIBDIR)/$(CONFIG)/libgrpc.a
+$(BINDIR)/$(CONFIG)/alts_security_connector_test: $(PROTOBUF_DEP) $(ALTS_SECURITY_CONNECTOR_TEST_OBJS) $(LIBDIR)/$(CONFIG)/libgpr.a $(LIBDIR)/$(CONFIG)/libgrpc.a $(LIBDIR)/$(CONFIG)/libgrpc_test_util.a
 	$(E) "[LD]      Linking $@"
 	$(Q) mkdir -p `dirname $@`
-	$(Q) $(LDXX) $(LDFLAGS) $(ALTS_SECURITY_CONNECTOR_TEST_OBJS) $(LIBDIR)/$(CONFIG)/libgpr.a $(LIBDIR)/$(CONFIG)/libgrpc.a $(LDLIBSXX) $(LDLIBS_PROTOBUF) $(LDLIBS) $(LDLIBS_SECURE) $(GTEST_LIB) -o $(BINDIR)/$(CONFIG)/alts_security_connector_test
+	$(Q) $(LDXX) $(LDFLAGS) $(ALTS_SECURITY_CONNECTOR_TEST_OBJS) $(LIBDIR)/$(CONFIG)/libgpr.a $(LIBDIR)/$(CONFIG)/libgrpc.a $(LIBDIR)/$(CONFIG)/libgrpc_test_util.a $(LDLIBSXX) $(LDLIBS_PROTOBUF) $(LDLIBS) $(LDLIBS_SECURE) $(GTEST_LIB) -o $(BINDIR)/$(CONFIG)/alts_security_connector_test
 
 endif
 
 endif
 
-$(OBJDIR)/$(CONFIG)/test/core/security/alts_security_connector_test.o:  $(LIBDIR)/$(CONFIG)/libgpr.a $(LIBDIR)/$(CONFIG)/libgrpc.a
+$(OBJDIR)/$(CONFIG)/test/core/security/alts_security_connector_test.o:  $(LIBDIR)/$(CONFIG)/libgpr.a $(LIBDIR)/$(CONFIG)/libgrpc.a $(LIBDIR)/$(CONFIG)/libgrpc_test_util.a
 
 deps_alts_security_connector_test: $(ALTS_SECURITY_CONNECTOR_TEST_OBJS:.o=.dep)
 
@@ -19235,6 +19243,49 @@ endif
 endif
 
 
+S2A_AUTH_CONTEXT_TEST_SRC = \
+    test/core/security/s2a_auth_context_test.cc \
+
+S2A_AUTH_CONTEXT_TEST_OBJS = $(addprefix $(OBJDIR)/$(CONFIG)/, $(addsuffix .o, $(basename $(S2A_AUTH_CONTEXT_TEST_SRC))))
+ifeq ($(NO_SECURE),true)
+
+# You can't build secure targets if you don't have OpenSSL.
+
+$(BINDIR)/$(CONFIG)/s2a_auth_context_test: openssl_dep_error
+
+else
+
+
+
+
+ifeq ($(NO_PROTOBUF),true)
+
+# You can't build the protoc plugins or protobuf-enabled targets if you don't have protobuf 3.5.0+.
+
+$(BINDIR)/$(CONFIG)/s2a_auth_context_test: protobuf_dep_error
+
+else
+
+$(BINDIR)/$(CONFIG)/s2a_auth_context_test: $(PROTOBUF_DEP) $(S2A_AUTH_CONTEXT_TEST_OBJS) $(LIBDIR)/$(CONFIG)/libgpr.a $(LIBDIR)/$(CONFIG)/libgrpc.a $(LIBDIR)/$(CONFIG)/libgrpc_test_util.a
+	$(E) "[LD]      Linking $@"
+	$(Q) mkdir -p `dirname $@`
+	$(Q) $(LDXX) $(LDFLAGS) $(S2A_AUTH_CONTEXT_TEST_OBJS) $(LIBDIR)/$(CONFIG)/libgpr.a $(LIBDIR)/$(CONFIG)/libgrpc.a $(LIBDIR)/$(CONFIG)/libgrpc_test_util.a $(LDLIBSXX) $(LDLIBS_PROTOBUF) $(LDLIBS) $(LDLIBS_SECURE) $(GTEST_LIB) -o $(BINDIR)/$(CONFIG)/s2a_auth_context_test
+
+endif
+
+endif
+
+$(OBJDIR)/$(CONFIG)/test/core/security/s2a_auth_context_test.o:  $(LIBDIR)/$(CONFIG)/libgpr.a $(LIBDIR)/$(CONFIG)/libgrpc.a $(LIBDIR)/$(CONFIG)/libgrpc_test_util.a
+
+deps_s2a_auth_context_test: $(S2A_AUTH_CONTEXT_TEST_OBJS:.o=.dep)
+
+ifneq ($(NO_SECURE),true)
+ifneq ($(NO_DEPS),true)
+-include $(S2A_AUTH_CONTEXT_TEST_OBJS:.o=.dep)
+endif
+endif
+
+
 S2A_CREDENTIALS_TEST_SRC = \
     test/core/security/s2a_credentials_test.cc \
 
@@ -23586,6 +23637,7 @@ src/core/lib/security/security_connector/fake/fake_security_connector.cc: $(OPEN
 src/core/lib/security/security_connector/load_system_roots_fallback.cc: $(OPENSSL_DEP)
 src/core/lib/security/security_connector/load_system_roots_linux.cc: $(OPENSSL_DEP)
 src/core/lib/security/security_connector/local/local_security_connector.cc: $(OPENSSL_DEP)
+src/core/lib/security/security_connector/s2a/s2a_auth_context.cc: $(OPENSSL_DEP)
 src/core/lib/security/security_connector/s2a/s2a_security_connector.cc: $(OPENSSL_DEP)
 src/core/lib/security/security_connector/security_connector.cc: $(OPENSSL_DEP)
 src/core/lib/security/security_connector/ssl/ssl_security_connector.cc: $(OPENSSL_DEP)
@@ -23661,6 +23713,7 @@ test/core/end2end/data/test_root_cert.cc: $(OPENSSL_DEP)
 test/core/end2end/end2end_tests.cc: $(OPENSSL_DEP)
 test/core/end2end/tests/call_creds.cc: $(OPENSSL_DEP)
 test/core/security/oauth2_utils.cc: $(OPENSSL_DEP)
+test/core/security/tsi_auth_context_util.cc: $(OPENSSL_DEP)
 test/core/tsi/alts/crypt/gsec_test_util.cc: $(OPENSSL_DEP)
 test/core/tsi/alts/handshaker/alts_handshaker_service_api_test_lib.cc: $(OPENSSL_DEP)
 test/core/tsi/s2a/s2a_test_util.cc: $(OPENSSL_DEP)

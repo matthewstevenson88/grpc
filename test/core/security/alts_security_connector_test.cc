@@ -28,6 +28,7 @@
 #include "src/core/lib/transport/transport.h"
 #include "src/core/tsi/alts/handshaker/alts_tsi_handshaker.h"
 #include "src/core/tsi/transport_security.h"
+#include "test/core/security/tsi_auth_context_util.h"
 
 using grpc_core::internal::grpc_alts_auth_context_from_tsi_peer;
 
@@ -88,28 +89,6 @@ static void test_unknown_peer_property_failure() {
   tsi_peer_destruct(&peer);
 }
 
-static bool test_identity(const grpc_auth_context* ctx,
-                          const char* expected_property_name,
-                          const char* expected_identity) {
-  grpc_auth_property_iterator it;
-  const grpc_auth_property* prop;
-  GPR_ASSERT(grpc_auth_context_peer_is_authenticated(ctx));
-  it = grpc_auth_context_peer_identity(ctx);
-  prop = grpc_auth_property_iterator_next(&it);
-  GPR_ASSERT(prop != nullptr);
-  if (strcmp(prop->name, expected_property_name) != 0) {
-    gpr_log(GPR_ERROR, "Expected peer identity property name %s and got %s.",
-            expected_property_name, prop->name);
-    return false;
-  }
-  if (strncmp(prop->value, expected_identity, prop->value_length) != 0) {
-    gpr_log(GPR_ERROR, "Expected peer identity %s and got got %s.",
-            expected_identity, prop->value);
-    return false;
-  }
-  return true;
-}
-
 static void test_alts_peer_to_auth_context_success() {
   tsi_peer peer;
   GPR_ASSERT(tsi_construct_peer(kTsiAltsNumOfPeerProperties, &peer) == TSI_OK);
@@ -146,8 +125,8 @@ static void test_alts_peer_to_auth_context_success() {
   grpc_core::RefCountedPtr<grpc_auth_context> ctx =
       grpc_alts_auth_context_from_tsi_peer(&peer);
   GPR_ASSERT(ctx != nullptr);
-  GPR_ASSERT(test_identity(ctx.get(), TSI_ALTS_SERVICE_ACCOUNT_PEER_PROPERTY,
-                           "alice"));
+  GPR_ASSERT(check_identity_from_auth_context_for_testing(
+      ctx.get(), TSI_ALTS_SERVICE_ACCOUNT_PEER_PROPERTY, "alice"));
   ctx.reset(DEBUG_LOCATION, "test");
   grpc_slice_unref(serialized_peer_versions);
   grpc_slice_unref(serialized_alts_ctx);
