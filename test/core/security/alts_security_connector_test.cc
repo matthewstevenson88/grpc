@@ -125,7 +125,7 @@ static void test_alts_peer_to_auth_context_success() {
   grpc_core::RefCountedPtr<grpc_auth_context> ctx =
       grpc_alts_auth_context_from_tsi_peer(&peer);
   GPR_ASSERT(ctx != nullptr);
-  GPR_ASSERT(test_identity_from_auth_context(
+  GPR_ASSERT(check_identity_from_auth_context_for_testing(
       ctx.get(), TSI_ALTS_SERVICE_ACCOUNT_PEER_PROPERTY, "alice"));
   ctx.reset(DEBUG_LOCATION, "test");
   grpc_slice_unref(serialized_peer_versions);

@@ -35,8 +35,7 @@ grpc_s2a_credentials::create_security_connector(
     grpc_core::RefCountedPtr<grpc_call_credentials> call_creds,
     const char* target_name, const grpc_channel_args* args,
     grpc_channel_args** new_args) {
-  return S2AChannelSecurityConnectorCreate(this->Ref(),
-                                           std::move(call_creds),
+  return S2AChannelSecurityConnectorCreate(this->Ref(), std::move(call_creds),
                                            target_name);
 }
 

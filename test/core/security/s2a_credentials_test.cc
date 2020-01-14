@@ -20,15 +20,21 @@
 #include <grpc/support/alloc.h>
 #include <grpc/support/log.h>
 
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
+
 #include "src/core/lib/security/credentials/s2a/s2a_credentials.h"
 
-static void s2a_credentials_test() {
+TEST(S2ACredentialsTest, Todo) {
   // TODO(mattstev): implement. Add integration tests when implementation of TSI
   // layer and below is complete.
   return;
 }
 
-int main(int /*argc*/, char** /*argv*/) {
-  s2a_credentials_test();
-  return 0;
+int main(int argc, char** argv) {
+  ::testing::InitGoogleTest(&argc, argv);
+  grpc_init();
+  int ret = RUN_ALL_TESTS();
+  grpc_shutdown();
+  return ret;
 }

@@ -281,6 +281,9 @@ grpc_cc_test(
 grpc_cc_test(
     name = "s2a_security_connector_test",
     srcs = ["s2a_security_connector_test.cc"],
+    external_deps = [
+        "gtest",
+    ],
     language = "C++",
     deps = [
         "//:gpr",
@@ -296,6 +299,9 @@ grpc_cc_test(
 grpc_cc_test(
     name = "s2a_auth_context_test",
     srcs = ["s2a_auth_context_test.cc"],
+    external_deps = [
+        "gtest",
+    ],
     language = "C++",
     deps = [
         "//:gpr",
@@ -312,6 +318,9 @@ grpc_cc_test(
 grpc_cc_test(
     name = "s2a_credentials_test",
     srcs = ["s2a_credentials_test.cc"],
+    external_deps = [
+        "gtest",
+    ],
     language = "C++",
     deps = [
         "//:gpr",

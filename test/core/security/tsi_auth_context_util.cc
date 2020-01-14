@@ -24,9 +24,9 @@
 
 #include "src/core/lib/security/context/security_context.h"
 
-bool test_identity_from_auth_context(const grpc_auth_context* ctx,
-                                     const char* expected_property_name,
-                                     const char* expected_identity) {
+bool check_identity_from_auth_context_for_testing(
+    const grpc_auth_context* ctx, const char* expected_property_name,
+    const char* expected_identity) {
   grpc_auth_property_iterator it;
   const grpc_auth_property* prop;
   GPR_ASSERT(grpc_auth_context_peer_is_authenticated(ctx));

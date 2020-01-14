@@ -5694,6 +5694,7 @@ targets:
   - gpr
   uses_polling: false
 - name: s2a_auth_context_test
+  gtest: true
   build: test
   language: c++
   src:
@@ -5703,6 +5704,7 @@ targets:
   - grpc
   - grpc_test_util
 - name: s2a_credentials_test
+  gtest: true
   build: test
   language: c++
   src:
@@ -5737,6 +5739,7 @@ targets:
   - gpr
   - grpc
 - name: s2a_security_connector_test
+  gtest: true
   build: test
   language: c++
   src:

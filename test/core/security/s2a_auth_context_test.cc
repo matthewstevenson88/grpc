@@ -20,6 +20,9 @@
 #include <grpc/support/alloc.h>
 #include <grpc/support/log.h>
 
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
+
 #include "src/core/lib/security/security_connector/s2a/s2a_auth_context.h"
 #include "src/core/lib/transport/transport.h"
 #include "src/core/tsi/s2a/s2a_constants.h"
@@ -28,24 +31,21 @@
 
 using experimental::internal::grpc_s2a_auth_context_from_tsi_peer;
 
-static void s2a_auth_context_peer_is_nullptr() {
-  grpc_core::RefCountedPtr<grpc_auth_context> ctx =
-      grpc_s2a_auth_context_from_tsi_peer(nullptr);
-  GPR_ASSERT(ctx == nullptr);
-}
+constexpr char kTestPeerIdentity[] = "alice";
+constexpr char kTestPeerUnknownProperty[] = "name";
 
-static void s2a_auth_context_empty_certificate() {
+TEST(S2AAuthContextTest, EmptyCertificate) {
   tsi_peer peer;
-  GPR_ASSERT(tsi_construct_peer(/* property_count=*/0, &peer) == TSI_OK);
+  GPR_ASSERT(tsi_construct_peer(/*property_count=*/0, &peer) == TSI_OK);
   grpc_core::RefCountedPtr<grpc_auth_context> ctx =
       grpc_s2a_auth_context_from_tsi_peer(&peer);
   GPR_ASSERT(ctx == nullptr);
   tsi_peer_destruct(&peer);
 }
 
-static void s2a_auth_context_empty_peer() {
+TEST(S2AAuthContextTest, EmptyPeer) {
   tsi_peer peer;
-  GPR_ASSERT(tsi_construct_peer(/* property_count=*/1, &peer) == TSI_OK);
+  GPR_ASSERT(tsi_construct_peer(/*property_count=*/1, &peer) == TSI_OK);
   GPR_ASSERT(tsi_construct_string_peer_property_from_cstring(
                  TSI_CERTIFICATE_TYPE_PEER_PROPERTY, kTsiS2ACertificateType,
                  &peer.properties[0]) == TSI_OK);
@@ -55,28 +55,29 @@ static void s2a_auth_context_empty_peer() {
   tsi_peer_destruct(&peer);
 }
 
-static void s2a_auth_context_unknown_peer_property() {
+TEST(S2AAuthContextTest, UnknownPeerProperty) {
   tsi_peer peer;
   GPR_ASSERT(tsi_construct_peer(kTsiS2ANumOfPeerProperties, &peer) == TSI_OK);
   GPR_ASSERT(tsi_construct_string_peer_property_from_cstring(
                  TSI_CERTIFICATE_TYPE_PEER_PROPERTY, kTsiS2ACertificateType,
                  &peer.properties[0]) == TSI_OK);
   GPR_ASSERT(tsi_construct_string_peer_property_from_cstring(
-                 "unknown", "alice", &peer.properties[1]) == TSI_OK);
+                 kTestPeerUnknownProperty, kTestPeerIdentity,
+                 &peer.properties[1]) == TSI_OK);
   grpc_core::RefCountedPtr<grpc_auth_context> ctx =
       grpc_s2a_auth_context_from_tsi_peer(&peer);
   GPR_ASSERT(ctx == nullptr);
   tsi_peer_destruct(&peer);
 }
 
-static void s2a_auth_context_success() {
+TEST(S2AAuthContextTest, Success) {
   tsi_peer peer;
   GPR_ASSERT(tsi_construct_peer(kTsiS2ANumOfPeerProperties, &peer) == TSI_OK);
   GPR_ASSERT(tsi_construct_string_peer_property_from_cstring(
                  TSI_CERTIFICATE_TYPE_PEER_PROPERTY, kTsiS2ACertificateType,
                  &peer.properties[0]) == TSI_OK);
   GPR_ASSERT(tsi_construct_string_peer_property_from_cstring(
-                 kTsiS2AServiceAccountPeerProperty, "alice",
+                 kTsiS2AServiceAccountPeerProperty, kTestPeerIdentity,
                  &peer.properties[1]) == TSI_OK);
   char test_ctx[] = "s2a_test serialized context";
   grpc_slice serialized_s2a_ctx = grpc_slice_from_copied_string(test_ctx);
@@ -89,18 +90,17 @@ static void s2a_auth_context_success() {
   grpc_core::RefCountedPtr<grpc_auth_context> ctx =
       grpc_s2a_auth_context_from_tsi_peer(&peer);
   GPR_ASSERT(ctx != nullptr);
-  GPR_ASSERT(test_identity_from_auth_context(
-      ctx.get(), kTsiS2AServiceAccountPeerProperty, "alice"));
+  GPR_ASSERT(check_identity_from_auth_context_for_testing(
+      ctx.get(), kTsiS2AServiceAccountPeerProperty, kTestPeerIdentity));
   ctx.reset(DEBUG_LOCATION, "test");
   grpc_slice_unref(serialized_s2a_ctx);
   tsi_peer_destruct(&peer);
 }
 
-int main(int /*argc*/, char** /*argv*/) {
-  s2a_auth_context_peer_is_nullptr();
-  s2a_auth_context_empty_certificate();
-  s2a_auth_context_empty_peer();
-  s2a_auth_context_unknown_peer_property();
-  s2a_auth_context_success();
-  return 0;
+int main(int argc, char** argv) {
+  ::testing::InitGoogleTest(&argc, argv);
+  grpc_init();
+  int ret = RUN_ALL_TESTS();
+  grpc_shutdown();
+  return ret;
 }

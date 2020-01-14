@@ -5410,7 +5410,7 @@
     "exclude_configs": [], 
     "exclude_iomgrs": [], 
     "flaky": false, 
-    "gtest": false, 
+    "gtest": true, 
     "language": "c++", 
     "name": "s2a_auth_context_test", 
     "platforms": [
@@ -5434,7 +5434,7 @@
     "exclude_configs": [], 
     "exclude_iomgrs": [], 
     "flaky": false, 
-    "gtest": false, 
+    "gtest": true, 
     "language": "c++", 
     "name": "s2a_credentials_test", 
     "platforms": [
@@ -5530,7 +5530,7 @@
     "exclude_configs": [], 
     "exclude_iomgrs": [], 
     "flaky": false, 
-    "gtest": false, 
+    "gtest": true, 
     "language": "c++", 
     "name": "s2a_security_connector_test", 
     "platforms": [
