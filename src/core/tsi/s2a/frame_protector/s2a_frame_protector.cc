@@ -193,6 +193,7 @@ tsi_result s2a_zero_copy_grpc_protector_create(
     uint16_t tls_version, uint16_t tls_ciphersuite, uint8_t* in_traffic_secret,
     size_t in_traffic_secret_size, uint8_t* out_traffic_secret,
     size_t out_traffic_secret_size, grpc_channel* channel,
+    size_t* max_protected_frame_size,
     tsi_zero_copy_grpc_protector** protector) {
   if (grpc_core::ExecCtx::Get() == nullptr || in_traffic_secret == nullptr ||
       out_traffic_secret == nullptr || channel == nullptr ||
@@ -236,6 +237,9 @@ tsi_result s2a_zero_copy_grpc_protector_create(
   }
   impl->max_protected_frame_size =
       SSL3_RT_MAX_PLAIN_LENGTH + max_record_overhead;
+  if (max_protected_frame_size != nullptr) {
+    *max_protected_frame_size = impl->max_protected_frame_size;
+  }
   impl->max_unprotected_data_size = SSL3_RT_MAX_PLAIN_LENGTH;
   grpc_slice_buffer_init(&(impl->protected_sb));
   grpc_slice_buffer_init(&(impl->protected_staging_sb));

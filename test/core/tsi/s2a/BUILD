@@ -19,18 +19,25 @@ licenses(["notice"])  # Apache v2
 grpc_package(name = "test/core/tsi/s2a")
 
 grpc_cc_library(
+    name = "s2a_test_data",
+    hdrs = [
+        "s2a_test_data.h",
+        ],
+)
+
+grpc_cc_library(
     name = "s2a_test_util",
     srcs = [
         "s2a_test_util.cc",
         ],
     hdrs = [
         "s2a_test_util.h",
-        "s2a_test_data.h",
         ],
     external_deps = [
         "libssl",
     ],
     deps = [
+        ":s2a_test_data",
         "//:s2a_constants",
         "//:s2a_record_protocol",
     ],
@@ -40,12 +47,14 @@ grpc_cc_test(
     name = "s2a_record_protocol_test",
     srcs = ["s2a_record_protocol_test.cc"],
     external_deps = [
+        "gtest",
         "libssl",
     ],
     language = "C++",
     deps = [
         "//:s2a_constants",
         "//:s2a_record_protocol",
+        ":s2a_test_data",
         ":s2a_test_util",
         "//:gpr",
         "//:grpc",
@@ -56,6 +65,7 @@ grpc_cc_test(
     name = "s2a_frame_protector_test",
     srcs = ["s2a_frame_protector_test.cc"],
     external_deps = [
+        "gtest",
         "libssl",
     ],
     language = "C++",
@@ -75,6 +85,7 @@ grpc_cc_test(
     language = "C++",
     deps = [
         "//:s2a_constants",
+        ":s2a_test_data",
         ":s2a_test_util",
         "//:gpr",
         "//:grpc",
@@ -86,6 +97,7 @@ grpc_cc_test(
     name = "s2a_handshaker_client_test",
     srcs = ["s2a_handshaker_client_test.cc"],
     language = "C++",
+    external_deps = ["gtest"],
     deps = [
         "//:s2a_constants",
         ":s2a_test_util",
@@ -95,3 +107,15 @@ grpc_cc_test(
     ],
 )
 
+grpc_cc_test(
+    name = "s2a_mock_handshake_test",
+    srcs = ["s2a_mock_handshake_test.cc"],
+    language = "C++",
+    deps = [
+        "//:s2a_constants",
+        ":s2a_test_util",
+        "//:gpr",
+        "//:grpc",
+        "//:tsi",
+    ],
+)

@@ -16,6 +16,8 @@
  *
  */
 
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 #include "src/core/tsi/alts/crypt/gsec.h"
 #include "test/core/tsi/alts/crypt/gsec_test_util.h"
 
@@ -801,7 +803,7 @@ static void gsec_test_get_random_aes_gcm_crypters(
       kAesGcmTagLength, /*rekey=*/true);
 }
 
-static void gsec_test_do_generic_crypter_tests() {
+TEST(AesGcmGsecCrypterTest, GenericCrypterTests) {
   gsec_aead_crypter** crypters;
   gsec_test_get_random_aes_gcm_crypters(&crypters);
   size_t ind;
@@ -817,7 +819,7 @@ static void gsec_test_do_generic_crypter_tests() {
   gpr_free(crypters);
 }
 
-static void gsec_test_do_vector_tests_rekey_nist() {
+TEST(AesGcmGsecCrypterTest, RekeyNIST) {
   // NIST vectors from:
   // http://csrc.nist.gov/groups/ST/toolkit/BCM/documents/proposedmodes/gcm/gcm-revised-spec.pdf
   //
@@ -1032,7 +1034,7 @@ static void gsec_test_do_vector_tests_rekey_nist() {
   gsec_test_verify_crypter_on_test_vector(&vec, /*rekey=*/true);
 }
 
-static void gsec_test_do_vector_tests_rekey_ieee() {
+TEST(AesGcmGsecCrypterTest, RekeyIEEE) {
   // IEEE vectors from:
   // http://www.ieee802.org/1/files/public/docs2011/bn-randall-test-vectors-0511-v1.pdf
   //
@@ -1448,7 +1450,7 @@ static void gsec_test_do_vector_tests_rekey_ieee() {
   gsec_test_verify_crypter_on_test_vector(&vec, /*rekey=*/true);
 }
 
-static void gsec_test_do_vector_tests_nist() {
+TEST(AesGcmGsecCrypterTest, NIST) {
   /**
    * From:
    * http://csrc.nist.gov/groups/ST/toolkit/BCM/documents/proposedmodes/gcm/
@@ -1572,7 +1574,7 @@ static void gsec_test_do_vector_tests_nist() {
   gsec_aead_free_test_vector(test_vector_4);
 }
 
-static void gsec_test_do_vector_tests_ieee() {
+TEST(AesGcmGsecCrypterTest, IEEE) {
   /**
    * From:
    * http://www.ieee802.org/1/files/public/docs2011/
@@ -2106,7 +2108,7 @@ static void hkdf_check_out_key(GsecHashFunction hash_function,
   GPR_ASSERT(out_key == correct_out_key);
 }
 
-static void gsec_test_derive_data() {
+TEST(AesGcmGsecCrypterTest, DeriveSecret) {
   /** This test data is taken from https://tools.ietf.org/html/rfc5869
    *  in Appendix A. **/
   std::vector<uint8_t> info_1 = {0xf0, 0xf1, 0xf2, 0xf3, 0xf4,
@@ -2162,14 +2164,10 @@ static void gsec_test_derive_data() {
   // TODO(mattstev): add test cases for the SHA384_hash_function.
 }
 
-int main(int /*argc*/, char** /*argv*/) {
+int main(int argc, char** argv) {
+  ::testing::InitGoogleTest(&argc, argv);
   grpc_init();
-  gsec_test_do_generic_crypter_tests();
-  gsec_test_do_vector_tests_nist();
-  gsec_test_do_vector_tests_ieee();
-  gsec_test_do_vector_tests_rekey_nist();
-  gsec_test_do_vector_tests_rekey_ieee();
-  gsec_test_derive_data();
+  int ret = RUN_ALL_TESTS();
   grpc_shutdown();
-  return 0;
+  return ret;
 }

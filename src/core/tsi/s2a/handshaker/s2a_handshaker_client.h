@@ -42,6 +42,12 @@ struct s2a_tsi_handshaker;
 typedef grpc_call_error (*s2a_grpc_caller)(grpc_call* call, const grpc_op* ops,
                                            size_t nops, grpc_closure* tag);
 
+/** The following 3 functions are used for testing purposes only. **/
+typedef tsi_result (*s2a_mock_client_start)(void* client);
+typedef tsi_result (*s2a_mock_server_start)(void* client,
+                                            grpc_slice* bytes_received);
+typedef tsi_result (*s2a_mock_next)(void* client, grpc_slice* bytes_received);
+
 /** A struct that stores the handshake result sent by the S2A service. **/
 struct s2a_recv_message_result {
   tsi_result status;
@@ -67,7 +73,7 @@ class S2AHandshakerClient {
                       const grpc_s2a_credentials_options* options,
                       const grpc_slice& target_name, grpc_iomgr_cb_func grpc_cb,
                       tsi_handshaker_on_next_done_cb cb, void* user_data,
-                      bool is_client);
+                      bool is_client, bool is_test);
 
   ~S2AHandshakerClient();
 
@@ -111,19 +117,95 @@ class S2AHandshakerClient {
    *  no further handshaker requests will be scheduled with the S2A. **/
   void Shutdown();
 
-  /** This method is exposed for testing purposes only. **/
-  grpc_byte_buffer* get_send_buffer_for_testing();
+  /** This method parses a response from the S2A service. **/
+  void HandleResponse(bool is_ok);
+
+  /** If this handshaker client has the final result of the handshake or if an
+   *  error has occurred, then:
+   *  - if |receive_status_finished| is true, then this method invokes |cb_|;
+   *  - if |receive_status_finished| is false, then this method does nothing.
+   *  On the other hand, if the final result of the handshake has not yet been
+   *  received and no error has occured, then this method invokes |cb_|. **/
+  void MaybeCompleteTsiNext(
+      bool receive_status_finished,
+      s2a_recv_message_result* pending_recv_message_result);
+
+  /** When the refcount (given by |refs_|) of this S2A handshaker client
+   *  instance is positive, this method dereferences all of the data owned by
+   *  this S2A handshaker client instance. Otherwise, this method does
+   *  nothing. **/
+  void Unref();
+
+  /** These methods are exposed for use in the |on_status_received| callback
+   *  function. **/
+  grpc_status_code handshake_status_code() { return handshake_status_code_; }
+  const grpc_slice handshake_status_details() {
+    return handshake_status_details_;
+  }
+
+  /** These methods are exposed for testing purposes only. If |is_test_| is set
+   *  to true, then the method accesses the appropriate private member variable.
+   *  If |is_test_| is set to false, then:
+   *  - if the method has a void return type, then the method does nothing;
+   *  - if the method returns a pointer, then the method does nothing and
+   *    returns nullptr. **/
+  void set_grpc_caller_for_testing(s2a_grpc_caller caller);
+  grpc_metadata_array* initial_metadata_for_testing();
+  grpc_byte_buffer** recv_buffer_addr_for_testing();
+  grpc_byte_buffer* send_buffer_for_testing();
+  grpc_closure* closure_for_testing();
+  void on_status_received_for_testing(grpc_status_code status,
+                                      grpc_error* error);
+  void ref_for_testing();
+
+  /** If |is_test_| is set to true, then this method populates the private
+   *  member fields of this handshaker client instance usnig the arguments. If
+   *  |is_test_| is false, then this method does nothing. **/
+  void SetFieldsForTesting(s2a_tsi_handshaker* handshaker,
+                           tsi_handshaker_on_next_done_cb cb, void* user_data,
+                           grpc_byte_buffer* recv_buffer,
+                           grpc_status_code status);
+
+  void set_mock_client_start_for_testing(s2a_mock_client_start client_start);
+  void set_mock_server_start_for_testing(s2a_mock_server_start server_start);
+  void set_mock_next_for_testing(s2a_mock_next next);
+
+ protected:
+  /** If |is_test_| is set to true, then this method verifies that the arguments
+   *  match the corresponding private member fields of this handshaker client
+   *  instance. If |is_test_| is false, then this method does nothing. **/
+  void CheckFieldsForTesting(tsi_handshaker_on_next_done_cb cb, void* user_data,
+                             bool has_sent_start_message,
+                             grpc_slice* recv_bytes);
+
+  /** These methods are exposed for testing purposes only. If |is_test_| is set
+   *  to true, then the method accesses the appropriate private member variable.
+   *  If |is_test_| is set to false, then:
+   *  - if the method has a void return type, then the method does nothing;
+   *  - if the method has a boolean return type, then the method returns false;
+   *  - if the method returns a pointer, then the method does nothing and
+   *    returns nullptr. **/
+  s2a_tsi_handshaker* handshaker_for_testing();
+  bool is_client_for_testing();
+  void set_cb_for_testing(tsi_handshaker_on_next_done_cb cb);
+  /** The caller must not pass in nullptr for |recv_bytes|. **/
+  void set_recv_bytes_for_testing(grpc_slice* recv_bytes);
 
  private:
   /** This method makes a call to the S2A service. **/
   tsi_result MakeGrpcCall(bool is_start);
 
-  void MaybeCompleteTsiNext(
-      bool receive_status_finished,
-      s2a_recv_message_result* pending_recv_message_result);
+  /** This method makes a call to the S2A service, and logs any errors that
+   *  occur. **/
+  tsi_result MakeGrpcCallUtil(bool is_start);
 
-  /** This method parses a response from the S2A service. **/
-  void HandleResponse(bool is_ok);
+  /** This method populates a |s2a_recv_message_result| instance using the
+   *  arguments to the method, and passes this instance to the
+   *  |MaybeCompleteTsiNext| method. This method should be called whenever
+   *  the |HandleResponse| method is ready to return. **/
+  void HandleResponseDone(tsi_result status, const uint8_t* bytes_to_send,
+                          size_t bytes_to_send_size,
+                          tsi_handshaker_result* result);
 
   /** This method prepares a serialized version of a client start message. **/
   grpc_byte_buffer* SerializedStartClient();
@@ -138,27 +220,28 @@ class S2AHandshakerClient {
 
   /** One ref is held by the entity that created this handshaker_client, and
    *  another ref is held by the pending RECEIVE_STATUS_ON_CLIENT op. **/
-  gpr_refcount refs_;
+  gpr_refcount* refs_ = nullptr;
   /** The S2A TSI handshaker that instantiates this S2A handshaker client. **/
-  s2a_tsi_handshaker* handshaker_;
-  grpc_call* call_;
-  s2a_grpc_caller grpc_caller_;
+  s2a_tsi_handshaker* handshaker_ = nullptr;
+  grpc_channel* channel_ = nullptr;
+  grpc_call* call_ = nullptr;
+  s2a_grpc_caller grpc_caller_ = nullptr;
   /** A gRPC closure to be scheduled when the response from handshaker service
    *  is received. It will be initialized with the injected grpc RPC callback.
    **/
   grpc_closure on_handshaker_service_resp_recv_;
   /** Buffers containing information to be sent (or received) to (or from) the
    *  handshaker service. **/
-  grpc_byte_buffer* send_buffer_;
-  grpc_byte_buffer* recv_buffer_;
+  grpc_byte_buffer* send_buffer_ = nullptr;
+  grpc_byte_buffer* recv_buffer_ = nullptr;
   /** This status indicates to the |handle_response_done| method whether or not
    *  an error occurred during a previous portion of the handshake. **/
-  grpc_status_code status_;
+  grpc_status_code status_ = GRPC_STATUS_OK;
   /** Initial metadata to be received from handshaker service. **/
   grpc_metadata_array recv_initial_metadata_;
   /** A callback function provided by an application to be invoked when response
    *  is received from handshaker service. **/
-  tsi_handshaker_on_next_done_cb cb_;
+  tsi_handshaker_on_next_done_cb cb_ = nullptr;
   void* user_data_ = nullptr;
   /** The S2A credential options passed in from the caller. **/
   const grpc_s2a_credentials_options* options_;
@@ -186,10 +269,18 @@ class S2AHandshakerClient {
   gpr_mu mu_;
   /** This status indicates whether the handshaker call's RECV_STATUS_ON_CLIENT
    *  op is done. **/
-  bool receive_status_finished_;
+  bool receive_status_finished_ = false;
   /** If this field is not nullptr, then it contains arguments needed to
    *  complete a TSI next callback. **/
-  s2a_recv_message_result* pending_recv_message_result_;
+  s2a_recv_message_result* pending_recv_message_result_ = nullptr;
+  /** This variable should be set to true iff the S2A handshaker client instance
+   *  is instantiated as part of a test. **/
+  bool is_test_ = false;
+  /** The 3 functions pointers below are used to call the handshake operations
+   *  implemented by a mock handshaker client. **/
+  s2a_mock_client_start client_start_ = nullptr;
+  s2a_mock_server_start server_start_ = nullptr;
+  s2a_mock_next next_ = nullptr;
 };
 
 /** This method populates |client| with an instance of the
@@ -212,22 +303,29 @@ class S2AHandshakerClient {
  *  - user_data: the argument passed to |cb|.
  *  - is_client: a boolean that is true if |client| is used at the client side,
  *    and false if |client| is used at the server side.
+ *  - is_test: a boolean that is true if |client| is instantiated as part of a
+ *    test.
  *  - client: a pointer to the address of an s2a_handshaker_client instance,
  *    which will be populated by the method. It is legal (and expected) for
  *    |client| to point to a nullptr.
  *
  *  On success, this method returns TSI_OK, and an error code otherwise. **/
-tsi_result s2a_handshaker_client_create(
+tsi_result S2AHandshakerClientCreate(
     s2a_tsi_handshaker* handshaker, grpc_channel* channel,
     grpc_pollset_set* interested_parties,
     const grpc_s2a_credentials_options* options, const grpc_slice& target_name,
     grpc_iomgr_cb_func grpc_cb, tsi_handshaker_on_next_done_cb cb,
-    void* user_data, bool is_client, S2AHandshakerClient** client);
+    void* user_data, bool is_client, bool is_test,
+    S2AHandshakerClient** client);
 
 /** This method destroys a S2AHandshakerClient instance. The caller must call
- * this method after any use of s2a_handshaker_client_create, even if it outputs
- * a status other than TSI_OK.  **/
-void s2a_handshaker_client_destroy(S2AHandshakerClient* client);
+ *  this method after any use of S2AHandshakerClientCreate, even if it outputs
+ *  a status other thand TSI_OK.  **/
+void S2AHandshakerClientDestroy(S2AHandshakerClient* client);
+
+/** This method is exposed for testing purposes only. **/
+void s2a_handshaker_client_on_status_received_for_testing(
+    S2AHandshakerClient* client, grpc_status_code status, grpc_error* error);
 
 }  // namespace experimental
 }  // namespace grpc_core
