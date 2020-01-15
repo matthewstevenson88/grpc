@@ -307,7 +307,7 @@ static tsi_result s2a_handshaker_result_extract_peer(
   s2a_tsi_handshaker_result* result =
       reinterpret_cast<s2a_tsi_handshaker_result*>(
           const_cast<tsi_handshaker_result*>(self));
-  GPR_ASSERT(kTsiS2ANumOfPeerProperties == 2);
+  //GPR_ASSERT(kTsiS2ANumOfPeerProperties == 2);
   tsi_result ok = tsi_construct_peer(kTsiS2ANumOfPeerProperties, peer);
   int index = 0;
   if (ok != TSI_OK) {
@@ -337,7 +337,7 @@ static tsi_result s2a_handshaker_result_extract_peer(
     tsi_peer_destruct(peer);
     gpr_log(GPR_ERROR, "Failed to set TSI peer property.");
   }
-  GPR_ASSERT(++index == kTsiS2ANumOfPeerProperties);
+  //GPR_ASSERT(++index == kTsiS2ANumOfPeerProperties);
   return ok;
 }
 
