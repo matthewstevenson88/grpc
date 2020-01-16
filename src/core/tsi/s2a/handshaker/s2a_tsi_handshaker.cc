@@ -432,6 +432,8 @@ tsi_result s2a_tsi_handshaker_result_create(s2a_SessionResp* response,
     return TSI_FAILED_PRECONDITION;
   }
 
+  // TODO(mattstev): read the sequence numbers and verify they are set to zero.
+
   /** Instantiate S2A TSI handshaker result. **/
   s2a_tsi_handshaker_result* tsi_result =
       static_cast<s2a_tsi_handshaker_result*>(
@@ -450,6 +452,8 @@ tsi_result s2a_tsi_handshaker_result_create(s2a_SessionResp* response,
     upb_strview hostname = s2a_Identity_hostname(peer_identity);
     tsi_result->hostname = gpr_strdup(hostname.data);
   }
+
+  // TODO(mattstev): read the local identity.
 
   /** Populate fields of |tsi_result| using |handshake_state|. **/
   tsi_result->tls_version = s2a_SessionState_tls_version(handshake_state);
