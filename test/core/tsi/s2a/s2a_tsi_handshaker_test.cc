@@ -17,9 +17,11 @@
  */
 
 #include "src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.h"
+#include <gmock/gmock.h>
 #include <grpc/grpc_security.h>
 #include <grpc/support/alloc.h>
 #include <grpc/support/log.h>
+#include <gtest/gtest.h>
 #include <vector>
 #include "src/core/lib/iomgr/exec_ctx.h"
 #include "src/core/lib/surface/channel.h"
@@ -40,7 +42,7 @@ std::vector<char> traffic_secret(32, 'k');
 
 char spiffe_id[] = "spiffe_id";
 
-static void s2a_tsi_handshaker_create_and_destroy_test() {
+TEST(S2ATsiHandshakerTest, CreateAndDestroy) {
   grpc_s2a_credentials_options* options = grpc_s2a_credentials_options_create();
   tsi_handshaker* handshaker = nullptr;
   char* error_details = nullptr;
@@ -94,7 +96,7 @@ static s2a_SessionResp* s2a_setup_test_session_resp(upb_arena* arena,
   return session_response;
 }
 
-static void s2a_tsi_handshaker_result_create_and_destroy_test() {
+TEST(S2ATsiHandshakerTest, ResultCreateAndDestroy) {
   /** Prepare an s2a_SessionResp instance and a new channel. **/
   upb::Arena arena;
   s2a_SessionResp* session_response =
@@ -186,7 +188,7 @@ static bool s2a_compare_peer_property_with_string(
   return true;
 }
 
-static void s2a_tsi_handshaker_result_extract_peer_test() {
+TEST(S2ATsiHandshakerTest, ResultExtractPeer) {
   upb::Arena arena;
   s2a_SessionResp* session_response =
       s2a_setup_test_session_resp(arena.ptr(), /*has_peer_identity=*/true);
@@ -224,8 +226,9 @@ static void s2a_tsi_handshaker_result_extract_peer_test() {
 }  // namespace grpc_core
 
 int main(int argc, char** argv) {
-  grpc_core::experimental::s2a_tsi_handshaker_create_and_destroy_test();
-  grpc_core::experimental::s2a_tsi_handshaker_result_create_and_destroy_test();
-  grpc_core::experimental::s2a_tsi_handshaker_result_extract_peer_test();
-  return 0;
+  ::testing::InitGoogleTest(&argc, argv);
+  grpc_init();
+  int ret = RUN_ALL_TESTS();
+  grpc_shutdown();
+  return ret;
 }

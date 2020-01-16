@@ -5530,7 +5530,7 @@
     "exclude_configs": [], 
     "exclude_iomgrs": [], 
     "flaky": false, 
-    "gtest": false, 
+    "gtest": true, 
     "language": "c++", 
     "name": "s2a_record_protocol_test", 
     "platforms": [
