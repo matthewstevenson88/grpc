@@ -5733,6 +5733,7 @@ targets:
   - grpc_test_util
   - grpc
 - name: s2a_mock_handshake_test
+  gtest: true
   build: test
   language: c++
   src:
