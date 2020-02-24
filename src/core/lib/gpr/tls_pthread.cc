@@ -21,10 +21,8 @@
 #ifdef GPR_PTHREAD_TLS
 
 #include "src/core/lib/gpr/tls.h"
-#include <iostream>
 
 intptr_t gpr_tls_set(struct gpr_pthread_thread_local* tls, intptr_t value) {
-  std::cout << "*********************Inside the |gpr_tls_set| method." << std::endl;
   GPR_ASSERT(0 == pthread_setspecific(tls->key, (void*)value));
   return value;
 }
