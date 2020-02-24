@@ -1454,9 +1454,8 @@ INSTANTIATE_TEST_SUITE_P(ClientCallbackEnd2endTest, ClientCallbackEnd2endTest,
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   grpc::testing::TestEnvironment env(argc, argv);
-  // grpc_init();
-  // int ret = RUN_ALL_TESTS();
-  // grpc_shutdown();
-  // return ret;
-  return 0;
+  grpc_init();
+  int ret = RUN_ALL_TESTS();
+  grpc_shutdown();
+  return ret;
 }

@@ -437,7 +437,6 @@ TYPED_TEST(AsyncClientEnd2endTest, ThreadStress) {
 
 int main(int argc, char** argv) {
   grpc::testing::TestEnvironment env(argc, argv);
-  //::testing::InitGoogleTest(&argc, argv);
-  //return RUN_ALL_TESTS();
-  return 0;
+  ::testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
 }

@@ -618,7 +618,6 @@ TEST_F(ServiceConfigEnd2endTest,
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   grpc::testing::TestEnvironment env(argc, argv);
-  //const auto result = RUN_ALL_TESTS();
-  //return result;
-  return 0;
+  const auto result = RUN_ALL_TESTS();
+  return result;
 }
