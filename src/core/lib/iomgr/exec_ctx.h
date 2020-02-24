@@ -25,6 +25,7 @@
 #include <grpc/support/atm.h>
 #include <grpc/support/cpu.h>
 #include <grpc/support/log.h>
+#include <iostream>
 
 #include "src/core/lib/gpr/time_precise.h"
 #include "src/core/lib/gpr/tls.h"
@@ -217,6 +218,7 @@ class ExecCtx {
   }
 
   static void Set(ExecCtx* exec_ctx) {
+    std::cout << "******************Calling |gpr_tls_set| from |ExecCtx::Set|." << std::endl;
     gpr_tls_set(&exec_ctx_, reinterpret_cast<intptr_t>(exec_ctx));
   }
 
@@ -314,6 +316,7 @@ class ApplicationCallbackExecCtx {
         }
         (*f->functor_run)(f, f->internal_success);
       }
+      std::cout << "******************Calling |gpr_tls_set| from destructor of |ApplicationCallbackExecCtx|." << std::endl;
       gpr_tls_set(&callback_exec_ctx_, reinterpret_cast<intptr_t>(nullptr));
       if (!(GRPC_APP_CALLBACK_EXEC_CTX_FLAG_IS_INTERNAL_THREAD & flags_)) {
         grpc_core::Fork::DecExecCtxCount();
@@ -330,6 +333,7 @@ class ApplicationCallbackExecCtx {
       if (!(GRPC_APP_CALLBACK_EXEC_CTX_FLAG_IS_INTERNAL_THREAD & flags)) {
         grpc_core::Fork::IncExecCtxCount();
       }
+      std::cout << "******************Calling |gpr_tls_set| from |ApplicationCallbackExecCtx::Set|." << std::endl;
       gpr_tls_set(&callback_exec_ctx_, reinterpret_cast<intptr_t>(exec_ctx));
     }
   }
