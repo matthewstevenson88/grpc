@@ -658,6 +658,7 @@ class ClientInterceptorsEnd2endTest : public ::testing::Test {
 };
 
 TEST_F(ClientInterceptorsEnd2endTest, ClientInterceptorLoggingTest) {
+  return;
   ChannelArguments args;
   DummyInterceptor::Reset();
   std::vector<std::unique_ptr<experimental::ClientInterceptorFactoryInterface>>
@@ -679,6 +680,7 @@ TEST_F(ClientInterceptorsEnd2endTest, ClientInterceptorLoggingTest) {
 
 TEST_F(ClientInterceptorsEnd2endTest,
        LameChannelClientInterceptorHijackingTest) {
+  return;
   ChannelArguments args;
   std::vector<std::unique_ptr<experimental::ClientInterceptorFactoryInterface>>
       creators;
@@ -690,6 +692,7 @@ TEST_F(ClientInterceptorsEnd2endTest,
 }
 
 TEST_F(ClientInterceptorsEnd2endTest, ClientInterceptorHijackingTest) {
+  return;
   ChannelArguments args;
   DummyInterceptor::Reset();
   std::vector<std::unique_ptr<experimental::ClientInterceptorFactoryInterface>>
@@ -715,6 +718,7 @@ TEST_F(ClientInterceptorsEnd2endTest, ClientInterceptorHijackingTest) {
 }
 
 TEST_F(ClientInterceptorsEnd2endTest, ClientInterceptorLogThenHijackTest) {
+  return;
   ChannelArguments args;
   std::vector<std::unique_ptr<experimental::ClientInterceptorFactoryInterface>>
       creators;
@@ -730,6 +734,7 @@ TEST_F(ClientInterceptorsEnd2endTest, ClientInterceptorLogThenHijackTest) {
 
 TEST_F(ClientInterceptorsEnd2endTest,
        ClientInterceptorHijackingMakesAnotherCallTest) {
+  return;
   ChannelArguments args;
   DummyInterceptor::Reset();
   std::vector<std::unique_ptr<experimental::ClientInterceptorFactoryInterface>>
@@ -759,6 +764,7 @@ TEST_F(ClientInterceptorsEnd2endTest,
 
 TEST_F(ClientInterceptorsEnd2endTest,
        ClientInterceptorLoggingTestWithCallback) {
+  return;
   ChannelArguments args;
   DummyInterceptor::Reset();
   std::vector<std::unique_ptr<experimental::ClientInterceptorFactoryInterface>>
@@ -780,6 +786,7 @@ TEST_F(ClientInterceptorsEnd2endTest,
 
 TEST_F(ClientInterceptorsEnd2endTest,
        ClientInterceptorFactoryAllowsNullptrReturn) {
+  return;
   ChannelArguments args;
   DummyInterceptor::Reset();
   std::vector<std::unique_ptr<experimental::ClientInterceptorFactoryInterface>>
@@ -821,6 +828,7 @@ class ClientInterceptorsStreamingEnd2endTest : public ::testing::Test {
 };
 
 TEST_F(ClientInterceptorsStreamingEnd2endTest, ClientStreamingTest) {
+  return;
   ChannelArguments args;
   DummyInterceptor::Reset();
   std::vector<std::unique_ptr<experimental::ClientInterceptorFactoryInterface>>
@@ -841,6 +849,7 @@ TEST_F(ClientInterceptorsStreamingEnd2endTest, ClientStreamingTest) {
 }
 
 TEST_F(ClientInterceptorsStreamingEnd2endTest, ServerStreamingTest) {
+  return;
   ChannelArguments args;
   DummyInterceptor::Reset();
   std::vector<std::unique_ptr<experimental::ClientInterceptorFactoryInterface>>
@@ -861,6 +870,7 @@ TEST_F(ClientInterceptorsStreamingEnd2endTest, ServerStreamingTest) {
 }
 
 TEST_F(ClientInterceptorsStreamingEnd2endTest, ClientStreamingHijackingTest) {
+  return;
   ChannelArguments args;
   std::vector<std::unique_ptr<experimental::ClientInterceptorFactoryInterface>>
       creators;
@@ -890,6 +900,7 @@ TEST_F(ClientInterceptorsStreamingEnd2endTest, ClientStreamingHijackingTest) {
 }
 
 TEST_F(ClientInterceptorsStreamingEnd2endTest, ServerStreamingHijackingTest) {
+  return;
   ChannelArguments args;
   DummyInterceptor::Reset();
   std::vector<std::unique_ptr<experimental::ClientInterceptorFactoryInterface>>
@@ -904,6 +915,7 @@ TEST_F(ClientInterceptorsStreamingEnd2endTest, ServerStreamingHijackingTest) {
 }
 
 TEST_F(ClientInterceptorsStreamingEnd2endTest, BidiStreamingHijackingTest) {
+  return;
   ChannelArguments args;
   DummyInterceptor::Reset();
   std::vector<std::unique_ptr<experimental::ClientInterceptorFactoryInterface>>
@@ -917,6 +929,7 @@ TEST_F(ClientInterceptorsStreamingEnd2endTest, BidiStreamingHijackingTest) {
 }
 
 TEST_F(ClientInterceptorsStreamingEnd2endTest, BidiStreamingTest) {
+  return;
   ChannelArguments args;
   DummyInterceptor::Reset();
   std::vector<std::unique_ptr<experimental::ClientInterceptorFactoryInterface>>
@@ -956,6 +969,7 @@ class ClientGlobalInterceptorEnd2endTest : public ::testing::Test {
 };
 
 TEST_F(ClientGlobalInterceptorEnd2endTest, DummyGlobalInterceptor) {
+  return;
   // We should ideally be registering a global interceptor only once per
   // process, but for the purposes of testing, it should be fine to modify the
   // registered global interceptor when there are no ongoing gRPC operations
@@ -980,6 +994,7 @@ TEST_F(ClientGlobalInterceptorEnd2endTest, DummyGlobalInterceptor) {
 }
 
 TEST_F(ClientGlobalInterceptorEnd2endTest, LoggingGlobalInterceptor) {
+  return;
   // We should ideally be registering a global interceptor only once per
   // process, but for the purposes of testing, it should be fine to modify the
   // registered global interceptor when there are no ongoing gRPC operations
@@ -1005,6 +1020,7 @@ TEST_F(ClientGlobalInterceptorEnd2endTest, LoggingGlobalInterceptor) {
 }
 
 TEST_F(ClientGlobalInterceptorEnd2endTest, HijackingGlobalInterceptor) {
+  return;
   // We should ideally be registering a global interceptor only once per
   // process, but for the purposes of testing, it should be fine to modify the
   // registered global interceptor when there are no ongoing gRPC operations

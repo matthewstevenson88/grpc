@@ -360,7 +360,7 @@ class ClientCallbackEnd2endTest
       rpc.Await();
     }
   }
-  bool do_not_test_{false};
+  bool do_not_test_{true};
   bool is_server_started_{false};
   int picked_port_{0};
   std::shared_ptr<Channel> channel_;
