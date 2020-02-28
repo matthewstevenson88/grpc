@@ -373,12 +373,14 @@ class ClientCallbackEnd2endTest
 };
 
 TEST_P(ClientCallbackEnd2endTest, SimpleRpc) {
+  return;
   MAYBE_SKIP_TEST;
   ResetStub();
   SendRpcs(1, false);
 }
 
 TEST_P(ClientCallbackEnd2endTest, SimpleRpcUnderLockNested) {
+  return;
   MAYBE_SKIP_TEST;
   ResetStub();
   std::mutex mu1, mu2, mu3;
@@ -430,6 +432,7 @@ TEST_P(ClientCallbackEnd2endTest, SimpleRpcUnderLockNested) {
 }
 
 TEST_P(ClientCallbackEnd2endTest, SimpleRpcUnderLock) {
+  return;
   MAYBE_SKIP_TEST;
   ResetStub();
   std::mutex mu;
@@ -458,18 +461,21 @@ TEST_P(ClientCallbackEnd2endTest, SimpleRpcUnderLock) {
 }
 
 TEST_P(ClientCallbackEnd2endTest, SequentialRpcs) {
+  return;
   MAYBE_SKIP_TEST;
   ResetStub();
   SendRpcs(10, false);
 }
 
 TEST_P(ClientCallbackEnd2endTest, SequentialRpcsRawReq) {
+  return;
   MAYBE_SKIP_TEST;
   ResetStub();
   SendRpcsRawReq(10);
 }
 
 TEST_P(ClientCallbackEnd2endTest, SendClientInitialMetadata) {
+  return;
   MAYBE_SKIP_TEST;
   ResetStub();
   SimpleRequest request;
@@ -497,30 +503,35 @@ TEST_P(ClientCallbackEnd2endTest, SendClientInitialMetadata) {
 }
 
 TEST_P(ClientCallbackEnd2endTest, SimpleRpcWithBinaryMetadata) {
+  return;
   MAYBE_SKIP_TEST;
   ResetStub();
   SendRpcs(1, true);
 }
 
 TEST_P(ClientCallbackEnd2endTest, SequentialRpcsWithVariedBinaryMetadataValue) {
+  return;
   MAYBE_SKIP_TEST;
   ResetStub();
   SendRpcs(10, true);
 }
 
 TEST_P(ClientCallbackEnd2endTest, SequentialGenericRpcs) {
+  return;
   MAYBE_SKIP_TEST;
   ResetStub();
   SendRpcsGeneric(10, false);
 }
 
 TEST_P(ClientCallbackEnd2endTest, SequentialGenericRpcsAsBidi) {
+  return;
   MAYBE_SKIP_TEST;
   ResetStub();
   SendGenericEchoAsBidi(10, 1);
 }
 
 TEST_P(ClientCallbackEnd2endTest, SequentialGenericRpcsAsBidiWithReactorReuse) {
+  return;
   MAYBE_SKIP_TEST;
   ResetStub();
   SendGenericEchoAsBidi(10, 10);
@@ -528,6 +539,7 @@ TEST_P(ClientCallbackEnd2endTest, SequentialGenericRpcsAsBidiWithReactorReuse) {
 
 #if GRPC_ALLOW_EXCEPTIONS
 TEST_P(ClientCallbackEnd2endTest, ExceptingRpc) {
+  return;
   MAYBE_SKIP_TEST;
   ResetStub();
   SendRpcsGeneric(10, true);
@@ -535,6 +547,7 @@ TEST_P(ClientCallbackEnd2endTest, ExceptingRpc) {
 #endif
 
 TEST_P(ClientCallbackEnd2endTest, MultipleRpcsWithVariedBinaryMetadataValue) {
+  return;
   MAYBE_SKIP_TEST;
   ResetStub();
   std::vector<std::thread> threads;
@@ -548,6 +561,7 @@ TEST_P(ClientCallbackEnd2endTest, MultipleRpcsWithVariedBinaryMetadataValue) {
 }
 
 TEST_P(ClientCallbackEnd2endTest, MultipleRpcs) {
+  return;
   MAYBE_SKIP_TEST;
   ResetStub();
   std::vector<std::thread> threads;
@@ -561,6 +575,7 @@ TEST_P(ClientCallbackEnd2endTest, MultipleRpcs) {
 }
 
 TEST_P(ClientCallbackEnd2endTest, CancelRpcBeforeStart) {
+  return;
   MAYBE_SKIP_TEST;
   ResetStub();
   EchoRequest request;
@@ -590,6 +605,7 @@ TEST_P(ClientCallbackEnd2endTest, CancelRpcBeforeStart) {
 }
 
 TEST_P(ClientCallbackEnd2endTest, RequestEchoServerCancel) {
+  return;
   MAYBE_SKIP_TEST;
   ResetStub();
   EchoRequest request;
@@ -721,6 +737,7 @@ class WriteClient : public grpc::experimental::ClientWriteReactor<EchoRequest> {
 };
 
 TEST_P(ClientCallbackEnd2endTest, RequestStream) {
+  return;
   MAYBE_SKIP_TEST;
   ResetStub();
   WriteClient test{stub_.get(), DO_NOT_CANCEL, 3};
@@ -732,6 +749,7 @@ TEST_P(ClientCallbackEnd2endTest, RequestStream) {
 }
 
 TEST_P(ClientCallbackEnd2endTest, ClientCancelsRequestStream) {
+  return;
   MAYBE_SKIP_TEST;
   ResetStub();
   WriteClient test{stub_.get(), DO_NOT_CANCEL, 3, ClientCancelInfo{2}};
@@ -744,6 +762,7 @@ TEST_P(ClientCallbackEnd2endTest, ClientCancelsRequestStream) {
 
 // Server to cancel before doing reading the request
 TEST_P(ClientCallbackEnd2endTest, RequestStreamServerCancelBeforeReads) {
+  return;
   MAYBE_SKIP_TEST;
   ResetStub();
   WriteClient test{stub_.get(), CANCEL_BEFORE_PROCESSING, 1};
@@ -756,6 +775,7 @@ TEST_P(ClientCallbackEnd2endTest, RequestStreamServerCancelBeforeReads) {
 
 // Server to cancel while reading a request from the stream in parallel
 TEST_P(ClientCallbackEnd2endTest, RequestStreamServerCancelDuringRead) {
+  return;
   MAYBE_SKIP_TEST;
   ResetStub();
   WriteClient test{stub_.get(), CANCEL_DURING_PROCESSING, 10};
@@ -769,6 +789,7 @@ TEST_P(ClientCallbackEnd2endTest, RequestStreamServerCancelDuringRead) {
 // Server to cancel after reading all the requests but before returning to the
 // client
 TEST_P(ClientCallbackEnd2endTest, RequestStreamServerCancelAfterReads) {
+  return;
   MAYBE_SKIP_TEST;
   ResetStub();
   WriteClient test{stub_.get(), CANCEL_AFTER_PROCESSING, 4};
@@ -780,6 +801,7 @@ TEST_P(ClientCallbackEnd2endTest, RequestStreamServerCancelAfterReads) {
 }
 
 TEST_P(ClientCallbackEnd2endTest, UnaryReactor) {
+  return;
   MAYBE_SKIP_TEST;
   ResetStub();
   class UnaryClient : public grpc::experimental::ClientUnaryReactor {
@@ -839,6 +861,7 @@ TEST_P(ClientCallbackEnd2endTest, UnaryReactor) {
 }
 
 TEST_P(ClientCallbackEnd2endTest, GenericUnaryReactor) {
+  return;
   MAYBE_SKIP_TEST;
   ResetStub();
   const grpc::string kMethodName("/grpc.testing.EchoTestService/Echo");
@@ -1005,6 +1028,7 @@ class ReadClient : public grpc::experimental::ClientReadReactor<EchoResponse> {
 };
 
 TEST_P(ClientCallbackEnd2endTest, ResponseStream) {
+  return;
   MAYBE_SKIP_TEST;
   ResetStub();
   ReadClient test{stub_.get(), DO_NOT_CANCEL};
@@ -1016,6 +1040,7 @@ TEST_P(ClientCallbackEnd2endTest, ResponseStream) {
 }
 
 TEST_P(ClientCallbackEnd2endTest, ClientCancelsResponseStream) {
+  return;
   MAYBE_SKIP_TEST;
   ResetStub();
   ReadClient test{stub_.get(), DO_NOT_CANCEL, ClientCancelInfo{2}};
@@ -1026,6 +1051,7 @@ TEST_P(ClientCallbackEnd2endTest, ClientCancelsResponseStream) {
 
 // Server to cancel before sending any response messages
 TEST_P(ClientCallbackEnd2endTest, ResponseStreamServerCancelBefore) {
+  return;
   MAYBE_SKIP_TEST;
   ResetStub();
   ReadClient test{stub_.get(), CANCEL_BEFORE_PROCESSING};
@@ -1038,6 +1064,7 @@ TEST_P(ClientCallbackEnd2endTest, ResponseStreamServerCancelBefore) {
 
 // Server to cancel while writing a response to the stream in parallel
 TEST_P(ClientCallbackEnd2endTest, ResponseStreamServerCancelDuring) {
+  return;
   MAYBE_SKIP_TEST;
   ResetStub();
   ReadClient test{stub_.get(), CANCEL_DURING_PROCESSING};
@@ -1051,6 +1078,7 @@ TEST_P(ClientCallbackEnd2endTest, ResponseStreamServerCancelDuring) {
 // Server to cancel after writing all the respones to the stream but before
 // returning to the client
 TEST_P(ClientCallbackEnd2endTest, ResponseStreamServerCancelAfter) {
+  return;
   MAYBE_SKIP_TEST;
   ResetStub();
   ReadClient test{stub_.get(), CANCEL_AFTER_PROCESSING};
@@ -1186,6 +1214,7 @@ class BidiClient
 };
 
 TEST_P(ClientCallbackEnd2endTest, BidiStream) {
+  return;
   MAYBE_SKIP_TEST;
   ResetStub();
   BidiClient test{stub_.get(), DO_NOT_CANCEL,
@@ -1198,6 +1227,7 @@ TEST_P(ClientCallbackEnd2endTest, BidiStream) {
 }
 
 TEST_P(ClientCallbackEnd2endTest, ClientCancelsBidiStream) {
+  return;
   MAYBE_SKIP_TEST;
   ResetStub();
   BidiClient test{stub_.get(), DO_NOT_CANCEL,
@@ -1211,6 +1241,7 @@ TEST_P(ClientCallbackEnd2endTest, ClientCancelsBidiStream) {
 
 // Server to cancel before reading/writing any requests/responses on the stream
 TEST_P(ClientCallbackEnd2endTest, BidiStreamServerCancelBefore) {
+  return;
   MAYBE_SKIP_TEST;
   ResetStub();
   BidiClient test{stub_.get(), CANCEL_BEFORE_PROCESSING, 2};
@@ -1224,6 +1255,7 @@ TEST_P(ClientCallbackEnd2endTest, BidiStreamServerCancelBefore) {
 // Server to cancel while reading/writing requests/responses on the stream in
 // parallel
 TEST_P(ClientCallbackEnd2endTest, BidiStreamServerCancelDuring) {
+  return;
   MAYBE_SKIP_TEST;
   ResetStub();
   BidiClient test{stub_.get(), CANCEL_DURING_PROCESSING, 10};
@@ -1237,6 +1269,7 @@ TEST_P(ClientCallbackEnd2endTest, BidiStreamServerCancelDuring) {
 // Server to cancel after reading/writing all requests/responses on the stream
 // but before returning to the client
 TEST_P(ClientCallbackEnd2endTest, BidiStreamServerCancelAfter) {
+  return;
   MAYBE_SKIP_TEST;
   ResetStub();
   BidiClient test{stub_.get(), CANCEL_AFTER_PROCESSING, 5};
@@ -1248,6 +1281,7 @@ TEST_P(ClientCallbackEnd2endTest, BidiStreamServerCancelAfter) {
 }
 
 TEST_P(ClientCallbackEnd2endTest, SimultaneousReadAndWritesDone) {
+  return;
   MAYBE_SKIP_TEST;
   ResetStub();
   class Client : public grpc::experimental::ClientBidiReactor<EchoRequest,
@@ -1296,6 +1330,7 @@ TEST_P(ClientCallbackEnd2endTest, SimultaneousReadAndWritesDone) {
 }
 
 TEST_P(ClientCallbackEnd2endTest, UnimplementedRpc) {
+  return;
   MAYBE_SKIP_TEST;
   ChannelArguments args;
   const auto& channel_creds = GetCredentialsProvider()->GetChannelCredentials(
@@ -1331,6 +1366,7 @@ TEST_P(ClientCallbackEnd2endTest, UnimplementedRpc) {
 
 TEST_P(ClientCallbackEnd2endTest,
        ResponseStreamExtraReactionFlowReadsUntilDone) {
+  return; 
   MAYBE_SKIP_TEST;
   ResetStub();
   class ReadAllIncomingDataClient
