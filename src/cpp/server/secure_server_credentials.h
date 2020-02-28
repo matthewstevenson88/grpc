@@ -20,6 +20,7 @@
 #define GRPC_INTERNAL_CPP_SERVER_SECURE_SERVER_CREDENTIALS_H
 
 #include <memory>
+#include <iostream>
 
 #include <grpcpp/security/server_credentials.h>
 #include <grpcpp/security/tls_credentials_options.h>
@@ -68,8 +69,10 @@ namespace grpc_impl {
 class SecureServerCredentials final : public ServerCredentials {
  public:
   explicit SecureServerCredentials(grpc_server_credentials* creds)
-      : creds_(creds) {}
+      : creds_(creds) {
+        std::cout << "*******Entered constructor of |SecureServerCredentials|." << std::endl; }
   ~SecureServerCredentials() override {
+    std::cout << "********Entered destructor of |SecureServerCredentials|." << std::endl;
     grpc_server_credentials_release(creds_);
   }
 

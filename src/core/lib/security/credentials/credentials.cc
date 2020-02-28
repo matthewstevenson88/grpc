@@ -22,7 +22,7 @@
 
 #include <stdio.h>
 #include <string.h>
-
+#include <iostream>
 #include "src/core/lib/channel/channel_args.h"
 #include "src/core/lib/gpr/string.h"
 #include "src/core/lib/http/httpcli.h"
@@ -180,9 +180,13 @@ grpc_channel_credentials* grpc_channel_credentials_find_in_args(
 }
 
 void grpc_server_credentials_release(grpc_server_credentials* creds) {
+  std::cout << "********Entered |grpc_server_credentials_release|." << std::endl;
   GRPC_API_TRACE("grpc_server_credentials_release(creds=%p)", 1, (creds));
+  std::cout << "*********Line 2 of |grpc_server_credentials_release|." << std::endl;
   grpc_core::ExecCtx exec_ctx;
+  std::cout << "********Line 3 of |grpc_server_credentials_release|." << std::endl;
   if (creds) creds->Unref();
+  std::cout << "*********Finishing |grpc_server_credentials_release|." << std::endl;
 }
 
 void grpc_server_credentials::set_auth_metadata_processor(

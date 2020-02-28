@@ -21,6 +21,7 @@
 #include "src/core/lib/security/credentials/tls/tls_credentials.h"
 
 #include <cstring>
+#include <iostream>
 
 #include <grpc/grpc.h>
 #include <grpc/support/alloc.h>
@@ -36,6 +37,7 @@ namespace {
 
 bool CredentialOptionSanityCheck(const grpc_tls_credentials_options* options,
                                  bool is_client) {
+  std::cout << "***********Entered |CredentialOptionSanityCheck|." << std::endl;
   if (options == nullptr) {
     gpr_log(GPR_ERROR, "TLS credentials options is nullptr.");
     return false;
@@ -99,7 +101,9 @@ TlsCredentials::create_security_connector(
 TlsServerCredentials::TlsServerCredentials(
     grpc_core::RefCountedPtr<grpc_tls_credentials_options> options)
     : grpc_server_credentials(GRPC_CREDENTIALS_TYPE_TLS),
-      options_(std::move(options)) {}
+      options_(std::move(options)) {
+        std::cout << "**************Entered constructor of C-core |TlsServerCredentials|." << std::endl;
+      }
 
 TlsServerCredentials::~TlsServerCredentials() {}
 
@@ -120,6 +124,7 @@ grpc_channel_credentials* grpc_tls_credentials_create(
 
 grpc_server_credentials* grpc_tls_server_credentials_create(
     grpc_tls_credentials_options* options) {
+  std::cout << "*********Entered |grpc_tls_server_credentials_create|." << std::endl;
   if (!CredentialOptionSanityCheck(options, false /* is_client */)) {
     return nullptr;
   }
