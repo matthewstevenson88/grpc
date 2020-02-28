@@ -376,13 +376,13 @@ TEST_P(ClientCallbackEnd2endTest, SimpleRpc) {
   return;
   MAYBE_SKIP_TEST;
   ResetStub();
-  SendRpcs(1, false);
+  //SendRpcs(1, false);
 }
 
 TEST_P(ClientCallbackEnd2endTest, SimpleRpcUnderLockNested) {
   return;
   MAYBE_SKIP_TEST;
-  ResetStub();
+  /**ResetStub();
   std::mutex mu1, mu2, mu3;
   std::condition_variable cv;
   bool done = false;
@@ -429,12 +429,13 @@ TEST_P(ClientCallbackEnd2endTest, SimpleRpcUnderLockNested) {
   while (!done) {
     cv.wait(l);
   }
+  **/
 }
 
 TEST_P(ClientCallbackEnd2endTest, SimpleRpcUnderLock) {
   return;
   MAYBE_SKIP_TEST;
-  ResetStub();
+  /**ResetStub();
   std::mutex mu;
   std::condition_variable cv;
   bool done = false;
@@ -458,26 +459,29 @@ TEST_P(ClientCallbackEnd2endTest, SimpleRpcUnderLock) {
   while (!done) {
     cv.wait(l);
   }
+  **/
 }
 
 TEST_P(ClientCallbackEnd2endTest, SequentialRpcs) {
   return;
   MAYBE_SKIP_TEST;
-  ResetStub();
+  /**ResetStub();
   SendRpcs(10, false);
+  **/
 }
 
 TEST_P(ClientCallbackEnd2endTest, SequentialRpcsRawReq) {
   return;
   MAYBE_SKIP_TEST;
-  ResetStub();
+  /**ResetStub();
   SendRpcsRawReq(10);
+  **/
 }
 
 TEST_P(ClientCallbackEnd2endTest, SendClientInitialMetadata) {
   return;
   MAYBE_SKIP_TEST;
-  ResetStub();
+  /**ResetStub();
   SimpleRequest request;
   SimpleResponse response;
   ClientContext cli_ctx;
@@ -500,43 +504,47 @@ TEST_P(ClientCallbackEnd2endTest, SendClientInitialMetadata) {
   while (!done) {
     cv.wait(l);
   }
+  **/
 }
 
 TEST_P(ClientCallbackEnd2endTest, SimpleRpcWithBinaryMetadata) {
   return;
   MAYBE_SKIP_TEST;
-  ResetStub();
+  /**ResetStub();
   SendRpcs(1, true);
+  **/
 }
 
 TEST_P(ClientCallbackEnd2endTest, SequentialRpcsWithVariedBinaryMetadataValue) {
   return;
   MAYBE_SKIP_TEST;
-  ResetStub();
+  /**ResetStub();
   SendRpcs(10, true);
+  **/
 }
 
 TEST_P(ClientCallbackEnd2endTest, SequentialGenericRpcs) {
   return;
   MAYBE_SKIP_TEST;
-  ResetStub();
-  SendRpcsGeneric(10, false);
+  /**ResetStub();
+  SendRpcsGeneric(10, false);**/
 }
 
 TEST_P(ClientCallbackEnd2endTest, SequentialGenericRpcsAsBidi) {
   return;
   MAYBE_SKIP_TEST;
-  ResetStub();
-  SendGenericEchoAsBidi(10, 1);
+  /**ResetStub();
+  SendGenericEchoAsBidi(10, 1);**/
 }
 
 TEST_P(ClientCallbackEnd2endTest, SequentialGenericRpcsAsBidiWithReactorReuse) {
   return;
   MAYBE_SKIP_TEST;
-  ResetStub();
-  SendGenericEchoAsBidi(10, 10);
+  /**ResetStub();
+  SendGenericEchoAsBidi(10, 10);**/
 }
 
+/**
 #if GRPC_ALLOW_EXCEPTIONS
 TEST_P(ClientCallbackEnd2endTest, ExceptingRpc) {
   return;
@@ -631,6 +639,7 @@ TEST_P(ClientCallbackEnd2endTest, RequestEchoServerCancel) {
     cv.wait(l);
   }
 }
+**/
 
 struct ClientCancelInfo {
   bool cancel{false};
@@ -736,6 +745,7 @@ class WriteClient : public grpc::experimental::ClientWriteReactor<EchoRequest> {
   bool done_ = false;
 };
 
+/**
 TEST_P(ClientCallbackEnd2endTest, RequestStream) {
   return;
   MAYBE_SKIP_TEST;
@@ -1440,6 +1450,8 @@ TEST_P(ClientCallbackEnd2endTest,
   EXPECT_EQ(kServerDefaultResponseStreamsToSend, reads_complete);
   EXPECT_EQ(client.status().error_code(), grpc::StatusCode::OK);
 }
+
+**/
 
 std::vector<TestScenario> CreateTestScenarios(bool test_insecure) {
 #if TARGET_OS_IPHONE
