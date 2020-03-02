@@ -688,13 +688,13 @@ TEST_F(CredentialsTest, LoadTlsServerCredentials) {
   std::shared_ptr<TlsCredentialReloadConfig> credential_reload_config(
       new TlsCredentialReloadConfig(test_credential_reload));
 
-  SslServerCredentialsOptions ssl_opts;
+  ::grpc::SslServerCredentialsOptions ssl_opts;
   ssl_opts.pem_root_certs = "";
   //TlsCredentialsOptions options = TlsCredentialsOptions(
   //    GRPC_SSL_REQUEST_CLIENT_CERTIFICATE_AND_VERIFY,
   //    GRPC_TLS_SERVER_VERIFICATION, nullptr, credential_reload_config, nullptr);
   std::shared_ptr<::grpc_impl::ServerCredentials> server_credentials =
-      grpc::experimental::SslServerCredentials(ssl_opts);
+      ::grpc::SslServerCredentials(ssl_opts);
   GPR_ASSERT(server_credentials.get() != nullptr);
   // grpc_shutdown();
 }
