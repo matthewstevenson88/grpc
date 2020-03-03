@@ -40,6 +40,7 @@ namespace grpc {
 namespace testing {
 namespace {
 
+/**
 const char kServerReturnStatusCode[] = "server_return_status_code";
 const char kServerDelayBeforeReturnUs[] = "server_delay_before_return_us";
 const char kServerReturnAfterNReads[] = "server_return_after_n_reads";
@@ -220,6 +221,7 @@ TEST_F(ServerEarlyReturnTest, RequestStreamEarlyOK) { DoRequestStream(false); }
 TEST_F(ServerEarlyReturnTest, RequestStreamEarlyCancel) {
   DoRequestStream(true);
 }
+**/
 
 }  // namespace
 }  // namespace testing
