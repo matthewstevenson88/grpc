@@ -12,38 +12,38 @@
 
 #include "upb/port_def.inc"
 
-static const upb_msglayout *const s2a_Identity_submsgs[1] = {
-  &s2a_Identity_AttributesEntry_msginit,
+static const upb_msglayout *const s2a_proto_Identity_submsgs[1] = {
+  &s2a_proto_Identity_AttributesEntry_msginit,
 };
 
-static const upb_msglayout_field s2a_Identity__fields[3] = {
+static const upb_msglayout_field s2a_proto_Identity__fields[3] = {
   {1, UPB_SIZE(4, 8), UPB_SIZE(-13, -25), 0, 9, 1},
   {2, UPB_SIZE(4, 8), UPB_SIZE(-13, -25), 0, 9, 1},
   {3, UPB_SIZE(0, 0), 0, 0, 11, 3},
 };
 
-const upb_msglayout s2a_Identity_msginit = {
-  &s2a_Identity_submsgs[0],
-  &s2a_Identity__fields[0],
+const upb_msglayout s2a_proto_Identity_msginit = {
+  &s2a_proto_Identity_submsgs[0],
+  &s2a_proto_Identity__fields[0],
   UPB_SIZE(16, 32), 3, false,
 };
 
-static const upb_msglayout_field s2a_Identity_AttributesEntry__fields[2] = {
+static const upb_msglayout_field s2a_proto_Identity_AttributesEntry__fields[2] = {
   {1, UPB_SIZE(0, 0), 0, 0, 9, 1},
   {2, UPB_SIZE(8, 16), 0, 0, 9, 1},
 };
 
-const upb_msglayout s2a_Identity_AttributesEntry_msginit = {
+const upb_msglayout s2a_proto_Identity_AttributesEntry_msginit = {
   NULL,
-  &s2a_Identity_AttributesEntry__fields[0],
+  &s2a_proto_Identity_AttributesEntry__fields[0],
   UPB_SIZE(16, 32), 2, false,
 };
 
-static const upb_msglayout *const s2a_ClientSessionStartReq_submsgs[2] = {
-  &s2a_Identity_msginit,
+static const upb_msglayout *const s2a_proto_ClientSessionStartReq_submsgs[2] = {
+  &s2a_proto_Identity_msginit,
 };
 
-static const upb_msglayout_field s2a_ClientSessionStartReq__fields[7] = {
+static const upb_msglayout_field s2a_proto_ClientSessionStartReq__fields[7] = {
   {1, UPB_SIZE(28, 40), 0, 0, 9, 3},
   {2, UPB_SIZE(0, 0), 0, 0, 14, 1},
   {3, UPB_SIZE(8, 8), 0, 0, 14, 1},
@@ -53,17 +53,17 @@ static const upb_msglayout_field s2a_ClientSessionStartReq__fields[7] = {
   {7, UPB_SIZE(16, 16), 0, 0, 9, 1},
 };
 
-const upb_msglayout s2a_ClientSessionStartReq_msginit = {
-  &s2a_ClientSessionStartReq_submsgs[0],
-  &s2a_ClientSessionStartReq__fields[0],
+const upb_msglayout s2a_proto_ClientSessionStartReq_msginit = {
+  &s2a_proto_ClientSessionStartReq_submsgs[0],
+  &s2a_proto_ClientSessionStartReq__fields[0],
   UPB_SIZE(40, 64), 7, false,
 };
 
-static const upb_msglayout *const s2a_ServerSessionStartReq_submsgs[1] = {
-  &s2a_Identity_msginit,
+static const upb_msglayout *const s2a_proto_ServerSessionStartReq_submsgs[1] = {
+  &s2a_proto_Identity_msginit,
 };
 
-static const upb_msglayout_field s2a_ServerSessionStartReq__fields[6] = {
+static const upb_msglayout_field s2a_proto_ServerSessionStartReq__fields[6] = {
   {1, UPB_SIZE(24, 32), 0, 0, 9, 3},
   {2, UPB_SIZE(0, 0), 0, 0, 14, 1},
   {3, UPB_SIZE(8, 8), 0, 0, 14, 1},
@@ -72,53 +72,53 @@ static const upb_msglayout_field s2a_ServerSessionStartReq__fields[6] = {
   {6, UPB_SIZE(16, 16), 0, 0, 12, 1},
 };
 
-const upb_msglayout s2a_ServerSessionStartReq_msginit = {
-  &s2a_ServerSessionStartReq_submsgs[0],
-  &s2a_ServerSessionStartReq__fields[0],
+const upb_msglayout s2a_proto_ServerSessionStartReq_msginit = {
+  &s2a_proto_ServerSessionStartReq_submsgs[0],
+  &s2a_proto_ServerSessionStartReq__fields[0],
   UPB_SIZE(40, 64), 6, false,
 };
 
-static const upb_msglayout_field s2a_SessionNextReq__fields[1] = {
+static const upb_msglayout_field s2a_proto_SessionNextReq__fields[1] = {
   {1, UPB_SIZE(0, 0), 0, 0, 12, 1},
 };
 
-const upb_msglayout s2a_SessionNextReq_msginit = {
+const upb_msglayout s2a_proto_SessionNextReq_msginit = {
   NULL,
-  &s2a_SessionNextReq__fields[0],
+  &s2a_proto_SessionNextReq__fields[0],
   UPB_SIZE(8, 16), 1, false,
 };
 
-static const upb_msglayout_field s2a_ResumptionTicketReq__fields[1] = {
+static const upb_msglayout_field s2a_proto_ResumptionTicketReq__fields[1] = {
   {1, UPB_SIZE(0, 0), 0, 0, 12, 1},
 };
 
-const upb_msglayout s2a_ResumptionTicketReq_msginit = {
+const upb_msglayout s2a_proto_ResumptionTicketReq_msginit = {
   NULL,
-  &s2a_ResumptionTicketReq__fields[0],
+  &s2a_proto_ResumptionTicketReq__fields[0],
   UPB_SIZE(8, 16), 1, false,
 };
 
-static const upb_msglayout *const s2a_SessionReq_submsgs[4] = {
-  &s2a_ClientSessionStartReq_msginit,
-  &s2a_ResumptionTicketReq_msginit,
-  &s2a_ServerSessionStartReq_msginit,
-  &s2a_SessionNextReq_msginit,
+static const upb_msglayout *const s2a_proto_SessionReq_submsgs[4] = {
+  &s2a_proto_ClientSessionStartReq_msginit,
+  &s2a_proto_ResumptionTicketReq_msginit,
+  &s2a_proto_ServerSessionStartReq_msginit,
+  &s2a_proto_SessionNextReq_msginit,
 };
 
-static const upb_msglayout_field s2a_SessionReq__fields[4] = {
+static const upb_msglayout_field s2a_proto_SessionReq__fields[4] = {
   {1, UPB_SIZE(0, 0), UPB_SIZE(-5, -9), 0, 11, 1},
   {2, UPB_SIZE(0, 0), UPB_SIZE(-5, -9), 2, 11, 1},
   {3, UPB_SIZE(0, 0), UPB_SIZE(-5, -9), 3, 11, 1},
   {4, UPB_SIZE(0, 0), UPB_SIZE(-5, -9), 1, 11, 1},
 };
 
-const upb_msglayout s2a_SessionReq_msginit = {
-  &s2a_SessionReq_submsgs[0],
-  &s2a_SessionReq__fields[0],
+const upb_msglayout s2a_proto_SessionReq_msginit = {
+  &s2a_proto_SessionReq_submsgs[0],
+  &s2a_proto_SessionReq__fields[0],
   UPB_SIZE(8, 16), 4, false,
 };
 
-static const upb_msglayout_field s2a_SessionState__fields[10] = {
+static const upb_msglayout_field s2a_proto_SessionState__fields[10] = {
   {1, UPB_SIZE(0, 0), 0, 0, 14, 1},
   {2, UPB_SIZE(8, 8), 0, 0, 14, 1},
   {3, UPB_SIZE(16, 16), 0, 0, 4, 1},
@@ -131,56 +131,58 @@ static const upb_msglayout_field s2a_SessionState__fields[10] = {
   {10, UPB_SIZE(72, 112), 0, 0, 12, 1},
 };
 
-const upb_msglayout s2a_SessionState_msginit = {
+const upb_msglayout s2a_proto_SessionState_msginit = {
   NULL,
-  &s2a_SessionState__fields[0],
+  &s2a_proto_SessionState__fields[0],
   UPB_SIZE(80, 128), 10, false,
 };
 
-static const upb_msglayout *const s2a_SessionResult_submsgs[3] = {
-  &s2a_Identity_msginit,
-  &s2a_SessionState_msginit,
+static const upb_msglayout *const s2a_proto_SessionResult_submsgs[3] = {
+  &s2a_proto_Identity_msginit,
+  &s2a_proto_SessionState_msginit,
 };
 
-static const upb_msglayout_field s2a_SessionResult__fields[4] = {
+static const upb_msglayout_field s2a_proto_SessionResult__fields[6] = {
   {1, UPB_SIZE(0, 0), 0, 0, 9, 1},
-  {2, UPB_SIZE(8, 16), 0, 1, 11, 1},
-  {4, UPB_SIZE(12, 24), 0, 0, 11, 1},
-  {5, UPB_SIZE(16, 32), 0, 0, 11, 1},
+  {2, UPB_SIZE(24, 48), 0, 1, 11, 1},
+  {4, UPB_SIZE(28, 56), 0, 0, 11, 1},
+  {5, UPB_SIZE(32, 64), 0, 0, 11, 1},
+  {11, UPB_SIZE(8, 16), 0, 0, 12, 1},
+  {12, UPB_SIZE(16, 32), 0, 0, 12, 1},
 };
 
-const upb_msglayout s2a_SessionResult_msginit = {
-  &s2a_SessionResult_submsgs[0],
-  &s2a_SessionResult__fields[0],
-  UPB_SIZE(24, 48), 4, false,
+const upb_msglayout s2a_proto_SessionResult_msginit = {
+  &s2a_proto_SessionResult_submsgs[0],
+  &s2a_proto_SessionResult__fields[0],
+  UPB_SIZE(40, 80), 6, false,
 };
 
-static const upb_msglayout_field s2a_SessionStatus__fields[2] = {
+static const upb_msglayout_field s2a_proto_SessionStatus__fields[2] = {
   {1, UPB_SIZE(0, 0), 0, 0, 13, 1},
   {2, UPB_SIZE(4, 8), 0, 0, 9, 1},
 };
 
-const upb_msglayout s2a_SessionStatus_msginit = {
+const upb_msglayout s2a_proto_SessionStatus_msginit = {
   NULL,
-  &s2a_SessionStatus__fields[0],
+  &s2a_proto_SessionStatus__fields[0],
   UPB_SIZE(16, 32), 2, false,
 };
 
-static const upb_msglayout *const s2a_SessionResp_submsgs[2] = {
-  &s2a_SessionResult_msginit,
-  &s2a_SessionStatus_msginit,
+static const upb_msglayout *const s2a_proto_SessionResp_submsgs[2] = {
+  &s2a_proto_SessionResult_msginit,
+  &s2a_proto_SessionStatus_msginit,
 };
 
-static const upb_msglayout_field s2a_SessionResp__fields[4] = {
+static const upb_msglayout_field s2a_proto_SessionResp__fields[4] = {
   {1, UPB_SIZE(4, 8), 0, 0, 12, 1},
   {2, UPB_SIZE(0, 0), 0, 0, 13, 1},
   {3, UPB_SIZE(12, 24), 0, 0, 11, 1},
   {4, UPB_SIZE(16, 32), 0, 1, 11, 1},
 };
 
-const upb_msglayout s2a_SessionResp_msginit = {
-  &s2a_SessionResp_submsgs[0],
-  &s2a_SessionResp__fields[0],
+const upb_msglayout s2a_proto_SessionResp_msginit = {
+  &s2a_proto_SessionResp_submsgs[0],
+  &s2a_proto_SessionResp__fields[0],
   UPB_SIZE(24, 48), 4, false,
 };
 

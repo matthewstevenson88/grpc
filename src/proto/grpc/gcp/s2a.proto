@@ -1,6 +1,10 @@
 syntax = "proto3";
 
-package s2a;
+package s2a.proto;
+
+option java_package = "com.google.net.grpc.s2a.handshaker";
+option java_outer_classname = "S2aProto";
+option java_multiple_files = true;
 
 // The ciphersuites supported by S2A. The name determines the confidentiality,
 // and authentication ciphers as well as the hash algorithm used for PRF in
@@ -110,6 +114,9 @@ message SessionNextReq {
   bytes in_bytes = 1;
 }
 
+// TODO(b/141876286): This only allows client-side handling of resumption
+//                    tickets. We need a way to pass the ticket from S2A to the
+//                    server-side application.
 message ResumptionTicketReq {
   // The byte representation of a NewSessionTicket message received from the
   // server.
@@ -140,7 +147,7 @@ message SessionState {
   // session.
   TLSVersion tls_version = 1;
 
-  // The TLS ciphersuite negotiated by the that S2A's handshaker module.
+  // The TLS ciphersuite negotiated by the S2A's handshaker module.
   Ciphersuite tls_ciphersuite = 2;
 
   // The sequence number of the next, incoming, TLS record.
@@ -180,6 +187,12 @@ message SessionResult {
   //  - One of the local identities specified by the server.
   //  - The default identity selected by S2A.
   Identity local_identity = 5;
+
+  // The SHA256 hash of the local certificate used in the handshake.
+  bytes local_cert_fingerprint = 11;
+
+  // The SHA256 hash of the peer certificate used in the handshake.
+  bytes peer_cert_fingerprint = 12;
 }
 
 message SessionStatus {
