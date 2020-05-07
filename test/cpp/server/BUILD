@@ -33,6 +33,19 @@ grpc_cc_test(
 )
 
 grpc_cc_test(
+    name = "server_credentials_test",
+    srcs = ["server_credentials_test.cc"],
+    external_deps = [
+        "gtest",
+    ],
+    deps = [
+        "//:grpc",
+        "//:grpc++",
+        "//:grpc_secure",
+    ],
+)
+
+grpc_cc_test(
     name = "server_builder_with_socket_mutator_test",
     srcs = ["server_builder_with_socket_mutator_test.cc"],
     external_deps = [
