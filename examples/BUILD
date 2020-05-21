@@ -88,6 +88,18 @@ cc_binary(
 )
 
 cc_binary(
+    name = "mtls_greeter_client",
+    srcs = ["cpp/helloworld/mtls_greeter_client.cc"],
+    defines = ["BAZEL_BUILD"],
+    deps = [
+        ":helloworld_cc_grpc",
+        "//:grpc++",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/flags:parse"
+    ],
+)
+
+cc_binary(
     name = "greeter_async_client",
     srcs = ["cpp/helloworld/greeter_async_client.cc"],
     defines = ["BAZEL_BUILD"],
@@ -104,6 +116,19 @@ cc_binary(
     deps = [
         ":helloworld_cc_grpc",
         "//:grpc++",
+    ],
+)
+
+cc_binary(
+    name = "mtls_greeter_server",
+    srcs = ["cpp/helloworld/mtls_greeter_server.cc"],
+    defines = ["BAZEL_BUILD"],
+    deps = [
+        ":helloworld_cc_grpc",
+        "//:grpc++",
+        "//:grpc++_reflection",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/flags:parse"
     ],
 )
 
