@@ -16,61 +16,47 @@
  *
  */
 
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <memory>
 #include <string>
 
 #include <grpcpp/grpcpp.h>
 
-#ifdef BAZEL_BUILD
-#include "examples/protos/helloworld.grpc.pb.h"
-#else
-#include "helloworld.grpc.pb.h"
-#endif
-
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
+#include "examples/protos/helloworld.grpc.pb.h"
 
 using grpc::Channel;
 using grpc::ClientContext;
 using grpc::Status;
-using helloworld::HelloRequest;
-using helloworld::HelloReply;
 using helloworld::Greeter;
+using helloworld::HelloReply;
+using helloworld::HelloRequest;
 
 ABSL_FLAG(std::string, server_address, "localhost:50051",
-  "address of the server");
+          "The address of the gRPC greeter server.");
 ABSL_FLAG(std::string, server_root_cert_pem_path, "ca.cert",
-  "path to root X509 certificate");
+          "The path to the root X509 certificate.");
 ABSL_FLAG(std::string, client_cert_pem_path, "client.pem",
-  "path to client's X509 certificate");
+          "The path to the client's X509 certificate.");
 ABSL_FLAG(std::string, client_key_pem_path, "client.key",
-  "path to client's private key");
+          "The path to the client's private key.");
 
 class GreeterClient {
  public:
-  GreeterClient(std::shared_ptr<Channel> channel)
+  GreeterClient(const std::shared_ptr<Channel>& channel)
       : stub_(Greeter::NewStub(channel)) {}
 
   // Assembles the client's payload, sends it and presents the response back
   // from the server.
   std::string SayHello(const std::string& user) {
-    // Data we are sending to the server.
     HelloRequest request;
     request.set_name(user);
-
-    // Container for the data we expect from the server.
     HelloReply reply;
-
-    // Context for the client. It could be used to convey extra information to
-    // the server and/or tweak certain RPC behaviors.
     ClientContext context;
 
-    // The actual RPC.
     Status status = stub_->SayHello(&context, request, &reply);
-
-    // Act upon its status.
     if (status.ok()) {
       return reply.message();
     } else {
@@ -84,7 +70,7 @@ class GreeterClient {
   std::unique_ptr<Greeter::Stub> stub_;
 };
 
-std::string readFile(const std::string& filePath) {
+static std::string readFile(const std::string& filePath) {
   std::ifstream ifs(filePath);
   return std::string((std::istreambuf_iterator<char>(ifs)),
                      (std::istreambuf_iterator<char>()));
@@ -92,28 +78,25 @@ std::string readFile(const std::string& filePath) {
 
 int main(int argc, char** argv) {
   absl::ParseCommandLine(argc, argv);
-  std::string serverAddr = absl::GetFlag(FLAGS_server_address);
-  std::string rootCertPath = absl::GetFlag(FLAGS_server_root_cert_pem_path);
-  std::string clientCertPath = absl::GetFlag(FLAGS_client_cert_pem_path);
-  std::string clientKeyPath = absl::GetFlag(FLAGS_client_key_pem_path);
-
-  // Read keys and certs.
-  std::string rootCert = readFile(rootCertPath);
-  std::string clientCert = readFile(clientCertPath);
-  std::string clientKey = readFile(clientKeyPath);
+  std::string server_address = absl::GetFlag(FLAGS_server_address);
+  std::string root_cert_path = absl::GetFlag(FLAGS_server_root_cert_pem_path);
+  std::string client_cert_path = absl::GetFlag(FLAGS_client_cert_pem_path);
+  std::string client_key_path = absl::GetFlag(FLAGS_client_key_pem_path);
 
   // Setup SSL credentials.
   grpc::SslCredentialsOptions sslOpts;
-  sslOpts.pem_root_certs = rootCert;
-  sslOpts.pem_private_key = clientKey;
-  sslOpts.pem_cert_chain = clientCert;
-  auto creds = grpc::SslCredentials(sslOpts);
+  sslOpts.pem_root_certs = readFile(root_cert_path);
+  sslOpts.pem_private_key = readFile(client_key_path);
+  sslOpts.pem_cert_chain = readFile(client_cert_path);
 
-  GreeterClient greeter(grpc::CreateChannel(
-    serverAddr, creds));
+  GreeterClient greeter(
+      grpc::CreateChannel(server_address, grpc::SslCredentials(sslOpts)));
   std::string user("world");
   std::string reply = greeter.SayHello(user);
   std::cout << "Greeter received: " << reply << std::endl;
 
+  if (reply != "Hello world") {
+    return 1;
+  }
   return 0;
 }

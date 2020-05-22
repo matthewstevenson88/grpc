@@ -90,7 +90,6 @@ cc_binary(
 cc_binary(
     name = "mtls_greeter_client",
     srcs = ["cpp/helloworld/mtls_greeter_client.cc"],
-    defines = ["BAZEL_BUILD"],
     deps = [
         ":helloworld_cc_grpc",
         "//:grpc++",
@@ -122,7 +121,6 @@ cc_binary(
 cc_binary(
     name = "mtls_greeter_server",
     srcs = ["cpp/helloworld/mtls_greeter_server.cc"],
-    defines = ["BAZEL_BUILD"],
     deps = [
         ":helloworld_cc_grpc",
         "//:grpc++",

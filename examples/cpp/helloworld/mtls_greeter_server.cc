@@ -16,52 +16,51 @@
  *
  */
 
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <memory>
 #include <string>
 
+#include <grpcpp/ext/proto_server_reflection_plugin.h>
 #include <grpcpp/grpcpp.h>
 #include <grpcpp/health_check_service_interface.h>
-#include <grpcpp/ext/proto_server_reflection_plugin.h>
-
-#ifdef BAZEL_BUILD
-#include "examples/protos/helloworld.grpc.pb.h"
-#else
-#include "helloworld.grpc.pb.h"
-#endif
 
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
+#include "examples/protos/helloworld.grpc.pb.h"
 
 using grpc::Server;
 using grpc::ServerBuilder;
 using grpc::ServerContext;
 using grpc::Status;
-using helloworld::HelloRequest;
-using helloworld::HelloReply;
 using helloworld::Greeter;
+using helloworld::HelloReply;
+using helloworld::HelloRequest;
 
-ABSL_FLAG(std::string, port, "50051", "port number to use for connection");
+ABSL_FLAG(std::string, port, "50051",
+          "The port number to use for the gRPC connection.");
 ABSL_FLAG(std::string, client_root_cert_pem_path, "ca.cert",
-  "path to root X509 certificate");
+          "The path to the root X509 certificate.");
 ABSL_FLAG(std::string, server_cert_pem_path, "service.pem",
-  "path to server's X509 certificate");
+          "The path to the server's X509 certificate.");
 ABSL_FLAG(std::string, server_key_pem_path, "service.key",
-  "path to server's private key");
+          "The path to the server's private key.");
 
 // Logic and data behind the server's behavior.
 class GreeterServiceImpl final : public Greeter::Service {
   Status SayHello(ServerContext* context, const HelloRequest* request,
                   HelloReply* reply) override {
+    if ((!reply) || (!request)) {
+      return Status::CANCELLED;
+    }
     std::string prefix("Hello ");
     reply->set_message(prefix + request->name());
-	std::cout << "Received message: " << request->name() << std::endl;
+    std::cout << "Received message: " << request->name() << std::endl;
     return Status::OK;
   }
 };
 
-std::string readFile(const std::string filePath) {
+static std::string readFile(const std::string& filePath) {
   std::ifstream ifs(filePath);
   return std::string((std::istreambuf_iterator<char>(ifs)),
                      (std::istreambuf_iterator<char>()));
@@ -69,40 +68,34 @@ std::string readFile(const std::string filePath) {
 
 void RunServer() {
   std::string port = absl::GetFlag(FLAGS_port);
-  std::string rootCertPath = absl::GetFlag(FLAGS_client_root_cert_pem_path);
-  std::string serverCertPath = absl::GetFlag(FLAGS_server_cert_pem_path);
-  std::string serverKeyPath = absl::GetFlag(FLAGS_server_key_pem_path);
+  std::string root_cert_path = absl::GetFlag(FLAGS_client_root_cert_pem_path);
+  std::string server_cert_path = absl::GetFlag(FLAGS_server_cert_pem_path);
+  std::string server_key_path = absl::GetFlag(FLAGS_server_key_pem_path);
 
   GreeterServiceImpl service;
-
-  // Read keys and certs.
-  std::string serverKey = readFile("service.key");
-  std::string serverCert = readFile("service.pem");
-  std::string rootCert = readFile("ca.cert");
 
   // Setup SSL credentials.
   grpc::SslServerCredentialsOptions sslOpts{};
   sslOpts.client_certificate_request =
-    GRPC_SSL_REQUEST_AND_REQUIRE_CLIENT_CERTIFICATE_AND_VERIFY;
+      GRPC_SSL_REQUEST_AND_REQUIRE_CLIENT_CERTIFICATE_AND_VERIFY;
   sslOpts.pem_key_cert_pairs.push_back(
-  grpc::SslServerCredentialsOptions::PemKeyCertPair{serverKey,
-    serverCert});
-  sslOpts.pem_root_certs = rootCert;
-  auto creds = grpc::SslServerCredentials(sslOpts);
+      grpc::SslServerCredentialsOptions::PemKeyCertPair{
+          readFile(server_key_path), readFile(server_cert_path)});
+  sslOpts.pem_root_certs = readFile(root_cert_path);
 
   grpc::EnableDefaultHealthCheckService(true);
   grpc::reflection::InitProtoReflectionServerBuilderPlugin();
 
   ServerBuilder builder;
   // Listen on the given address without any authentication mechanism.
-  std::string serverAddr = "localhost:" + port;
-  builder.AddListeningPort(serverAddr, creds);
+  std::string server_address = "localhost:" + port;
+  builder.AddListeningPort(server_address, grpc::SslServerCredentials(sslOpts));
   // Register "service" as the instance through which we'll communicate with
   // clients. In this case it corresponds to an *synchronous* service.
   builder.RegisterService(&service);
   // Finally assemble the server.
   std::unique_ptr<Server> server(builder.BuildAndStart());
-  std::cout << "Server listening on " << serverAddr << std::endl;
+  std::cout << "Server listening on " << server_address << std::endl;
 
   // Wait for the server to shutdown. Note that some other thread must be
   // responsible for shutting down the server for this call to ever return.
@@ -112,6 +105,5 @@ void RunServer() {
 int main(int argc, char** argv) {
   absl::ParseCommandLine(argc, argv);
   RunServer();
-
   return 0;
 }
