@@ -67,11 +67,6 @@ static std::string readFile(const std::string& filePath) {
 }
 
 void RunServer() {
-  std::string port = absl::GetFlag(FLAGS_port);
-  std::string root_cert_path = absl::GetFlag(FLAGS_client_root_cert_pem_path);
-  std::string server_cert_path = absl::GetFlag(FLAGS_server_cert_pem_path);
-  std::string server_key_path = absl::GetFlag(FLAGS_server_key_pem_path);
-
   GreeterServiceImpl service;
 
   // Setup SSL credentials.
@@ -80,12 +75,14 @@ void RunServer() {
       GRPC_SSL_REQUEST_AND_REQUIRE_CLIENT_CERTIFICATE_AND_VERIFY;
   sslOpts.pem_key_cert_pairs.push_back(
       grpc::SslServerCredentialsOptions::PemKeyCertPair{
-          readFile(server_key_path), readFile(server_cert_path)});
-  sslOpts.pem_root_certs = readFile(root_cert_path);
+          readFile(absl::GetFlag(FLAGS_server_key_pem_path)),
+          readFile(absl::GetFlag(FLAGS_server_cert_pem_path))});
+  sslOpts.pem_root_certs =
+      readFile(absl::GetFlag(FLAGS_client_root_cert_pem_path));
 
   ServerBuilder builder;
   // Listen on the given address without any authentication mechanism.
-  std::string server_address = "localhost:" + port;
+  std::string server_address = "localhost:" + absl::GetFlag(FLAGS_port);
   builder.AddListeningPort(server_address, grpc::SslServerCredentials(sslOpts));
   // Register "service" as the instance through which we'll communicate with
   // clients. In this case it corresponds to an *synchronous* service.

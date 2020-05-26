@@ -78,19 +78,16 @@ static std::string readFile(const std::string& filePath) {
 
 int main(int argc, char** argv) {
   absl::ParseCommandLine(argc, argv);
-  std::string server_address = absl::GetFlag(FLAGS_server_address);
-  std::string root_cert_path = absl::GetFlag(FLAGS_server_root_cert_pem_path);
-  std::string client_cert_path = absl::GetFlag(FLAGS_client_cert_pem_path);
-  std::string client_key_path = absl::GetFlag(FLAGS_client_key_pem_path);
 
   // Setup SSL credentials.
   grpc::SslCredentialsOptions sslOpts;
-  sslOpts.pem_root_certs = readFile(root_cert_path);
-  sslOpts.pem_private_key = readFile(client_key_path);
-  sslOpts.pem_cert_chain = readFile(client_cert_path);
+  sslOpts.pem_root_certs =
+      readFile(absl::GetFlag(FLAGS_server_root_cert_pem_path));
+  sslOpts.pem_private_key = readFile(absl::GetFlag(FLAGS_client_key_pem_path));
+  sslOpts.pem_cert_chain = readFile(absl::GetFlag(FLAGS_client_cert_pem_path));
 
-  GreeterClient greeter(
-      grpc::CreateChannel(server_address, grpc::SslCredentials(sslOpts)));
+  GreeterClient greeter(grpc::CreateChannel(absl::GetFlag(FLAGS_server_address),
+                                            grpc::SslCredentials(sslOpts)));
   std::string user("world");
   std::string reply = greeter.SayHello(user);
   std::cout << "Greeter received: " << reply << std::endl;
