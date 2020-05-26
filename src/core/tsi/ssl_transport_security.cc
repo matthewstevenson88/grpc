@@ -1808,11 +1808,17 @@ tsi_result tsi_create_ssl_client_handshaker_factory_with_options(
     return TSI_INVALID_ARGUMENT;
   }
 
-#if defined(OPENSSL_NO_TLS1_2_METHOD) || OPENSSL_API_COMPAT >= 0x10100000L
+#if OPENSSL_VERSION_NUMBER >= 0x10100000
   ssl_context = SSL_CTX_new(TLS_method());
+  if (ssl_context != nullptr) {
+    SSL_CTX_set_min_proto_version(ssl_context, TLS1_3_VERSION);
+  }
 #else
-  ssl_context = SSL_CTX_new(TLSv1_2_method());
+  // |TLS_method| and |SSL_CTX_set_min_proto_version| are not available in
+  // OpenSSL versions < 1.1.0.
+  ssl_context = SSL_CTX_new(TLSv1_3_method());
 #endif
+
   if (ssl_context == nullptr) {
     gpr_log(GPR_ERROR, "Could not create ssl context.");
     return TSI_INVALID_ARGUMENT;
@@ -1972,10 +1978,15 @@ tsi_result tsi_create_ssl_server_handshaker_factory_with_options(
 
   for (i = 0; i < options->num_key_cert_pairs; i++) {
     do {
-#if defined(OPENSSL_NO_TLS1_2_METHOD) || OPENSSL_API_COMPAT >= 0x10100000L
+#if OPENSSL_VERSION_NUMBER >= 0x10100000
       impl->ssl_contexts[i] = SSL_CTX_new(TLS_method());
+      if (impl->ssl_contexts[i] != nullptr) {
+        SSL_CTX_set_min_proto_version(impl->ssl_contexts[i], TLS1_3_VERSION);
+      }
 #else
-      impl->ssl_contexts[i] = SSL_CTX_new(TLSv1_2_method());
+      // |TLS_method| and |SSL_CTX_set_min_proto_version| are not available in
+      // OpenSSL versions < 1.1.0.
+      impl->ssl_contexts[i] = SSL_CTX_new(TLSv1_3_method());
 #endif
       if (impl->ssl_contexts[i] == nullptr) {
         gpr_log(GPR_ERROR, "Could not create ssl context.");
