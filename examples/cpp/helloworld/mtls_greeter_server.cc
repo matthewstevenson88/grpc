@@ -83,9 +83,6 @@ void RunServer() {
           readFile(server_key_path), readFile(server_cert_path)});
   sslOpts.pem_root_certs = readFile(root_cert_path);
 
-  grpc::EnableDefaultHealthCheckService(true);
-  grpc::reflection::InitProtoReflectionServerBuilderPlugin();
-
   ServerBuilder builder;
   // Listen on the given address without any authentication mechanism.
   std::string server_address = "localhost:" + port;

@@ -1972,10 +1972,13 @@ tsi_result tsi_create_ssl_server_handshaker_factory_with_options(
 
   for (i = 0; i < options->num_key_cert_pairs; i++) {
     do {
-#if defined(OPENSSL_NO_TLS1_2_METHOD) || OPENSSL_API_COMPAT >= 0x10100000L
-      impl->ssl_contexts[i] = SSL_CTX_new(TLS_method());
+#if OPENSSL_VERSION_NUMBER >= 0x10100000
+      impl->ssl_contexts[i] = SSL_CTX_new(TLS_method());	      impl->ssl_contexts[i] = SSL_CTX_new(TLS_method());
+      if (impl->ssl_contexts[i] != nullptr) {
+        SSL_CTX_set_min_proto_version(impl->ssl_contexts[i], TLS1_3_VERSION);
+      }
 #else
-      impl->ssl_contexts[i] = SSL_CTX_new(TLSv1_2_method());
+      impl->ssl_contexts[i] = SSL_CTX_new(TLSv1_3_method());
 #endif
       if (impl->ssl_contexts[i] == nullptr) {
         gpr_log(GPR_ERROR, "Could not create ssl context.");
