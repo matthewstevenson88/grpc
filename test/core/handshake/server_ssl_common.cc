@@ -121,6 +121,7 @@ void server_thread(void* arg) {
 
   // Start server listening on local port.
   std::string addr = absl::StrCat("127.0.0.1:", port);
+  gpr_log(GPR_INFO, "*******About to start server...");
   grpc_server* server = grpc_server_create(nullptr, nullptr);
   GPR_ASSERT(
       grpc_server_add_secure_http2_port(server, addr.c_str(), ssl_creds));
@@ -183,6 +184,7 @@ bool server_ssl_test(const char* alpn_list[], unsigned int alpn_list_len,
   // so long as we wait for it to reach beyond the point of adding a secure
   // server port.
   s.Await();
+  gpr_log(GPR_INFO, "*******Server is now waiting...");
 
   const SSL_METHOD* method = TLSv1_2_client_method();
   SSL_CTX* ctx = SSL_CTX_new(method);
