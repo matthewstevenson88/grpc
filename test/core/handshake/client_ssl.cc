@@ -39,7 +39,6 @@
 #include <grpc/support/log.h>
 
 #include "src/core/tsi/ssl_transport_security.h"
-#include "src/core/lib/security/security_connector/ssl_utils.h"
 #include "src/core/lib/gprpp/sync.h"
 #include "src/core/lib/gprpp/thd.h"
 #include "src/core/lib/iomgr/load_file.h"
@@ -171,14 +170,9 @@ static void server_thread(void* arg) {
   gpr_log(GPR_INFO, "Into server thread...");
   const server_args* args = static_cast<server_args*>(arg);
 
-//#if OPENSSL_VERSION_NUMBER >= 0x10100000
-//  OPENSSL_init_ssl(0, nullptr);
-//#else
-//  SSL_library_init();
-//  SSL_load_error_strings();
-//  OpenSSL_add_all_algorithms();
-//#endif
-  InitSsl();
+  //InitSsl();
+  SSL_load_error_strings();
+  OpenSSL_add_ssl_algorithms();
   args->server_info->Activate();
   gpr_log(GPR_INFO, "Done OpenSSL initializations...");
 
