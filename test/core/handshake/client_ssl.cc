@@ -57,6 +57,7 @@ typedef struct {
 // Pick an arbitrary unused port and return it in *out_port. Return
 // an fd>=0 on success.
 static int create_socket(int* out_port) {
+  gpr_log(GPR_INFO, "Into create socket...");
   int s;
   struct sockaddr_in addr;
   socklen_t addr_len;
@@ -68,6 +69,7 @@ static int create_socket(int* out_port) {
 
   s = socket(AF_INET, SOCK_STREAM, 0);
   if (s < 0) {
+    gpr_log(GPR_INFO, "Unable create socket...");
     perror("Unable to create socket");
     return -1;
   }
@@ -80,6 +82,7 @@ static int create_socket(int* out_port) {
   }
 
   if (listen(s, 1) < 0) {
+    gpr_log(GPR_INFO, "Unable to listen...");
     perror("Unable to listen");
     close(s);
     return -1;
@@ -103,6 +106,7 @@ static int create_socket(int* out_port) {
 // SSL_CTX_set_alpn_select_cb.
 static int alpn_select_cb(SSL* /*ssl*/, const uint8_t** out, uint8_t* out_len,
                           const uint8_t* in, unsigned in_len, void* arg) {
+  gpr_log(GPR_INFO, "Into alpn select cb...");
   const uint8_t* alpn_preferred = static_cast<const uint8_t*>(arg);
 
   *out = alpn_preferred;
@@ -139,14 +143,17 @@ static int alpn_select_cb(SSL* /*ssl*/, const uint8_t** out, uint8_t* out_len,
 // https://wiki.openssl.org/index.php/Simple_TLS_Server and the gRPC core
 // internals in src/core/tsi/ssl_transport_security.c.
 static void server_thread(void* arg) {
+  gpr_log(GPR_INFO, "Into server thread...");
   const server_args* args = static_cast<server_args*>(arg);
 
   SSL_load_error_strings();
   OpenSSL_add_ssl_algorithms();
+  gpr_log(GPR_INFO, "Done OpenSSL initializations...");
 
   const SSL_METHOD* method = TLSv1_2_server_method();
   SSL_CTX* ctx = SSL_CTX_new(method);
   if (!ctx) {
+    gpr_log(GPR_INFO, "Unable to create SSL context...");
     perror("Unable to create SSL context");
     ERR_print_errors_fp(stderr);
     abort();
@@ -154,10 +161,12 @@ static void server_thread(void* arg) {
 
   // Load key pair.
   if (SSL_CTX_use_certificate_file(ctx, SSL_CERT_PATH, SSL_FILETYPE_PEM) < 0) {
+    gpr_log(GPR_INFO, "Unable to load cert file...");
     ERR_print_errors_fp(stderr);
     abort();
   }
   if (SSL_CTX_use_PrivateKey_file(ctx, SSL_KEY_PATH, SSL_FILETYPE_PEM) < 0) {
+    gpr_log(GPR_INFO, "Unable to load private key file...");
     ERR_print_errors_fp(stderr);
     abort();
   }
@@ -168,6 +177,7 @@ static void server_thread(void* arg) {
       "ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-SHA256:ECDHE-RSA-AES256-"
       "SHA384:ECDHE-RSA-AES256-GCM-SHA384";
   if (!SSL_CTX_set_cipher_list(ctx, cipher_list)) {
+    gpr_log(GPR_INFO, "Unable to set cipher list...");
     ERR_print_errors_fp(stderr);
     gpr_log(GPR_ERROR, "Couldn't set server cipher list.");
     abort();
@@ -184,6 +194,7 @@ static void server_thread(void* arg) {
   const int client =
       accept(sock, reinterpret_cast<struct sockaddr*>(&addr), &len);
   if (client < 0) {
+    gpr_log(GPR_INFO, "Unable to accept...");
     perror("Unable to accept");
     abort();
   }
