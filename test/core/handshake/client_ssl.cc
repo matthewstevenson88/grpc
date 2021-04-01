@@ -202,8 +202,7 @@ static void server_thread(void* arg) {
   //const char* cipher_list =
   //    "ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-SHA256:ECDHE-RSA-AES256-"
   //    "SHA384:ECDHE-RSA-AES256-GCM-SHA384";
-  //if (!SSL_CTX_set_cipher_list(ctx, grpc_get_ssl_cipher_suites())) {
-  if (!SSL_CTX_set_cipher_list(ctx, "ALL")) {
+  if (!SSL_CTX_set_cipher_list(ctx, grpc_get_ssl_cipher_suites())) {
     gpr_log(GPR_INFO, "Unable to set cipher list...");
     ERR_print_errors_fp(stderr);
     gpr_log(GPR_ERROR, "Couldn't set server cipher list.");
