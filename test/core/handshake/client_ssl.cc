@@ -146,8 +146,13 @@ static void server_thread(void* arg) {
   gpr_log(GPR_INFO, "Into server thread...");
   const server_args* args = static_cast<server_args*>(arg);
 
+#if OPENSSL_VERSION_NUMBER >= 0x10100000
+  OPENSSL_init_ssl(0, nullptr);
+#else
+  SSL_library_init();
   SSL_load_error_strings();
-  OpenSSL_add_ssl_algorithms();
+  OpenSSL_add_all_algorithms();
+#endif
   gpr_log(GPR_INFO, "Done OpenSSL initializations...");
 
   const SSL_METHOD* method = TLSv1_2_server_method();
@@ -231,6 +236,7 @@ static void server_thread(void* arg) {
 // server validates ALPN aspects of the handshake and supplies the protocol
 // specified in the server_alpn_preferred argument to the client.
 static bool client_ssl_test(char* server_alpn_preferred) {
+  gpr_log(GPR_INFO, "Into client ssl test...");
   bool success = true;
 
   grpc_init();
@@ -245,8 +251,10 @@ static bool client_ssl_test(char* server_alpn_preferred) {
     if (server_socket == -1) {
       sleep(1);
     }
+    gpr_log(GPR_INFO, "Finding port...");
   }
   GPR_ASSERT(server_socket > 0 && port > 0);
+  gpr_log(GPR_INFO, "Found port...");
 
   // Launch the TLS server thread.
   server_args args = {server_socket, server_alpn_preferred};
@@ -254,6 +262,7 @@ static bool client_ssl_test(char* server_alpn_preferred) {
   grpc_core::Thread thd("grpc_client_ssl_test", server_thread, &args, &ok);
   GPR_ASSERT(ok);
   thd.Start();
+  gpr_log(GPR_INFO, "Started server...");
 
   // Load key pair and establish client SSL credentials.
   grpc_ssl_pem_key_cert_pair pem_key_cert_pair;
@@ -300,6 +309,7 @@ static bool client_ssl_test(char* server_alpn_preferred) {
   grpc_completion_queue* cq = grpc_completion_queue_create_for_next(nullptr);
 
   while (state != GRPC_CHANNEL_READY && retries-- > 0) {
+    gpr_log(GPR_INFO, "Waiting for channel to become ready...");
     grpc_channel_watch_connectivity_state(
         channel, state, grpc_timeout_seconds_to_deadline(3), cq, nullptr);
     gpr_timespec cq_deadline = grpc_timeout_seconds_to_deadline(5);
@@ -310,6 +320,7 @@ static bool client_ssl_test(char* server_alpn_preferred) {
   }
   grpc_completion_queue_destroy(cq);
   if (retries < 0) {
+    gpr_log(GPR_INFO, "Retries was negative...");
     success = false;
   }
 
@@ -330,13 +341,16 @@ int main(int argc, char* argv[]) {
   grpc::testing::TestEnvironment env(argc, argv);
   // Handshake succeeeds when the server has grpc-exp as the ALPN preference.
   GPR_ASSERT(client_ssl_test(const_cast<char*>("grpc-exp")));
+  gpr_log(GPR_INFO, "Done first test...");
   // Handshake succeeeds when the server has h2 as the ALPN preference. This
   // covers legacy gRPC servers which don't support grpc-exp.
   GPR_ASSERT(client_ssl_test(const_cast<char*>("h2")));
+  gpr_log(GPR_INFO, "Done second test...");
   // Handshake fails when the server uses a fake protocol as its ALPN
   // preference. This validates the client is correctly validating ALPN returns
   // and sanity checks the client_ssl_test.
   GPR_ASSERT(!client_ssl_test(const_cast<char*>("foo")));
+  gpr_log(GPR_INFO, "Done third test...");
   return 0;
 }
 
