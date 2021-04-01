@@ -189,6 +189,10 @@ static void init_openssl(void) {
   GPR_ASSERT(g_ssl_ctx_ex_factory_index != -1);
 }
 
+void InitSsl() {
+  gpr_once_init(&g_init_openssl_once, init_openssl);
+}
+
 /* --- Ssl utils. ---*/
 
 static const char* ssl_error_string(int error) {

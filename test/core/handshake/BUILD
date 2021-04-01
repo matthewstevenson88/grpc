@@ -29,6 +29,7 @@ grpc_cc_test(
     language = "C++",
     tags = ["no_windows"],
     deps = [
+        "//:tsi",
         "//:gpr",
         "//:grpc",
         "//test/core/util:grpc_test_util",

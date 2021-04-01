@@ -29,6 +29,8 @@ extern "C" {
 #include <openssl/x509.h>
 }
 
+void InitSsl();
+
 /* Value for the TSI_CERTIFICATE_TYPE_PEER_PROPERTY property for X509 certs. */
 #define TSI_X509_CERTIFICATE_TYPE "X509"
 

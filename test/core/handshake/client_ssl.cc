@@ -38,6 +38,7 @@
 #include <grpc/support/alloc.h>
 #include <grpc/support/log.h>
 
+#include "src/core/tsi/ssl_transport_security.h"
 #include "src/core/lib/gprpp/thd.h"
 #include "src/core/lib/iomgr/load_file.h"
 #include "test/core/util/port.h"
@@ -47,10 +48,32 @@
 #define SSL_KEY_PATH "src/core/tsi/test_creds/server1.key"
 #define SSL_CA_PATH "src/core/tsi/test_creds/ca.pem"
 
+class ServerInfo {
+ public:
+  ServerInfo() {}
+
+  void Activate() {
+    grpc_core::MutexLock lock(&mu_);
+    ready_ = true;
+    cv_.Signal();
+  }
+
+  void Await() {
+    grpc_core::MutexLock lock(&mu_);
+    grpc_core::WaitUntil(&cv_, &mu_, [this] { return ready_; });
+  }
+
+ private:
+  grpc_core::Mutex mu_;
+  grpc_core::CondVar cv_;
+  bool ready_ = false;
+};
+
 // Arguments for TLS server thread.
 typedef struct {
   int socket;
   char* alpn_preferred;
+  ServerInfo* server_info;
 } server_args;
 
 // Based on https://wiki.openssl.org/index.php/Simple_TLS_Server.
@@ -146,13 +169,15 @@ static void server_thread(void* arg) {
   gpr_log(GPR_INFO, "Into server thread...");
   const server_args* args = static_cast<server_args*>(arg);
 
-#if OPENSSL_VERSION_NUMBER >= 0x10100000
-  OPENSSL_init_ssl(0, nullptr);
-#else
-  SSL_library_init();
-  SSL_load_error_strings();
-  OpenSSL_add_all_algorithms();
-#endif
+//#if OPENSSL_VERSION_NUMBER >= 0x10100000
+//  OPENSSL_init_ssl(0, nullptr);
+//#else
+//  SSL_library_init();
+//  SSL_load_error_strings();
+//  OpenSSL_add_all_algorithms();
+//#endif
+  InitSsl();
+  args->server_info->Activate();
   gpr_log(GPR_INFO, "Done OpenSSL initializations...");
 
   const SSL_METHOD* method = TLSv1_2_server_method();
@@ -257,11 +282,13 @@ static bool client_ssl_test(char* server_alpn_preferred) {
   gpr_log(GPR_INFO, "Found port...");
 
   // Launch the TLS server thread.
-  server_args args = {server_socket, server_alpn_preferred};
+  ServerInfo server_info;
+  server_args args = {server_socket, server_alpn_preferred, &server_info};
   bool ok;
   grpc_core::Thread thd("grpc_client_ssl_test", server_thread, &args, &ok);
   GPR_ASSERT(ok);
   thd.Start();
+  server_info.Await();
   gpr_log(GPR_INFO, "Started server...");
 
   // Load key pair and establish client SSL credentials.
