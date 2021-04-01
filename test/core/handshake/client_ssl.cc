@@ -39,6 +39,7 @@
 #include <grpc/support/log.h>
 
 #include "src/core/tsi/ssl_transport_security.h"
+#include "src/core/lib/gprpp/sync.h"
 #include "src/core/lib/gprpp/thd.h"
 #include "src/core/lib/iomgr/load_file.h"
 #include "test/core/util/port.h"
