@@ -39,6 +39,7 @@
 #include <grpc/support/log.h>
 
 #include "src/core/tsi/ssl_transport_security.h"
+#include "src/core/lib/security/security_connector/ssl_utils.h"
 #include "src/core/lib/gprpp/sync.h"
 #include "src/core/lib/gprpp/thd.h"
 #include "src/core/lib/iomgr/load_file.h"
@@ -181,8 +182,7 @@ static void server_thread(void* arg) {
   args->server_info->Activate();
   gpr_log(GPR_INFO, "Done OpenSSL initializations...");
 
-  const SSL_METHOD* method = TLSv1_2_server_method();
-  SSL_CTX* ctx = SSL_CTX_new(method);
+  SSL_CTX* ctx = SSL_CTX_new(TLSv1_2_method());
   if (!ctx) {
     gpr_log(GPR_INFO, "Unable to create SSL context...");
     perror("Unable to create SSL context");
@@ -203,11 +203,11 @@ static void server_thread(void* arg) {
   }
 
   // Set the cipher list to match the one expressed in
-  // src/core/tsi/ssl_transport_security.c.
-  const char* cipher_list =
-      "ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-SHA256:ECDHE-RSA-AES256-"
-      "SHA384:ECDHE-RSA-AES256-GCM-SHA384";
-  if (!SSL_CTX_set_cipher_list(ctx, cipher_list)) {
+  // src/core/tsi/ssl_transport_security.cc.
+  //const char* cipher_list =
+  //    "ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-SHA256:ECDHE-RSA-AES256-"
+  //    "SHA384:ECDHE-RSA-AES256-GCM-SHA384";
+  if (!SSL_CTX_set_cipher_list(ctx, grpc_get_ssl_cipher_suites())) {
     gpr_log(GPR_INFO, "Unable to set cipher list...");
     ERR_print_errors_fp(stderr);
     gpr_log(GPR_ERROR, "Couldn't set server cipher list.");
