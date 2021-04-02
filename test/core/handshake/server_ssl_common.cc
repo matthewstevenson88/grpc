@@ -98,6 +98,7 @@ class ServerInfo {
 
 // Simple gRPC server. This listens until client_handshake_complete occurs.
 void server_thread(void* arg) {
+  gpr_log(GPR_INFO, "Entered server thread...");
   ServerInfo* s = static_cast<ServerInfo*>(arg);
   const int port = s->port();
 
@@ -167,6 +168,7 @@ void server_thread(void* arg) {
 // using this (via alpn_expected).
 bool server_ssl_test(const char* alpn_list[], unsigned int alpn_list_len,
                      const char* alpn_expected) {
+  gpr_log(GPR_INFO, "Entered server_ssl_test...");
   bool success = true;
 
   grpc_init();
@@ -178,6 +180,7 @@ bool server_ssl_test(const char* alpn_list[], unsigned int alpn_list_len,
   grpc_core::Thread thd("grpc_ssl_test", server_thread, &s, &ok);
   GPR_ASSERT(ok);
   thd.Start();
+  gpr_log(GPR_INFO, "gRPC server thread started...");
 
   // The work in server_thread will cause the SSL initialization to take place
   // so long as we wait for it to reach beyond the point of adding a secure
@@ -187,6 +190,7 @@ bool server_ssl_test(const char* alpn_list[], unsigned int alpn_list_len,
   const SSL_METHOD* method = TLSv1_2_client_method();
   SSL_CTX* ctx = SSL_CTX_new(method);
   if (!ctx) {
+    gpr_log(GPR_INFO, "Unable to create SSL context...");
     perror("Unable to create SSL context");
     ERR_print_errors_fp(stderr);
     abort();
@@ -208,6 +212,7 @@ bool server_ssl_test(const char* alpn_list[], unsigned int alpn_list_len,
       "ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-SHA256:ECDHE-RSA-AES256-"
       "SHA384:ECDHE-RSA-AES256-GCM-SHA384";
   if (!SSL_CTX_set_cipher_list(ctx, cipher_list)) {
+    gpr_log(GPR_INFO, "Couldn't set server cipher list...");
     ERR_print_errors_fp(stderr);
     gpr_log(GPR_ERROR, "Couldn't set server cipher list.");
     abort();
@@ -235,6 +240,7 @@ bool server_ssl_test(const char* alpn_list[], unsigned int alpn_list_len,
   int retries = 10;
   int sock = -1;
   while (sock == -1 && retries-- > 0) {
+    gpr_log(GPR_INFO, "Trying to connect...");
     sock = create_socket(s.port());
     if (sock < 0) {
       sleep(1);

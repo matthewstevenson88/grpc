@@ -173,7 +173,7 @@ static void server_thread(void* arg) {
 
   //InitSsl();
   SSL_load_error_strings();
-  OpenSSL_add_all_algorithms();
+  OpenSSL_add_ssl_algorithms();
   args->server_info->Activate();
   gpr_log(GPR_INFO, "Done OpenSSL initializations...");
 
@@ -199,10 +199,10 @@ static void server_thread(void* arg) {
 
   // Set the cipher list to match the one expressed in
   // src/core/tsi/ssl_transport_security.cc.
-  //const char* cipher_list =
-  //    "ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-SHA256:ECDHE-RSA-AES256-"
-  //    "SHA384:ECDHE-RSA-AES256-GCM-SHA384";
-  if (!SSL_CTX_set_cipher_list(ctx, grpc_get_ssl_cipher_suites())) {
+  const char* cipher_list =
+      "ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-SHA256:ECDHE-RSA-AES256-"
+      "SHA384:ECDHE-RSA-AES256-GCM-SHA384";
+  if (!SSL_CTX_set_cipher_list(ctx, cipher_list)) {
     gpr_log(GPR_INFO, "Unable to set cipher list...");
     ERR_print_errors_fp(stderr);
     gpr_log(GPR_ERROR, "Couldn't set server cipher list.");
