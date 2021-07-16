@@ -1,0 +1,1091 @@
+/*
+ *
+ * Copyright 2021 gRPC authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+
+#include <grpc/grpc.h>
+#include <grpc/slice.h>
+#include <grpc/support/sync.h>
+
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
+
+#include "s2a/src/proto/upb-generated/proto/common.upb.h"
+#include "s2a/src/proto/upb-generated/proto/s2a.upb.h"
+#include "s2a/src/test_util/s2a_test_data.h"
+#include "src/core/lib/gprpp/thd.h"
+#include "src/core/lib/surface/channel.h"
+#include "src/core/tsi/s2a/handshaker/s2a_handshaker_client.h"
+#include "src/core/tsi/s2a/handshaker/s2a_tsi_test_utilities.h"
+#include "src/core/tsi/s2a/s2a_security.h"
+#include "src/core/tsi/s2a/s2a_tsi_handshaker.h"
+#include "src/core/tsi/transport_security_grpc.h"
+#include "upb/upb.hpp"
+
+namespace s2a {
+namespace tsi {
+namespace {
+
+constexpr char kS2AMockHandshakeTestRecvBytes[] = "Hello World";
+constexpr char kS2AMockHandshakeTestOutFrame[] = "Hello Google";
+constexpr char kS2AMockHandshakeTestConsumedBytes[] = "Hello";
+constexpr char kS2AMockHandshakeTestRemainBytes[] = " Google";
+constexpr char kClientLocalHostname[] = "client local hostname";
+constexpr char kClientTargetSpiffeId[] = "client target spiffe id";
+constexpr char kClientTargetHostname[] = "client target hostname";
+constexpr char kServerLocalSpiffeId[] = "server local spiffe id";
+constexpr char kServerLocalHostname[] = "server local hostname";
+
+static bool should_handshaker_client_api_succeed = true;
+
+/** --- System for preparing and sending responses to handshaker client. -- **/
+
+/** S2A mock notification. **/
+typedef struct notification {
+  gpr_cv cv;
+  gpr_mu mu;
+  bool notified;
+} notification;
+
+/** Type of S2A handshaker response. **/
+enum S2AResponseType {
+  INVALID,
+  FAILED,
+  CLIENT_START,
+  SERVER_START,
+  CLIENT_NEXT,
+  SERVER_NEXT,
+};
+
+static S2AHandshakerClient* cb_event = nullptr;
+static notification caller_to_tsi_notification;
+static notification tsi_to_caller_notification;
+
+static void notification_init(notification* n) {
+  gpr_mu_init(&n->mu);
+  gpr_cv_init(&n->cv);
+  n->notified = false;
+}
+
+static void notification_destroy(notification* n) {
+  gpr_mu_destroy(&n->mu);
+  gpr_cv_destroy(&n->cv);
+}
+
+static void signal(notification* n) {
+  gpr_mu_lock(&n->mu);
+  n->notified = true;
+  gpr_cv_signal(&n->cv);
+  gpr_mu_unlock(&n->mu);
+}
+
+static void wait(notification* n) {
+  gpr_mu_lock(&n->mu);
+  while (!n->notified) {
+    gpr_cv_wait(&n->cv, &n->mu, gpr_inf_future(GPR_CLOCK_REALTIME));
+  }
+  n->notified = false;
+  gpr_mu_unlock(&n->mu);
+}
+
+/** This method mocks the S2A handshaker service to generate handshaker response
+ *  for a specific request. **/
+static grpc_byte_buffer* generate_handshaker_response(S2AResponseType type) {
+  upb::Arena arena;
+  s2a_proto_SessionResult* result;
+  s2a_proto_Identity* peer_identity;
+  s2a_proto_Identity* local_identity;
+  s2a_proto_SessionState* state;
+  s2a_proto_SessionResp* resp = s2a_proto_SessionResp_new(arena.ptr());
+  s2a_proto_SessionStatus* status =
+      s2a_proto_SessionResp_mutable_status(resp, arena.ptr());
+  s2a_proto_SessionStatus_set_code(status, 0);
+  switch (type) {
+    case S2AResponseType::INVALID:
+      break;
+    case S2AResponseType::CLIENT_START:
+    case S2AResponseType::SERVER_START:
+      s2a_proto_SessionResp_set_out_frames(
+          resp, upb_strview_makez(kS2AMockHandshakeTestOutFrame));
+      break;
+    case S2AResponseType::CLIENT_NEXT:
+      s2a_proto_SessionResp_set_out_frames(
+          resp, upb_strview_makez(kS2AMockHandshakeTestOutFrame));
+      s2a_proto_SessionResp_set_bytes_consumed(
+          resp, strlen(kS2AMockHandshakeTestConsumedBytes));
+      result = s2a_proto_SessionResp_mutable_result(resp, arena.ptr());
+      peer_identity =
+          s2a_proto_SessionResult_mutable_peer_identity(result, arena.ptr());
+      s2a_proto_Identity_set_spiffe_id(peer_identity,
+                                       upb_strview_makez(kServerLocalSpiffeId));
+      local_identity =
+          s2a_proto_SessionResult_mutable_local_identity(result, arena.ptr());
+      s2a_proto_Identity_set_hostname(local_identity,
+                                      upb_strview_makez(kClientLocalHostname));
+      state = s2a_proto_SessionResult_mutable_state(result, arena.ptr());
+      s2a_proto_SessionState_set_in_key(
+          state,
+          upb_strview_make(reinterpret_cast<const char*>(
+                               s2a_test_data::aes_128_gcm_traffic_secret),
+                           s2a_test_data::aes_128_gcm_traffic_secret_size));
+      s2a_proto_SessionState_set_out_key(
+          state,
+          upb_strview_make(reinterpret_cast<const char*>(
+                               s2a_test_data::aes_128_gcm_traffic_secret),
+                           s2a_test_data::aes_128_gcm_traffic_secret_size));
+      s2a_proto_SessionState_set_tls_ciphersuite(state,
+                                                 s2a_proto_AES_128_GCM_SHA256);
+      s2a_proto_SessionState_set_tls_version(state, s2a_proto_TLS1_3);
+      break;
+    case S2AResponseType::SERVER_NEXT:
+      s2a_proto_SessionResp_set_bytes_consumed(
+          resp, strlen(kS2AMockHandshakeTestConsumedBytes));
+      result = s2a_proto_SessionResp_mutable_result(resp, arena.ptr());
+      peer_identity =
+          s2a_proto_SessionResult_mutable_peer_identity(result, arena.ptr());
+      s2a_proto_Identity_set_hostname(peer_identity,
+                                      upb_strview_makez(kClientLocalHostname));
+      local_identity =
+          s2a_proto_SessionResult_mutable_local_identity(result, arena.ptr());
+      s2a_proto_Identity_set_hostname(local_identity,
+                                      upb_strview_makez(kServerLocalHostname));
+      state = s2a_proto_SessionResult_mutable_state(result, arena.ptr());
+      s2a_proto_SessionState_set_in_key(
+          state,
+          upb_strview_make(reinterpret_cast<const char*>(
+                               s2a_test_data::aes_128_gcm_traffic_secret),
+                           s2a_test_data::aes_128_gcm_traffic_secret_size));
+      s2a_proto_SessionState_set_out_key(
+          state,
+          upb_strview_make(reinterpret_cast<const char*>(
+                               s2a_test_data::aes_128_gcm_traffic_secret),
+                           s2a_test_data::aes_128_gcm_traffic_secret_size));
+      s2a_proto_SessionState_set_tls_ciphersuite(state,
+                                                 s2a_proto_AES_128_GCM_SHA256);
+      s2a_proto_SessionState_set_tls_version(state, s2a_proto_TLS1_3);
+      break;
+    case S2AResponseType::FAILED:
+      s2a_proto_SessionStatus_set_code(status, /*INVALID ARGUMENT=*/3);
+      break;
+  }
+  size_t buf_len;
+  char* buf = s2a_proto_SessionResp_serialize(resp, arena.ptr(), &buf_len);
+  grpc_slice slice = gpr_slice_from_copied_buffer(buf, buf_len);
+  if (type == INVALID) {
+    grpc_slice bad_slice =
+        grpc_slice_split_head(&slice, GRPC_SLICE_LENGTH(slice) - 1);
+    grpc_slice_unref(slice);
+    slice = grpc_slice_ref(bad_slice);
+    grpc_slice_unref(bad_slice);
+  }
+  grpc_byte_buffer* buffer =
+      grpc_raw_byte_buffer_create(&slice, /*number of slices=*/1);
+  grpc_slice_unref(slice);
+  return buffer;
+}
+
+/** ------------------ Callback functions. ------------------------------- **/
+
+static void check_must_not_be_called(tsi_result /*status*/, void* /*user_data*/,
+                                     const unsigned char* /*bytes_to_send*/,
+                                     size_t /*bytes_to_send_size*/,
+                                     tsi_handshaker_result* /*result*/) {
+  GPR_ASSERT(0);
+}
+
+static void on_client_start_success_cb(tsi_result status, void* user_data,
+                                       const unsigned char* bytes_to_send,
+                                       size_t bytes_to_send_size,
+                                       tsi_handshaker_result* result) {
+  GPR_ASSERT(status == TSI_OK);
+  GPR_ASSERT(user_data == nullptr);
+  GPR_ASSERT(bytes_to_send_size == strlen(kS2AMockHandshakeTestOutFrame));
+  GPR_ASSERT(memcmp(bytes_to_send, kS2AMockHandshakeTestOutFrame,
+                    bytes_to_send_size) == 0);
+  GPR_ASSERT(result == nullptr);
+  /** Validate peer identity. **/
+  tsi_peer peer;
+  GPR_ASSERT(tsi_handshaker_result_extract_peer(result, &peer) ==
+             TSI_INVALID_ARGUMENT);
+  /** Validate zero copy grpc protector. **/
+  {
+    grpc_core::ExecCtx exec_ctx;
+    tsi_zero_copy_grpc_protector* protector = nullptr;
+    GPR_ASSERT(tsi_handshaker_result_create_zero_copy_grpc_protector(
+                   result, nullptr, &protector) == TSI_INVALID_ARGUMENT);
+  }
+  /** Validate unused bytes. **/
+  const unsigned char* unused_bytes = nullptr;
+  size_t unused_bytes_size = 0;
+  GPR_ASSERT(tsi_handshaker_result_get_unused_bytes(result, &unused_bytes,
+                                                    &unused_bytes_size) ==
+             TSI_INVALID_ARGUMENT);
+  signal(&tsi_to_caller_notification);
+}
+
+static void on_server_start_success_cb(tsi_result status, void* user_data,
+                                       const unsigned char* bytes_to_send,
+                                       size_t bytes_to_send_size,
+                                       tsi_handshaker_result* result) {
+  GPR_ASSERT(status == TSI_OK);
+  GPR_ASSERT(user_data == nullptr);
+  GPR_ASSERT(bytes_to_send_size == strlen(kS2AMockHandshakeTestOutFrame));
+  GPR_ASSERT(memcmp(bytes_to_send, kS2AMockHandshakeTestOutFrame,
+                    bytes_to_send_size) == 0);
+  GPR_ASSERT(result == nullptr);
+  /** Validate peer identity. **/
+  tsi_peer peer;
+  GPR_ASSERT(tsi_handshaker_result_extract_peer(result, &peer) ==
+             TSI_INVALID_ARGUMENT);
+  /** Validate zero copy grpc protector. **/
+  {
+    grpc_core::ExecCtx exec_ctx;
+    tsi_zero_copy_grpc_protector* protector = nullptr;
+    GPR_ASSERT(tsi_handshaker_result_create_zero_copy_grpc_protector(
+                   result, nullptr, &protector) == TSI_INVALID_ARGUMENT);
+  }
+  /** Validate unused bytes. **/
+  const unsigned char* unused_bytes = nullptr;
+  size_t unused_bytes_size = 0;
+  GPR_ASSERT(tsi_handshaker_result_get_unused_bytes(result, &unused_bytes,
+                                                    &unused_bytes_size) ==
+             TSI_INVALID_ARGUMENT);
+  signal(&tsi_to_caller_notification);
+}
+
+static void on_client_next_success_cb(tsi_result status, void* user_data,
+                                      const unsigned char* bytes_to_send,
+                                      size_t bytes_to_send_size,
+                                      tsi_handshaker_result* result) {
+  GPR_ASSERT(status == TSI_OK);
+  GPR_ASSERT(user_data == nullptr);
+  GPR_ASSERT(bytes_to_send_size == strlen(kS2AMockHandshakeTestOutFrame));
+  GPR_ASSERT(memcmp(bytes_to_send, kS2AMockHandshakeTestOutFrame,
+                    bytes_to_send_size) == 0);
+  GPR_ASSERT(result != nullptr);
+  /** Validate peer identity. **/
+  tsi_peer peer;
+  GPR_ASSERT(tsi_handshaker_result_extract_peer(result, &peer) == TSI_OK);
+  GPR_ASSERT(peer.property_count == kTsiS2ANumOfPeerProperties);
+  GPR_ASSERT(memcmp(kTsiS2ACertificateType, peer.properties[0].value.data,
+                    peer.properties[0].value.length) == 0);
+  GPR_ASSERT(memcmp(kServerLocalSpiffeId, peer.properties[1].value.data,
+                    peer.properties[1].value.length) == 0);
+  GPR_ASSERT(memcmp(tsi_security_level_to_string(TSI_PRIVACY_AND_INTEGRITY),
+                    peer.properties[2].value.data,
+                    peer.properties[2].value.length) == 0);
+  tsi_peer_destruct(&peer);
+  /** Validate unused bytes. **/
+  const uint8_t* bytes = nullptr;
+  size_t bytes_size = 0;
+  GPR_ASSERT(tsi_handshaker_result_get_unused_bytes(result, &bytes,
+                                                    &bytes_size) == TSI_OK);
+  GPR_ASSERT(bytes_size == strlen(kS2AMockHandshakeTestRemainBytes));
+  GPR_ASSERT(memcmp(bytes, kS2AMockHandshakeTestRemainBytes, bytes_size) == 0);
+  /** Validate zero copy grpc protector. **/
+  {
+    grpc_core::ExecCtx exec_ctx;
+    tsi_zero_copy_grpc_protector* protector = nullptr;
+    GPR_ASSERT(tsi_handshaker_result_create_zero_copy_grpc_protector(
+                   result, nullptr, &protector) == TSI_OK);
+    GPR_ASSERT(protector != nullptr);
+    tsi_zero_copy_grpc_protector_destroy(protector);
+  }
+  tsi_handshaker_result_destroy(result);
+  signal(&tsi_to_caller_notification);
+}
+
+static void on_server_next_success_cb(tsi_result status, void* user_data,
+                                      const unsigned char* bytes_to_send,
+                                      size_t bytes_to_send_size,
+                                      tsi_handshaker_result* result) {
+  GPR_ASSERT(status == TSI_OK);
+  GPR_ASSERT(user_data == nullptr);
+  GPR_ASSERT(bytes_to_send_size == 0);
+  GPR_ASSERT(bytes_to_send == nullptr);
+  GPR_ASSERT(result != nullptr);
+  /** Validate peer identity. **/
+  tsi_peer peer;
+  GPR_ASSERT(tsi_handshaker_result_extract_peer(result, &peer) == TSI_OK);
+  GPR_ASSERT(peer.property_count == kTsiS2ANumOfPeerProperties);
+  GPR_ASSERT(memcmp(kTsiS2ACertificateType, peer.properties[0].value.data,
+                    peer.properties[0].value.length) == 0);
+  GPR_ASSERT(memcmp(kClientLocalHostname, peer.properties[1].value.data,
+                    peer.properties[1].value.length) == 0);
+  GPR_ASSERT(memcmp(tsi_security_level_to_string(TSI_PRIVACY_AND_INTEGRITY),
+                    peer.properties[2].value.data,
+                    peer.properties[2].value.length) == 0);
+  tsi_peer_destruct(&peer);
+  /** Validate zero copy grpc protector. **/
+  {
+    grpc_core::ExecCtx exec_ctx;
+    tsi_zero_copy_grpc_protector* protector = nullptr;
+    GPR_ASSERT(tsi_handshaker_result_create_zero_copy_grpc_protector(
+                   result, nullptr, &protector) == TSI_OK);
+    GPR_ASSERT(protector != nullptr);
+    tsi_zero_copy_grpc_protector_destroy(protector);
+  }
+  tsi_handshaker_result_destroy(result);
+  signal(&tsi_to_caller_notification);
+}
+
+static void on_invalid_input_cb(tsi_result status, void* user_data,
+                                const unsigned char* bytes_to_send,
+                                size_t bytes_to_send_size,
+                                tsi_handshaker_result* result) {
+  GPR_ASSERT(status == TSI_INTERNAL_ERROR);
+  GPR_ASSERT(user_data == nullptr);
+  GPR_ASSERT(bytes_to_send == nullptr);
+  GPR_ASSERT(bytes_to_send_size == 0);
+  GPR_ASSERT(result == nullptr);
+}
+
+static void on_failed_grpc_call_cb(tsi_result status, void* user_data,
+                                   const unsigned char* bytes_to_send,
+                                   size_t bytes_to_send_size,
+                                   tsi_handshaker_result* result) {
+  GPR_ASSERT(status == TSI_INTERNAL_ERROR);
+  GPR_ASSERT(user_data == nullptr);
+  GPR_ASSERT(bytes_to_send == nullptr);
+  GPR_ASSERT(bytes_to_send_size == 0);
+  GPR_ASSERT(result == nullptr);
+}
+
+static void on_invalid_resp_cb(tsi_result status, void* user_data,
+                               const unsigned char* bytes_to_send,
+                               size_t bytes_to_send_size,
+                               tsi_handshaker_result* result) {
+  GPR_ASSERT(status == TSI_DATA_CORRUPTED);
+  GPR_ASSERT(user_data == nullptr);
+  GPR_ASSERT(bytes_to_send == nullptr);
+  GPR_ASSERT(bytes_to_send_size == 0);
+  GPR_ASSERT(result == nullptr);
+}
+
+static void on_failed_resp_cb(tsi_result status, void* user_data,
+                              const unsigned char* bytes_to_send,
+                              size_t bytes_to_send_size,
+                              tsi_handshaker_result* result) {
+  GPR_ASSERT(status == TSI_DATA_CORRUPTED);
+  GPR_ASSERT(user_data == nullptr);
+  GPR_ASSERT(bytes_to_send == nullptr);
+  GPR_ASSERT(bytes_to_send_size == 0);
+  GPR_ASSERT(result == nullptr);
+}
+
+static void on_shutdown_resp_cb(tsi_result status, void* user_data,
+                                const unsigned char* bytes_to_send,
+                                size_t bytes_to_send_size,
+                                tsi_handshaker_result* result) {
+  GPR_ASSERT(status == TSI_HANDSHAKE_SHUTDOWN);
+  GPR_ASSERT(user_data == nullptr);
+  GPR_ASSERT(bytes_to_send == nullptr);
+  GPR_ASSERT(bytes_to_send_size == 0);
+  GPR_ASSERT(result == nullptr);
+}
+
+/** ------------------ Mock handshaker client. ------------------------- **/
+
+void S2AProxyLogger(const std::string& message) {
+  gpr_log(GPR_INFO, "%s", message.c_str());
+}
+
+std::unique_ptr<s2a_proxy::S2AProxy> GetTestProxy(
+    bool is_client, grpc_slice target_name,
+    grpc_s2a_credentials_options* options) {
+  GPR_ASSERT(options != nullptr);
+  std::string target_name_str(reinterpret_cast<char*>(const_cast<uint8_t*>(
+                                  GRPC_SLICE_START_PTR(target_name))),
+                              GRPC_SLICE_LENGTH(target_name));
+  s2a_proxy::S2AProxy::S2AProxyOptions proxy_options = {
+      S2AProxyLogger, is_client, kS2AApplicationProtocol, target_name_str,
+      options->s2a_options.Copy()};
+  return s2a_proxy::S2AProxy::Create(proxy_options);
+}
+
+class MockHandshakerClient : public S2AHandshakerClient {
+ public:
+  MockHandshakerClient(tsi_handshaker* handshaker, grpc_channel* channel,
+                       grpc_pollset_set* interested_parties,
+                       grpc_s2a_credentials_options* options,
+                       const grpc_slice& target_name,
+                       grpc_iomgr_cb_func grpc_cb,
+                       tsi_handshaker_on_next_done_cb cb, void* user_data,
+                       bool is_client, bool is_test)
+      : S2AHandshakerClient(handshaker, channel, interested_parties, options,
+                            target_name, grpc_cb, cb, user_data, is_client,
+                            is_test,
+                            GetTestProxy(is_client, target_name, options)) {}
+
+  tsi_result Next(grpc_slice* bytes_received) {
+    if (!should_handshaker_client_api_succeed) {
+      return TSI_INTERNAL_ERROR;
+    }
+    bool is_client = is_client_for_testing();
+
+    // Client start.
+    if (is_client && is_first_handshake_message_) {
+      is_first_handshake_message_ = false;
+      CheckFieldsForTesting(on_client_start_success_cb,
+                            /*user_data=*/nullptr,
+                            /*has_sent_start_message=*/true,
+                            /*recv_bytes=*/nullptr);
+      /** Populate handshaker response for client_start request. **/
+      grpc_byte_buffer** recv_buffer_ptr = recv_buffer_addr_for_testing();
+      GPR_ASSERT(recv_buffer_ptr != nullptr);
+      *recv_buffer_ptr = generate_handshaker_response(CLIENT_START);
+      cb_event = this;
+      signal(&caller_to_tsi_notification);
+      return TSI_OK;
+    }
+
+    // Server start.
+    if (!is_client && is_first_handshake_message_) {
+      is_first_handshake_message_ = false;
+      CheckFieldsForTesting(on_server_start_success_cb,
+                            /*user_data=*/nullptr,
+                            /*has_sent_start_message=*/true,
+                            /*recv_bytes=*/nullptr);
+      grpc_slice slice = grpc_empty_slice();
+      GPR_ASSERT(grpc_slice_cmp(*bytes_received, slice) == 0);
+      /** Populate handshaker response for server_start request. **/
+      grpc_byte_buffer** recv_buffer_ptr = recv_buffer_addr_for_testing();
+      GPR_ASSERT(recv_buffer_ptr != nullptr);
+      *recv_buffer_ptr = generate_handshaker_response(SERVER_START);
+      cb_event = this;
+      grpc_slice_unref(slice);
+      signal(&caller_to_tsi_notification);
+      return TSI_OK;
+    }
+
+    // Next.
+    tsi_handshaker_on_next_done_cb cb =
+        is_client ? on_client_next_success_cb : on_server_next_success_cb;
+    set_cb_for_testing(cb);
+    set_recv_bytes_for_testing(bytes_received);
+    CheckFieldsForTesting(cb, /*user_data=*/nullptr,
+                          /*has_sent_start_message=*/true, bytes_received);
+    GPR_ASSERT(bytes_received != nullptr);
+    GPR_ASSERT(memcmp(GRPC_SLICE_START_PTR(*bytes_received),
+                      kS2AMockHandshakeTestRecvBytes,
+                      GRPC_SLICE_LENGTH(*bytes_received)) == 0);
+    /** Populate handshaker response for next request. **/
+    grpc_slice out_frame =
+        grpc_slice_from_static_string(kS2AMockHandshakeTestOutFrame);
+    grpc_byte_buffer** recv_buffer_ptr = recv_buffer_addr_for_testing();
+    GPR_ASSERT(recv_buffer_ptr != nullptr);
+    *recv_buffer_ptr = is_client ? generate_handshaker_response(CLIENT_NEXT)
+                                 : generate_handshaker_response(SERVER_NEXT);
+    set_recv_bytes_for_testing(&out_frame);
+    cb_event = this;
+    signal(&caller_to_tsi_notification);
+    grpc_slice_unref(out_frame);
+    return TSI_OK;
+  }
+
+  void Shutdown() {}
+
+ private:
+  bool is_first_handshake_message_ = true;
+};
+
+static tsi_result mock_next(void* client, grpc_slice* bytes_received) {
+  GPR_ASSERT(client != nullptr);
+  MockHandshakerClient* mock_client =
+      reinterpret_cast<MockHandshakerClient*>(client);
+  return mock_client->Next(bytes_received);
+}
+
+static tsi_result s2a_create_mock_handshaker_client(
+    tsi_handshaker* handshaker, grpc_channel* channel,
+    grpc_pollset_set* interested_parties, grpc_s2a_credentials_options* options,
+    const grpc_slice& target_name, grpc_iomgr_cb_func grpc_cb,
+    tsi_handshaker_on_next_done_cb cb, void* user_data, bool is_client,
+    S2AHandshakerClient** client) {
+  if (client == nullptr || options == nullptr ||
+      options->s2a_options.s2a_address().empty()) {
+    gpr_log(GPR_ERROR, kS2AHandshakerClientNullptrArguments);
+    return TSI_INVALID_ARGUMENT;
+  }
+  *client = new MockHandshakerClient(handshaker, channel, interested_parties,
+                                     options, target_name, grpc_cb, cb,
+                                     user_data, is_client, /*is_test=*/true);
+  (*client)->set_mock_next_for_testing(mock_next);
+  return TSI_OK;
+}
+
+/** -------------------- Test framework. ------------------------------- **/
+
+static tsi_handshaker* create_test_handshaker(bool is_client) {
+  grpc_s2a_credentials_options* options = new grpc_s2a_credentials_options();
+  options->s2a_options.set_s2a_address(kS2AHandshakerServiceUrlForTesting);
+  options->s2a_options.add_supported_ciphersuite(
+      s2a_options::S2AOptions::Ciphersuite::AES_128_GCM_SHA256);
+  options->s2a_options.add_supported_ciphersuite(
+      s2a_options::S2AOptions::Ciphersuite::AES_256_GCM_SHA384);
+  options->s2a_options.add_supported_ciphersuite(
+      s2a_options::S2AOptions::Ciphersuite::CHACHA20_POLY1305_SHA256);
+  if (is_client) {
+    options->s2a_options.add_local_hostname(kClientLocalHostname);
+    options->s2a_options.add_target_spiffe_id(kClientTargetSpiffeId);
+    options->s2a_options.add_target_hostname(kClientTargetHostname);
+  } else {
+    options->s2a_options.add_local_spiffe_id(kServerLocalSpiffeId);
+    options->s2a_options.add_local_hostname(kServerLocalHostname);
+  }
+  S2ATsiHandshakerOptions tsi_options;
+  tsi_options.is_client = is_client;
+  tsi_options.s2a_options = options;
+  tsi_options.target_name = "target_name";
+  absl::StatusOr<tsi_handshaker*> handshaker =
+      CreateS2ATsiHandshakerForTesting(tsi_options);
+  EXPECT_TRUE(handshaker.ok());
+  EXPECT_NE(*handshaker, nullptr);
+  s2a_tsi_handshaker_set_create_mock_handshaker_client(
+      *handshaker, s2a_create_mock_handshaker_client);
+  return *handshaker;
+}
+
+static void run_tsi_handshaker_destroy_with_exec_ctx(
+    tsi_handshaker* handshaker) {
+  if (handshaker == nullptr) {
+    return;
+  }
+  grpc_core::ExecCtx exec_ctx;
+  grpc_s2a_credentials_options* options =
+      const_cast<grpc_s2a_credentials_options*>(
+          s2a_tsi_handshaker_options_for_testing(handshaker));
+  delete options;
+  tsi_handshaker_destroy(handshaker);
+  handshaker = nullptr;
+}
+
+static void s2a_check_handle_response_with_shutdown(void* /*unused*/) {
+  wait(&caller_to_tsi_notification);
+  GPR_ASSERT(cb_event != nullptr);
+  cb_event->HandleResponse(/*is_ok=*/true);
+}
+
+static void s2a_check_handle_response_success(void* /*unused*/) {
+  /** Client start. **/
+  wait(&caller_to_tsi_notification);
+  GPR_ASSERT(cb_event != nullptr);
+  cb_event->HandleResponse(/*is_ok=*/true);
+  /** Client next. **/
+  wait(&caller_to_tsi_notification);
+  cb_event->HandleResponse(/*is_ok=*/true);
+  cb_event->ref_for_testing();
+  cb_event->on_status_received_for_testing(GRPC_STATUS_OK, GRPC_ERROR_NONE);
+  /** Server start. **/
+  wait(&caller_to_tsi_notification);
+  cb_event->HandleResponse(/*is_ok=*/true);
+  /** Server next. **/
+  wait(&caller_to_tsi_notification);
+  cb_event->HandleResponse(/*is_ok=*/true);
+  cb_event->ref_for_testing();
+  cb_event->on_status_received_for_testing(GRPC_STATUS_OK, GRPC_ERROR_NONE);
+}
+
+class S2AMockHandshakeTest : public ::testing::Test {
+ protected:
+  S2AMockHandshakeTest() {}
+
+  void SetUp() override {}
+
+  void TearDown() override {}
+
+  void InitializeTsiHandshakers(bool client, bool server) {
+    if (client) {
+      client_handshaker_ = create_test_handshaker(/*is_client=*/true);
+    }
+    if (server) {
+      server_handshaker_ = create_test_handshaker(/*is_client=*/false);
+    }
+  }
+
+  void DestroyTsiHandshakers() {
+    run_tsi_handshaker_destroy_with_exec_ctx(client_handshaker_);
+    run_tsi_handshaker_destroy_with_exec_ctx(server_handshaker_);
+  }
+
+  void InitializeNotifications() {
+    notification_init(&caller_to_tsi_notification);
+    notification_init(&tsi_to_caller_notification);
+  }
+
+  void DestroyNotifications() {
+    notification_destroy(&caller_to_tsi_notification);
+    notification_destroy(&tsi_to_caller_notification);
+  }
+
+  tsi_handshaker* client_handshaker_ = nullptr;
+  tsi_handshaker* server_handshaker_ = nullptr;
+};
+
+TEST_F(S2AMockHandshakeTest, CheckHandshakerNextInvalidInput) {
+  should_handshaker_client_api_succeed = true;
+  InitializeTsiHandshakers(/*client=*/true, /*server=*/false);
+
+  /** Check nullptr handshaker. **/
+  {
+    grpc_core::ExecCtx exec_ctx;
+    EXPECT_EQ(tsi_handshaker_next(/*self=*/nullptr, /*received_bytes=*/nullptr,
+                                  /*received_bytes_size=*/0,
+                                  /*bytes_to_send=*/nullptr,
+                                  /*bytes_to_send_size=*/nullptr,
+                                  /*handshaker_result=*/nullptr,
+                                  check_must_not_be_called,
+                                  /*user_data=*/nullptr),
+              TSI_INVALID_ARGUMENT);
+  }
+  /** Check nullptr callback. **/
+  {
+    grpc_core::ExecCtx exec_ctx;
+    EXPECT_EQ(
+        tsi_handshaker_next(client_handshaker_, /*received_bytes=*/nullptr,
+                            /*received_bytes_size=*/0,
+                            /*bytes_to_send=*/nullptr,
+                            /*bytes_to_send_size=*/nullptr,
+                            /*handshaker_result=*/nullptr, /*cb=*/nullptr,
+                            /*user_data=*/nullptr),
+        TSI_INVALID_ARGUMENT);
+  }
+
+  DestroyTsiHandshakers();
+}
+
+TEST_F(S2AMockHandshakeTest, CheckHandshakerShutdownInvalidInput) {
+  should_handshaker_client_api_succeed = false;
+  InitializeTsiHandshakers(/*client=*/true, /*server=*/false);
+
+  /** Check nullptr handshaker. **/
+  {
+    grpc_core::ExecCtx exec_ctx;
+    tsi_handshaker_shutdown(/*self=*/nullptr);
+  }
+
+  DestroyTsiHandshakers();
+}
+
+TEST_F(S2AMockHandshakeTest, CheckHandshakerNextFailure) {
+  should_handshaker_client_api_succeed = false;
+  InitializeTsiHandshakers(/*client=*/true, /*server=*/true);
+
+  /** Client start. **/
+  {
+    grpc_core::ExecCtx exec_ctx;
+    EXPECT_EQ(tsi_handshaker_next(
+                  client_handshaker_, /*received_bytes=*/nullptr,
+                  /*received_bytes_size=*/0,
+                  /*bytes_to_send=*/nullptr,
+                  /*bytes_to_send_size=*/nullptr,
+                  /*handshaker_result=*/nullptr, check_must_not_be_called,
+                  /*user_data=*/nullptr),
+              TSI_INTERNAL_ERROR);
+  }
+  /** Server start. **/
+  {
+    grpc_core::ExecCtx exec_ctx;
+    EXPECT_EQ(tsi_handshaker_next(
+                  server_handshaker_, /*received_bytes=*/nullptr,
+                  /*received_bytes_size=*/0,
+                  /*bytes_to_send=*/nullptr,
+                  /*bytes_to_send_size=*/nullptr,
+                  /*handshaker_result=*/nullptr, check_must_not_be_called,
+                  /*user_data=*/nullptr),
+              TSI_INTERNAL_ERROR);
+  }
+  /** Server next. **/
+  {
+    grpc_core::ExecCtx exec_ctx;
+    EXPECT_EQ(tsi_handshaker_next(server_handshaker_,
+                                  reinterpret_cast<const unsigned char*>(
+                                      kS2AMockHandshakeTestRecvBytes),
+                                  strlen(kS2AMockHandshakeTestRecvBytes),
+                                  /*bytes_to_send=*/nullptr,
+                                  /*bytes_to_send_size=*/nullptr,
+                                  /*handshaker_result=*/nullptr,
+                                  check_must_not_be_called,
+                                  /*user_data=*/nullptr),
+              TSI_INTERNAL_ERROR);
+  }
+  /** Client next. **/
+  {
+    grpc_core::ExecCtx exec_ctx;
+    EXPECT_EQ(tsi_handshaker_next(client_handshaker_,
+                                  reinterpret_cast<const unsigned char*>(
+                                      kS2AMockHandshakeTestRecvBytes),
+                                  strlen(kS2AMockHandshakeTestRecvBytes),
+                                  /*bytes_to_send=*/nullptr,
+                                  /*bytes_to_send_size=*/nullptr,
+                                  /*handshaker_result=*/nullptr,
+                                  check_must_not_be_called,
+                                  /*user_data=*/nullptr),
+              TSI_INTERNAL_ERROR);
+  }
+
+  DestroyTsiHandshakers();
+}
+
+TEST_F(S2AMockHandshakeTest, CheckHandleResponseNullptrHandshaker) {
+  should_handshaker_client_api_succeed = false;
+  InitializeNotifications();
+  InitializeTsiHandshakers(/*client=*/true, /*server=*/false);
+
+  {
+    grpc_core::ExecCtx exec_ctx;
+    tsi_handshaker_next(client_handshaker_, /*received_bytes=*/nullptr,
+                        /*received_bytes_size=*/0,
+                        /*bytes_to_send=*/nullptr,
+                        /*bytes_to_send_size=*/nullptr,
+                        /*handshaker_result=*/nullptr,
+                        on_client_start_success_cb, /*user_data=*/nullptr);
+  }
+  grpc_slice slice = grpc_empty_slice();
+  grpc_byte_buffer* recv_buffer = grpc_raw_byte_buffer_create(&slice, 1);
+  MockHandshakerClient* client = reinterpret_cast<MockHandshakerClient*>(
+      s2a_tsi_handshaker_client_for_testing(client_handshaker_));
+  /** Check nullptr handshaker. **/
+  GPR_ASSERT(client != nullptr);
+  client->SetFieldsForTesting(/*handshaker=*/nullptr, on_invalid_input_cb,
+                              /*user_data=*/nullptr, recv_buffer,
+                              GRPC_STATUS_OK);
+  client->HandleResponse(/*is_ok=*/true);
+  /* Note: here and elsewhere in this test, we first ref the handshaker in order
+   * to match the unref that on_status_received will do. This necessary
+   * because this test mocks out the grpc call in such a way that the code
+   * path that would usually take this ref is skipped. */
+  client->ref_for_testing();
+  client->on_status_received_for_testing(GRPC_STATUS_OK, GRPC_ERROR_NONE);
+
+  grpc_slice_unref(slice);
+  DestroyTsiHandshakers();
+  DestroyNotifications();
+}
+
+TEST_F(S2AMockHandshakeTest, CheckHandleResponseNullptrRecvBytes) {
+  should_handshaker_client_api_succeed = false;
+  InitializeNotifications();
+  InitializeTsiHandshakers(/*client=*/true, /*server=*/false);
+
+  {
+    grpc_core::ExecCtx exec_ctx;
+    tsi_handshaker_next(client_handshaker_, /*received_bytes=*/nullptr,
+                        /*received_bytes_size=*/0, /*bytes_to_send=*/nullptr,
+                        /*bytes_to_send_size=*/nullptr,
+                        /*handshaker_result=*/nullptr,
+                        on_client_start_success_cb, /*user_data=*/nullptr);
+  }
+  MockHandshakerClient* client = reinterpret_cast<MockHandshakerClient*>(
+      s2a_tsi_handshaker_client_for_testing(client_handshaker_));
+  /** Check nullptr recv_bytes. **/
+  GPR_ASSERT(client != nullptr);
+  client->SetFieldsForTesting(client_handshaker_, on_invalid_input_cb,
+                              /*user_data=*/nullptr,
+                              /*recv_buffer=*/nullptr, GRPC_STATUS_OK);
+  client->HandleResponse(/*is_ok=*/true);
+  client->ref_for_testing();
+  client->on_status_received_for_testing(GRPC_STATUS_OK, GRPC_ERROR_NONE);
+
+  DestroyTsiHandshakers();
+  DestroyNotifications();
+}
+
+TEST_F(S2AMockHandshakeTest,
+       CheckHandleResponseFailedGrpcCallToHandshakerService) {
+  should_handshaker_client_api_succeed = false;
+  InitializeNotifications();
+  InitializeTsiHandshakers(/*client=*/true, /*server=*/false);
+
+  {
+    grpc_core::ExecCtx exec_ctx;
+    tsi_handshaker_next(client_handshaker_, /*received_bytes=*/nullptr,
+                        /*received_bytes_size=*/0,
+                        /*bytes_to_send=*/nullptr,
+                        /*bytes_to_send_size=*/nullptr,
+                        /*handshaker_result=*/nullptr,
+                        on_client_start_success_cb, /*user_data=*/nullptr);
+  }
+  grpc_slice slice = grpc_empty_slice();
+  grpc_byte_buffer* recv_buffer = grpc_raw_byte_buffer_create(&slice, 1);
+  MockHandshakerClient* client = reinterpret_cast<MockHandshakerClient*>(
+      s2a_tsi_handshaker_client_for_testing(client_handshaker_));
+  /** Check failed grpc call made to handshaker service. **/
+  GPR_ASSERT(client != nullptr);
+  client->SetFieldsForTesting(client_handshaker_, on_failed_grpc_call_cb,
+                              /*user_data=*/nullptr, recv_buffer,
+                              GRPC_STATUS_UNKNOWN);
+  client->HandleResponse(/*is_ok=*/true);
+  client->ref_for_testing();
+  client->on_status_received_for_testing(GRPC_STATUS_UNKNOWN, GRPC_ERROR_NONE);
+
+  grpc_slice_unref(slice);
+  DestroyTsiHandshakers();
+  DestroyNotifications();
+}
+
+TEST_F(S2AMockHandshakeTest,
+       CheckHandleResponseFailedRecvMessageFromHandshakerService) {
+  should_handshaker_client_api_succeed = false;
+  InitializeNotifications();
+  InitializeTsiHandshakers(/*client=*/true, /*server=*/false);
+
+  {
+    grpc_core::ExecCtx exec_ctx;
+    tsi_handshaker_next(client_handshaker_, /*received_bytes=*/nullptr,
+                        /*received_bytes_size=*/0,
+                        /*bytes_to_send=*/nullptr,
+                        /*bytes_to_send_size=*/nullptr,
+                        /*handshaker_result=*/nullptr,
+                        on_client_start_success_cb, /*user_data=*/nullptr);
+  }
+  grpc_slice slice = grpc_empty_slice();
+  grpc_byte_buffer* recv_buffer = grpc_raw_byte_buffer_create(&slice, 1);
+  MockHandshakerClient* client = reinterpret_cast<MockHandshakerClient*>(
+      s2a_tsi_handshaker_client_for_testing(client_handshaker_));
+  /** Check failed recv message op from handshaker service. **/
+  GPR_ASSERT(client != nullptr);
+  client->SetFieldsForTesting(client_handshaker_, on_failed_grpc_call_cb,
+                              /*user_data=*/nullptr, recv_buffer,
+                              GRPC_STATUS_OK);
+  client->HandleResponse(/*is_ok=*/false);
+  client->ref_for_testing();
+  client->on_status_received_for_testing(GRPC_STATUS_OK, GRPC_ERROR_NONE);
+
+  grpc_slice_unref(slice);
+  DestroyTsiHandshakers();
+  DestroyNotifications();
+}
+
+TEST_F(S2AMockHandshakeTest, CheckHandleResponseInvalidResp) {
+  should_handshaker_client_api_succeed = false;
+  InitializeNotifications();
+  InitializeTsiHandshakers(/*client=*/true, /*server=*/false);
+
+  {
+    grpc_core::ExecCtx exec_ctx;
+    tsi_handshaker_next(client_handshaker_, /*received_bytes=*/nullptr,
+                        /*received_bytes_size=*/0,
+                        /*bytes_to_send=*/nullptr,
+                        /*bytes_to_send_size=*/nullptr,
+                        /*handshaker_result=*/nullptr,
+                        on_client_start_success_cb, /*user_data=*/nullptr);
+  }
+  MockHandshakerClient* client = reinterpret_cast<MockHandshakerClient*>(
+      s2a_tsi_handshaker_client_for_testing(client_handshaker_));
+  grpc_byte_buffer* recv_buffer = generate_handshaker_response(INVALID);
+  GPR_ASSERT(client != nullptr);
+  client->SetFieldsForTesting(client_handshaker_, on_invalid_resp_cb,
+                              /*user_data=*/nullptr, recv_buffer,
+                              GRPC_STATUS_OK);
+  client->HandleResponse(/*is_ok=*/true);
+  client->ref_for_testing();
+  client->on_status_received_for_testing(GRPC_STATUS_OK, GRPC_ERROR_NONE);
+
+  DestroyTsiHandshakers();
+  DestroyNotifications();
+}
+
+TEST_F(S2AMockHandshakeTest, CheckHandleResponseFailure) {
+  should_handshaker_client_api_succeed = false;
+  InitializeNotifications();
+  InitializeTsiHandshakers(/*client=*/true, /*server=*/false);
+
+  {
+    grpc_core::ExecCtx exec_ctx;
+    tsi_handshaker_next(client_handshaker_, /*received_bytes=*/nullptr,
+                        /*received_bytes_size=*/0,
+                        /*bytes_to_send=*/nullptr,
+                        /*bytes_to_send_size=*/nullptr,
+                        /*handshaker_result=*/nullptr,
+                        on_client_start_success_cb, /*user_data=*/nullptr);
+  }
+  MockHandshakerClient* client = reinterpret_cast<MockHandshakerClient*>(
+      s2a_tsi_handshaker_client_for_testing(client_handshaker_));
+  /** Tests. **/
+  grpc_byte_buffer* recv_buffer = generate_handshaker_response(FAILED);
+  GPR_ASSERT(client != nullptr);
+  client->SetFieldsForTesting(client_handshaker_, on_failed_resp_cb,
+                              /*user_data=*/nullptr, recv_buffer,
+                              GRPC_STATUS_OK);
+  client->HandleResponse(/*is_ok=*/true);
+  client->ref_for_testing();
+  client->on_status_received_for_testing(GRPC_STATUS_OK, GRPC_ERROR_NONE);
+
+  DestroyTsiHandshakers();
+  DestroyNotifications();
+}
+
+TEST_F(S2AMockHandshakeTest, CheckHandleResponseAfterShutdown) {
+  should_handshaker_client_api_succeed = true;
+  InitializeNotifications();
+  InitializeTsiHandshakers(/*client=*/true, /*server=*/false);
+
+  {
+    grpc_core::ExecCtx exec_ctx;
+    tsi_handshaker_next(client_handshaker_, /*received_bytes=*/nullptr,
+                        /*received_bytes_size=*/0,
+                        /*bytes_to_send=*/nullptr,
+                        /*bytes_to_send_size=*/nullptr,
+                        /*handshaker_result=*/nullptr,
+                        on_client_start_success_cb, /*user_data=*/nullptr);
+  }
+  MockHandshakerClient* client = reinterpret_cast<MockHandshakerClient*>(
+      s2a_tsi_handshaker_client_for_testing(client_handshaker_));
+  GPR_ASSERT(client != nullptr);
+  grpc_byte_buffer** recv_buffer_ptr = client->recv_buffer_addr_for_testing();
+  GPR_ASSERT(recv_buffer_ptr != nullptr);
+  grpc_byte_buffer_destroy(*recv_buffer_ptr);
+
+  tsi_handshaker_shutdown(client_handshaker_);
+  grpc_byte_buffer* recv_buffer = generate_handshaker_response(CLIENT_START);
+  client->SetFieldsForTesting(client_handshaker_, on_shutdown_resp_cb,
+                              /*user_data=*/nullptr, recv_buffer,
+                              GRPC_STATUS_OK);
+  client->HandleResponse(/*is_ok=*/true);
+  client->ref_for_testing();
+  client->on_status_received_for_testing(GRPC_STATUS_OK, GRPC_ERROR_NONE);
+
+  DestroyTsiHandshakers();
+  DestroyNotifications();
+}
+
+TEST_F(S2AMockHandshakeTest, CheckHandshakerNextFailsAfterShutdown) {
+  should_handshaker_client_api_succeed = true;
+  InitializeNotifications();
+  cb_event = nullptr;
+  grpc_core::Thread thd("s2a_mock_handshake_test",
+                        &s2a_check_handle_response_with_shutdown,
+                        /*arg=*/nullptr);
+  thd.Start();
+  InitializeTsiHandshakers(/*client=*/true, /*server=*/false);
+
+  {
+    grpc_core::ExecCtx exec_ctx;
+    EXPECT_EQ(tsi_handshaker_next(
+                  client_handshaker_, /*received_bytes=*/nullptr,
+                  /*received_bytes_size=*/0,
+                  /*bytes_to_send=*/nullptr,
+                  /*bytes_to_send_size=*/nullptr,
+                  /*handshaker_result=*/nullptr, on_client_start_success_cb,
+                  /*user_data=*/nullptr),
+              TSI_ASYNC);
+  }
+  wait(&tsi_to_caller_notification);
+  tsi_handshaker_shutdown(client_handshaker_);
+  {
+    grpc_core::ExecCtx exec_ctx;
+    EXPECT_EQ(tsi_handshaker_next(client_handshaker_,
+                                  reinterpret_cast<const unsigned char*>(
+                                      kS2AMockHandshakeTestRecvBytes),
+                                  strlen(kS2AMockHandshakeTestRecvBytes),
+                                  /*bytes_to_send=*/nullptr,
+                                  /*bytes_to_send_size=*/nullptr,
+                                  /*handshaker_result=*/nullptr,
+                                  on_client_next_success_cb,
+                                  /*user_data=*/nullptr),
+              TSI_HANDSHAKE_SHUTDOWN);
+  }
+
+  DestroyTsiHandshakers();
+  thd.Join();
+  DestroyNotifications();
+}
+
+TEST_F(S2AMockHandshakeTest, CheckHandshakerSuccess) {
+  should_handshaker_client_api_succeed = true;
+  InitializeNotifications();
+  grpc_core::Thread thd("s2a_mock_handshake_test",
+                        &s2a_check_handle_response_success, /*arg=*/nullptr);
+  thd.Start();
+  InitializeTsiHandshakers(/*client=*/true, /*server=*/true);
+
+  /** Client start. **/
+  {
+    grpc_core::ExecCtx exec_ctx;
+    EXPECT_EQ(tsi_handshaker_next(
+                  client_handshaker_, /*received_bytes=*/nullptr,
+                  /*received_bytes_size=*/0,
+                  /*bytes_to_send=*/nullptr,
+                  /*bytes_to_send_size=*/nullptr,
+                  /*handshaker_result=*/nullptr, on_client_start_success_cb,
+                  /*user_data=*/nullptr),
+              TSI_ASYNC);
+  }
+  wait(&tsi_to_caller_notification);
+  /** Client next. **/
+  {
+    grpc_core::ExecCtx exec_ctx;
+    EXPECT_EQ(tsi_handshaker_next(client_handshaker_,
+                                  reinterpret_cast<const unsigned char*>(
+                                      kS2AMockHandshakeTestRecvBytes),
+                                  strlen(kS2AMockHandshakeTestRecvBytes),
+                                  /*bytes_to_send=*/nullptr,
+                                  /*bytes_to_send_size=*/nullptr,
+                                  /*handshaker_result=*/nullptr,
+                                  on_client_next_success_cb,
+                                  /*user_data=*/nullptr),
+              TSI_ASYNC);
+  }
+  wait(&tsi_to_caller_notification);
+  /** Server start. **/
+  {
+    grpc_core::ExecCtx exec_ctx;
+    EXPECT_EQ(tsi_handshaker_next(
+                  server_handshaker_, /*received_bytes=*/nullptr,
+                  /*received_bytes_size=*/0,
+                  /*bytes_to_send=*/nullptr,
+                  /*bytes_to_send_size=*/nullptr,
+                  /*handshaker_result=*/nullptr, on_server_start_success_cb,
+                  /*user_data=*/nullptr),
+              TSI_ASYNC);
+  }
+  wait(&tsi_to_caller_notification);
+  /** Server next. **/
+  {
+    grpc_core::ExecCtx exec_ctx;
+    EXPECT_EQ(tsi_handshaker_next(server_handshaker_,
+                                  reinterpret_cast<const unsigned char*>(
+                                      kS2AMockHandshakeTestRecvBytes),
+                                  strlen(kS2AMockHandshakeTestRecvBytes),
+                                  /*bytes_to_send=*/nullptr,
+                                  /*bytes_to_send_size=*/nullptr,
+                                  /*handshaker_result=*/nullptr,
+                                  on_server_next_success_cb,
+                                  /*user_data=*/nullptr),
+              TSI_ASYNC);
+  }
+  wait(&tsi_to_caller_notification);
+
+  DestroyTsiHandshakers();
+  thd.Join();
+  DestroyNotifications();
+}
+
+}  // namespace
+}  // namespace tsi
+}  // namespace s2a
+
+int main(int argc, char** argv) {
+  ::testing::InitGoogleTest(&argc, argv);
+  grpc_init();
+  int ret = RUN_ALL_TESTS();
+  grpc_shutdown();
+  return ret;
+}

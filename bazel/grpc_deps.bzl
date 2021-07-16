@@ -186,7 +186,37 @@ def grpc_deps():
 
     native.bind(
         name = "s2a_core",
-        actual = "@s2a_core//:s2a_core",
+        actual = "@com_google_s2a_core//:s2a_core",
+    )
+
+    native.bind(
+        name = "s2a_core_common_upb",
+        actual = "@com_google_s2a_core//s2a/src/proto/upb-generated/proto:common_upb_proto",
+    )
+
+    native.bind(
+        name = "s2a_core_s2a_upb",
+        actual = "@com_google_s2a_core//s2a/src/proto/upb-generated/proto:s2a_upb_proto",
+    )
+
+    native.bind(
+        name = "s2a_core_s2a_context_upb",
+        actual = "@com_google_s2a_core//s2a/src/proto/upb-generated/proto:s2a_context_upb_proto",
+    )
+
+    native.bind(
+        name = "s2a_core_proxy_test_util",
+        actual = "@com_google_s2a_core//:s2a_proxy_test_util",
+    )
+
+    native.bind(
+        name = "s2a_core_test_data",
+        actual = "@com_google_s2a_core//:s2a_test_data",
+    )
+
+    native.bind(
+        name = "s2a_core_token_manager",
+        actual = "@com_google_s2a_core//:single_token_access_token_manager",
     )
 
     if "boringssl" not in native.existing_rules():
@@ -449,14 +479,22 @@ def grpc_deps():
             ],
         )
 
-    if "s2a_core" not in native.existing_rules():
+    if "com_google_s2a_core" not in native.existing_rules():
         http_archive(
-            name = "s2a_core",
-            sha256 = "68d6c6c6149a2285edafc9a148688db0b774e18eefe49630cf6bfc9402d12da5",
-            strip_prefix = "s2a_core-52c99aa9539ae7ebe0152af53e3d34372b2be29d",
+            name = "com_google_s2a_core",
+            sha256 = "7ef3c812c720e0dfd1305908f4445dd91ff18bb88e44a28685e7039dab2ab3d0",
+            strip_prefix = "s2a-core-72fa6827cc50bbe8e83d76ae6d93673f6c626660",
             urls = [
-                "https://github.com/google/s2a-core/archive/52c99aa9539ae7ebe0152af53e3d34372b2be29d.tar.gz",
+                "https://github.com/google/s2a-core/archive/72fa6827cc50bbe8e83d76ae6d93673f6c626660.tar.gz",
             ],
+        )
+
+    if "rules_foreign_cc" not in native.existing_rules():
+        http_archive(
+          name = "rules_foreign_cc",
+          sha256 = "d54742ffbdc6924f222d2179f0e10e911c5c659c4ae74158e9fe827aad862ac6",
+          strip_prefix = "rules_foreign_cc-0.2.0",
+          url = "https://github.com/bazelbuild/rules_foreign_cc/archive/0.2.0.tar.gz",
         )
 
     grpc_python_deps()

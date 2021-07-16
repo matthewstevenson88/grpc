@@ -2694,6 +2694,52 @@ grpc_cc_library(
 )
 
 grpc_cc_library(
+    name = "s2a_tsi",
+    srcs = [
+        "src/core/tsi/s2a/handshaker/s2a_handshaker_client.cc",
+        "src/core/tsi/s2a/handshaker/s2a_handshaker_client_caller.cc",
+        "src/core/tsi/s2a/handshaker/s2a_handshaker_util.cc",
+        "src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.cc",
+        "src/core/tsi/s2a/util/s2a_util.cc",
+        "src/core/tsi/s2a/frame_protector/s2a_zero_copy_grpc_protector.cc",
+        "src/core/tsi/s2a/options/grpc_s2a_credentials_options.cc",
+        "src/core/tsi/transport_security_grpc.cc",
+    ],
+    hdrs = [
+        "src/core/tsi/s2a/s2a_tsi_handshaker.h",
+        "src/core/tsi/s2a/grpc_s2a_credentials_options.h",
+        "src/core/tsi/s2a/s2a_security.h",
+        "src/core/tsi/s2a/handshaker/s2a_handshaker_client.h",
+        "src/core/tsi/s2a/handshaker/s2a_handshaker_util.h",
+        "src/core/tsi/s2a/handshaker/s2a_tsi_test_utilities.h",
+        "src/core/tsi/s2a/util/s2a_util.h",
+        "src/core/tsi/s2a/frame_protector/s2a_zero_copy_grpc_protector.h",
+        "src/core/tsi/transport_security_grpc.h",
+    ],
+    external_deps = [
+        "absl/status",
+        "absl/status:statusor",
+        "absl/strings",
+        "libssl",
+        "libcrypto",
+        "upb_lib",
+        "s2a_core",
+        "s2a_core_common_upb",
+        "s2a_core_s2a_upb",
+        "s2a_core_s2a_context_upb",
+        "s2a_core_token_manager",
+    ],
+    language = "c++",
+    deps = [
+        "gpr",
+        "gpr_base",
+        "grpc_base_c",
+        "grpc_transport_chttp2_client_insecure",
+        "tsi_interface",
+    ],
+)
+
+grpc_cc_library(
     name = "tsi",
     srcs = [
         "src/core/tsi/alts/handshaker/alts_handshaker_client.cc",
