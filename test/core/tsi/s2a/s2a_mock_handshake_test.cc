@@ -34,6 +34,7 @@
 #include "src/core/tsi/s2a/handshaker/s2a_handshaker_client.h"
 #include "src/core/tsi/s2a/handshaker/s2a_tsi_test_utilities.h"
 #include "src/core/tsi/s2a/s2a_security.h"
+#include "src/core/tsi/s2a/s2a_shared_resource.h"
 #include "src/core/tsi/s2a/s2a_tsi_handshaker.h"
 #include "src/core/tsi/transport_security_grpc.h"
 #include "upb/upb.hpp"
@@ -1085,7 +1086,9 @@ TEST_F(S2AMockHandshakeTest, CheckHandshakerSuccess) {
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   grpc_init();
+  grpc_s2a_shared_resource_dedicated_init();
   int ret = RUN_ALL_TESTS();
+  grpc_s2a_shared_resource_dedicated_shutdown();
   grpc_shutdown();
   return ret;
 }
