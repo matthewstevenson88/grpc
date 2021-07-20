@@ -2699,6 +2699,7 @@ grpc_cc_library(
         "src/core/tsi/s2a/handshaker/s2a_handshaker_client.cc",
         "src/core/tsi/s2a/handshaker/s2a_handshaker_client_caller.cc",
         "src/core/tsi/s2a/handshaker/s2a_handshaker_util.cc",
+        "src/core/tsi/s2a/handshaker/s2a_shared_resource.cc",
         "src/core/tsi/s2a/handshaker/s2a_tsi_handshaker.cc",
         "src/core/tsi/s2a/util/s2a_util.cc",
         "src/core/tsi/s2a/frame_protector/s2a_zero_copy_grpc_protector.cc",
@@ -2706,6 +2707,7 @@ grpc_cc_library(
         "src/core/tsi/transport_security_grpc.cc",
     ],
     hdrs = [
+        "src/core/tsi/s2a/s2a_shared_resource.h",
         "src/core/tsi/s2a/s2a_tsi_handshaker.h",
         "src/core/tsi/s2a/grpc_s2a_credentials_options.h",
         "src/core/tsi/s2a/s2a_security.h",

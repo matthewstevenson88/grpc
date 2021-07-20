@@ -24,18 +24,19 @@
 #include <grpc/support/string_util.h>
 #include <grpc/support/sync.h>
 
-#include "src/core/tsi/s2a/frame_protector/s2a_zero_copy_grpc_protector.h"
-#include "src/core/tsi/s2a/handshaker/s2a_handshaker_client.h"
-#include "src/core/tsi/s2a/handshaker/s2a_tsi_test_utilities.h"
-#include "src/core/tsi/s2a/s2a_security.h"
 #include "absl/status/statusor.h"
-#include "src/core/lib/slice/slice_internal.h"
-#include "src/core/lib/surface/channel.h"
-#include "src/core/tsi/transport_security.h"
 #include "s2a/include/s2a_frame_protector.h"
 #include "s2a/src/proto/upb-generated/proto/common.upb.h"
 #include "s2a/src/proto/upb-generated/proto/s2a.upb.h"
 #include "s2a/src/proto/upb-generated/proto/s2a_context.upb.h"
+#include "src/core/lib/slice/slice_internal.h"
+#include "src/core/lib/surface/channel.h"
+#include "src/core/tsi/s2a/frame_protector/s2a_zero_copy_grpc_protector.h"
+#include "src/core/tsi/s2a/handshaker/s2a_handshaker_client.h"
+#include "src/core/tsi/s2a/handshaker/s2a_tsi_test_utilities.h"
+#include "src/core/tsi/s2a/s2a_security.h"
+#include "src/core/tsi/s2a/s2a_shared_resource.h"
+#include "src/core/tsi/transport_security.h"
 #include "upb/upb.hpp"
 
 namespace s2a {
@@ -54,6 +55,7 @@ struct s2a_tsi_handshaker {
   bool has_created_handshaker_client;
   grpc_pollset_set* interested_parties;
   grpc_s2a_credentials_options* options;
+  bool use_dedicated_cq;
   grpc_channel* channel;
   /** The mutex |mu| synchronizes the fields |client| and |shutdown|. These are
    *  the only fields of the s2a_tsi_handshaker that could be accessed
@@ -100,6 +102,18 @@ static void on_handshaker_service_resp_recv(void* arg,
   client->HandleResponse(success);
 }
 
+/* A gRPC-provided callback that is used when a dedicated CQ and thread are
+ * used. It serves to safely bring control back to the application. */
+static void on_handshaker_service_resp_recv_dedicated(
+    void* arg, grpc_error_handle /*error*/) {
+  s2a_shared_resource_dedicated* resource =
+      grpc_s2a_get_shared_resource_dedicated();
+  grpc_cq_end_op(
+      resource->cq, arg, GRPC_ERROR_NONE,
+      [](void* /*done_arg*/, grpc_cq_completion* /*storage*/) {}, nullptr,
+      &resource->storage);
+}
+
 static tsi_result s2a_tsi_handshaker_continue_handshaker_next(
     s2a_tsi_handshaker* handshaker, const uint8_t* received_bytes,
     size_t received_bytes_size, tsi_handshaker_on_next_done_cb cb,
@@ -107,21 +121,33 @@ static tsi_result s2a_tsi_handshaker_continue_handshaker_next(
   GPR_ASSERT(handshaker != nullptr);
   grpc_core::MutexLock lock(&handshaker->mu);
   if (!handshaker->has_created_handshaker_client) {
+    if (handshaker->channel == nullptr) {
+      grpc_s2a_shared_resource_dedicated_start(
+          handshaker->options->s2a_options.s2a_address().c_str());
+      handshaker->interested_parties =
+          grpc_s2a_get_shared_resource_dedicated()->interested_parties;
+      GPR_ASSERT(handshaker->interested_parties != nullptr);
+    }
+    grpc_iomgr_cb_func grpc_cb = handshaker->channel == nullptr
+                                     ? on_handshaker_service_resp_recv_dedicated
+                                     : on_handshaker_service_resp_recv;
+    grpc_channel* channel =
+        handshaker->channel == nullptr
+            ? grpc_s2a_get_shared_resource_dedicated()->channel
+            : handshaker->channel;
     S2AHandshakerClient* client = nullptr;
     tsi_result client_create_result = TSI_OK;
     if (handshaker->is_test) {
       GPR_ASSERT(handshaker->create_mock != nullptr);
       client_create_result = handshaker->create_mock(
-          &(handshaker->base), handshaker->channel,
-          handshaker->interested_parties, handshaker->options,
-          handshaker->target_name, on_handshaker_service_resp_recv, cb,
-          user_data, handshaker->is_client, &client);
+          &(handshaker->base), channel, handshaker->interested_parties,
+          handshaker->options, handshaker->target_name, grpc_cb, cb, user_data,
+          handshaker->is_client, &client);
     } else {
       client_create_result = S2AHandshakerClientCreate(
-          &(handshaker->base), handshaker->channel,
-          handshaker->interested_parties, handshaker->options,
-          handshaker->target_name, on_handshaker_service_resp_recv, cb,
-          user_data, handshaker->is_client, handshaker->is_test, &client);
+          &(handshaker->base), channel, handshaker->interested_parties,
+          handshaker->options, handshaker->target_name, grpc_cb, cb, user_data,
+          handshaker->is_client, handshaker->is_test, &client);
     }
     GPR_ASSERT(client != nullptr);
     GPR_ASSERT(client_create_result == TSI_OK);
@@ -133,7 +159,10 @@ static tsi_result s2a_tsi_handshaker_continue_handshaker_next(
     }
     handshaker->has_created_handshaker_client = true;
   }
-
+  if (handshaker->channel == nullptr && !handshaker->is_test) {
+    GPR_ASSERT(grpc_cq_begin_op(grpc_s2a_get_shared_resource_dedicated()->cq,
+                                handshaker->client));
+  }
   grpc_slice slice = (received_bytes == nullptr || received_bytes_size == 0)
                          ? grpc_empty_slice()
                          : grpc_slice_from_copied_buffer(
@@ -157,8 +186,7 @@ static void s2a_tsi_handshaker_create_channel_and_continue_handshaker_next(
   GPR_ASSERT(handshaker != nullptr);
   GPR_ASSERT(handshaker->channel == nullptr);
   handshaker->channel = ::grpc_insecure_channel_create(
-      next_args->handshaker->options->s2a_options.s2a_address()
-          .c_str(),
+      next_args->handshaker->options->s2a_options.s2a_address().c_str(),
       nullptr, nullptr);
   tsi_result continue_next_result = s2a_tsi_handshaker_continue_handshaker_next(
       handshaker, next_args->received_bytes.get(),
@@ -187,7 +215,8 @@ static tsi_result handshaker_next(
       return TSI_HANDSHAKE_SHUTDOWN;
     }
   }
-  if (handshaker->channel == nullptr && !handshaker->is_test) {
+  if (handshaker->channel == nullptr && !handshaker->is_test &&
+      !handshaker->use_dedicated_cq) {
     s2a_tsi_handshaker_continue_handshaker_next_args* args =
         new s2a_tsi_handshaker_continue_handshaker_next_args();
     args->handshaker = handshaker;
@@ -214,6 +243,22 @@ static tsi_result handshaker_next(
     }
   }
   return TSI_ASYNC;
+}
+
+/*
+ * This API will be invoked by a non-gRPC application, and an ExecCtx needs
+ * to be explicitly created in order to invoke the S2A handshaker client APIs
+ * that assume the caller is inside the gRPC C-core.
+ */
+static tsi_result handshaker_next_dedicated(
+    tsi_handshaker* self, const unsigned char* received_bytes,
+    size_t received_bytes_size, const unsigned char** bytes_to_send,
+    size_t* bytes_to_send_size, tsi_handshaker_result** result,
+    tsi_handshaker_on_next_done_cb cb, void* user_data) {
+  grpc_core::ExecCtx exec_ctx;
+  return handshaker_next(self, received_bytes, received_bytes_size,
+                         bytes_to_send, bytes_to_send_size, result, cb,
+                         user_data);
 }
 
 static void handshaker_shutdown(tsi_handshaker* self) {
@@ -251,6 +296,16 @@ static const tsi_handshaker_vtable handshaker_vtable = {
     nullptr,         handshaker_destroy,
     handshaker_next, handshaker_shutdown};
 
+static const tsi_handshaker_vtable handshaker_vtable_dedicated = {
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    handshaker_destroy,
+    handshaker_next_dedicated,
+    handshaker_shutdown};
+
 absl::StatusOr<tsi_handshaker*> CreateS2ATsiHandshaker(
     S2ATsiHandshakerOptions& options) {
   if (options.s2a_options == nullptr ||
@@ -265,8 +320,11 @@ absl::StatusOr<tsi_handshaker*> CreateS2ATsiHandshaker(
           ? grpc_empty_slice()
           : grpc_slice_from_static_string(options.target_name);
   handshaker->interested_parties = options.interested_parties;
+  handshaker->use_dedicated_cq = (options.interested_parties == nullptr);
   handshaker->options = options.s2a_options;
-  handshaker->base.vtable = &handshaker_vtable;
+  handshaker->base.vtable = handshaker->use_dedicated_cq
+                                ? &handshaker_vtable_dedicated
+                                : &handshaker_vtable;
   return &(handshaker->base);
 }
 
@@ -543,4 +601,3 @@ void s2a_tsi_handshaker_set_create_mock_handshaker_client(
 
 }  // namespace tsi
 }  // namespace s2a
-
