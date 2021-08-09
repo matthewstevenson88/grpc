@@ -2718,6 +2718,7 @@ grpc_cc_library(
         "src/core/tsi/s2a/frame_protector/s2a_zero_copy_grpc_protector.h",
         "src/core/tsi/transport_security_grpc.h",
     ],
+    public_hdrs = GRPC_SECURE_PUBLIC_HDRS,
     external_deps = [
         "absl/status",
         "absl/status:statusor",
