@@ -23,6 +23,7 @@
 #include <string.h>
 
 #include <algorithm>
+#include <initializer_list>
 #include <utility>
 
 #include "absl/status/status.h"
