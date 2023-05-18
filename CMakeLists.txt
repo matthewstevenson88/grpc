@@ -13142,7 +13142,6 @@ add_executable(h2_ssl_cert_test
   test/core/end2end/data/server1_key.cc
   test/core/end2end/data/test_root_cert.cc
   test/core/end2end/end2end_tests.cc
-  test/core/end2end/engine_passthrough.cc
   test/core/end2end/fixtures/local_util.cc
   test/core/end2end/h2_ssl_cert_test.cc
   test/core/event_engine/event_engine_test_utils.cc
