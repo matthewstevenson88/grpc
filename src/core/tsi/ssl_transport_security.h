@@ -349,7 +349,8 @@ struct tsi_ssl_server_handshaker_options {
         min_tls_version(tsi_tls_version::TSI_TLS1_2),
         max_tls_version(tsi_tls_version::TSI_TLS1_3),
         key_logger(nullptr),
-        crl_directory(nullptr), set_client_ca_list(true) {}
+        crl_directory(nullptr),
+        set_client_ca_list(true) {}
 };
 
 // Creates a server handshaker factory.
