@@ -2201,7 +2201,7 @@ tsi_result tsi_create_ssl_server_handshaker_factory_with_options(
       if (options->pem_client_root_certs != nullptr) {
         result = ssl_ctx_load_verification_certs(
             impl->ssl_contexts[i], options->pem_client_root_certs,
-            strlen(options->pem_client_root_certs), /*root_names=*/nullptr);
+            strlen(options->pem_client_root_certs), /*root_name=*/nullptr);
         if (result != TSI_OK) {
           gpr_log(GPR_ERROR, "Invalid verification certs.");
           break;
