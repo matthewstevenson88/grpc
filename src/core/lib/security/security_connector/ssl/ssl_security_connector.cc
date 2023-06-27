@@ -263,7 +263,8 @@ class grpc_ssl_server_security_connector
           server_credentials->config().min_tls_version);
       options.max_tls_version = grpc_get_tsi_tls_version(
           server_credentials->config().max_tls_version);
-      options.set_client_ca_list = server_credentials->config().set_client_ca_list;
+      options.set_client_ca_list =
+          server_credentials->config().set_client_ca_list;
       const tsi_result result =
           tsi_create_ssl_server_handshaker_factory_with_options(
               &options, &server_handshaker_factory_);
