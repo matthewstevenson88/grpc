@@ -106,22 +106,22 @@ struct grpc_tls_credentials_options
       send_client_ca_list_ == other.send_client_ca_list_;
   }
 
-  // Copy constructor.
   grpc_tls_credentials_options(grpc_tls_credentials_options& other) :
-    cert_request_type_(other.cert_request_type_),
-    verify_server_cert_(other.verify_server_cert_),
-    min_tls_version_(other.min_tls_version_),
-    max_tls_version_(other.max_tls_version_),
-    certificate_verifier_(other.certificate_verifier_),
-    check_call_host_(other.check_call_host_),
-    certificate_provider_(other.certificate_provider_),
-    watch_root_cert_(other.watch_root_cert_),
-    root_cert_name_(other.root_cert_name_),
-    watch_identity_pair_(other.watch_identity_pair_),
-    identity_cert_name_(other.identity_cert_name_),
-    tls_session_key_log_file_path_(other.tls_session_key_log_file_path_),
-    crl_directory_(other.crl_directory_),
-    crl_provider_(other.crl_provider_) {}
+    cert_request_type(other.cert_request_type),
+      verify_server_cert(other.verify_server_cert),
+      min_tls_version(other.min_tls_version),
+      max_tls_version(other.max_tls_version),
+      certificate_verifier(other.certificate_verifier),
+      check_call_host(other.check_call_host),
+      certificate_provider(other.certificate_provider),
+      watch_root_cert(other.watch_root_cert),
+      root_cert_name(other.root_cert_name),
+      watch_identity_pair(other.watch_identity_pair),
+      identity_cert_name(other.identity_cert_name),
+      tls_session_key_log_file_path(other.tls_session_key_log_file_path),
+      crl_directory(other.crl_directory),
+      crl_provider(other.crl_provider),
+      send_client_ca_list(other.send_client_ca_list)  {}
 
  private:
   grpc_ssl_client_certificate_request_type cert_request_type_ = GRPC_SSL_DONT_REQUEST_CLIENT_CERTIFICATE;
