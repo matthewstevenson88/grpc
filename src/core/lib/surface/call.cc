@@ -223,6 +223,10 @@ void Call::CancelWithStatus(grpc_status_code status, const char* description) {
         StatusIntProperty::kRpcStatus, status));
     return;
   }
+  if (status == GRPC_STATUS_OK) {
+    VLOG(2) << "CancelWithStatus() called with OK status, using UNKNOWN";
+    status = GRPC_STATUS_UNKNOWN;
+  }
   CancelWithError(
       absl::Status(static_cast<absl::StatusCode>(status), description));
 }
@@ -486,13 +490,13 @@ grpc_call_error grpc_call_start_batch_and_execute(grpc_call* call,
 }
 
 void grpc_call_tracer_set(grpc_call* call,
-                          grpc_core::ClientCallTracer* tracer) {
-  grpc_core::Arena* arena = grpc_call_get_arena(call);
-  return arena->SetContext<grpc_core::CallTracerAnnotationInterface>(tracer);
+                          grpc_core::ClientCallTracerInterface* tracer) {
+  grpc_call_get_arena(call)
+      ->SetContext<grpc_core::CallTracerAnnotationInterface>(tracer);
 }
 
-void grpc_call_tracer_set_and_manage(grpc_call* call,
-                                     grpc_core::ClientCallTracer* tracer) {
+void grpc_call_tracer_set_and_manage(
+    grpc_call* call, grpc_core::ClientCallTracerInterface* tracer) {
   grpc_core::Arena* arena = grpc_call_get_arena(call);
   arena->ManagedNew<ClientCallTracerWrapper>(tracer);
   return arena->SetContext<grpc_core::CallTracerAnnotationInterface>(tracer);

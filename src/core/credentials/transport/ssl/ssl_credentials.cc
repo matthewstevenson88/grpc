@@ -58,7 +58,6 @@ grpc_ssl_credentials::grpc_ssl_credentials(
       root_store_ = grpc_core::DefaultSslRootStore::GetRootStore();
     }
   } else {
-    config_.pem_root_certs = config_.pem_root_certs;
     root_store_ = nullptr;
   }
 
@@ -194,7 +193,7 @@ grpc_security_status grpc_ssl_credentials::InitializeClientHandshakerFactory(
                   "be nullptr";
     return GRPC_SECURITY_ERROR;
   }
-  options.pem_root_certs = pem_root_certs;
+  options.root_cert_info = std::make_shared<RootCertInfo>(pem_root_certs);
   options.root_store = root_store;
   options.alpn_protocols =
       grpc_fill_alpn_protocol_strings(&options.num_alpn_protocols);
@@ -278,8 +277,8 @@ grpc_ssl_server_credentials::~grpc_ssl_server_credentials() {
 }
 grpc_core::RefCountedPtr<grpc_server_security_connector>
 grpc_ssl_server_credentials::create_security_connector(
-    const grpc_core::ChannelArgs& /* args */) {
-  return grpc_ssl_server_security_connector_create(this->Ref());
+    const grpc_core::ChannelArgs& args) {
+  return grpc_ssl_server_security_connector_create(this->Ref(), args);
 }
 
 grpc_core::UniqueTypeName grpc_ssl_server_credentials::Type() {

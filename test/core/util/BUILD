@@ -45,6 +45,18 @@ grpc_cc_test(
 )
 
 grpc_cc_test(
+    name = "memory_usage_test",
+    srcs = ["memory_usage_test.cc"],
+    external_deps = [
+        "gtest",
+        "gtest_main",
+    ],
+    deps = [
+        "//src/core:memory_usage",
+    ],
+)
+
+grpc_cc_test(
     name = "tdigest_test",
     srcs = ["tdigest_test.cc"],
     external_deps = [
@@ -68,6 +80,34 @@ grpc_cc_benchmark(
     monitoring = HISTORY,
     deps = [
         "//src/core:tdigest",
+    ],
+)
+
+grpc_cc_benchmark(
+    name = "bm_latent_see",
+    srcs = ["bm_latent_see.cc"],
+    external_deps = [
+    ],
+    monitoring = HISTORY,
+    deps = [
+        "//src/core:latent_see",
+    ],
+)
+
+grpc_cc_test(
+    name = "latent_see_test",
+    srcs = ["latent_see_test.cc"],
+    external_deps = [
+        "absl/log:log",
+        "gtest",
+        "gtest_main",
+    ],
+    uses_event_engine = False,
+    uses_polling = False,
+    deps = [
+        "//src/core:json",
+        "//src/core:json_reader",
+        "//src/core:latent_see",
     ],
 )
 
@@ -314,6 +354,7 @@ grpc_cc_test(
     external_deps = [
         "gtest",
     ],
+    tags = ["error_tests"],
     uses_event_engine = False,
     uses_polling = False,
     deps = [
@@ -787,6 +828,8 @@ grpc_cc_test(
     uses_event_engine = False,
     uses_polling = False,
     deps = [
+        "//:grpc",
+        "//src/core:notification",
         "//src/core:wait_for_single_owner",
     ],
 )
@@ -822,4 +865,16 @@ grpc_fuzz_test(
         "gtest",
     ],
     deps = ["//src/core:seq_bit_set"],
+)
+
+grpc_cc_test(
+    name = "function_signature_test",
+    srcs = ["function_signature_test.cc"],
+    external_deps = [
+        "gtest",
+        "gtest_main",
+    ],
+    deps = [
+        "//src/core:function_signature",
+    ],
 )

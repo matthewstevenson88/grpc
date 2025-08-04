@@ -45,7 +45,7 @@ class SslTlsFixture : public SecureFixture {
     return "src/core/tsi/test_creds/server1.key";
   }
 
- private:
+ protected:
   grpc_core::ChannelArgs MutateClientArgs(
       grpc_core::ChannelArgs args) override {
     return args.Set(GRPC_SSL_TARGET_NAME_OVERRIDE_ARG, "foo.test.google.fr");
@@ -90,6 +90,7 @@ class SslTlsFixture : public SecureFixture {
     return ssl_creds;
   }
 
+ private:
   static void process_auth_failure(void* state, grpc_auth_context* /*ctx*/,
                                    const grpc_metadata* /*md*/,
                                    size_t /*md_count*/,
@@ -100,6 +101,11 @@ class SslTlsFixture : public SecureFixture {
   }
 
   grpc_tls_version tls_version_;
+};
+
+class SslTlsFixture1_3 : public SslTlsFixture {
+ public:
+  SslTlsFixture1_3() : SslTlsFixture(grpc_tls_version::TLS1_3) {}
 };
 
 #endif  // GRPC_TEST_CORE_END2END_FIXTURES_H2_SSL_TLS_COMMON_H

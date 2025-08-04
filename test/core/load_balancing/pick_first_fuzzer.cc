@@ -511,7 +511,7 @@ class Fuzzer {
       return fuzzer_->stats_plugin_group_;
     }
 
-    void AddTraceEvent(TraceSeverity, absl::string_view) override {}
+    void AddTraceEvent(absl::string_view) override {}
 
     Fuzzer* const fuzzer_;
   };
@@ -554,7 +554,8 @@ class Fuzzer {
       return nullptr;
     }
 
-    ClientCallTracer::CallAttemptTracer* GetCallAttemptTracer() const override {
+    ClientCallTracerInterface::CallAttemptTracer* GetCallAttemptTracer()
+        const override {
       return nullptr;
     }
 

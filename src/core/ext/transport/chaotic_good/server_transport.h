@@ -91,6 +91,9 @@ class ChaoticGoodServerTransport final : public ServerTransport {
   void SetPollsetSet(grpc_stream*, grpc_pollset_set*) override {}
   void PerformOp(grpc_transport_op*) override;
   void Orphan() override;
+  RefCountedPtr<channelz::SocketNode> GetSocketNode() const override {
+    return frame_transport_->ctx()->socket_node;
+  }
 
   void SetCallDestination(
       RefCountedPtr<UnstartedCallDestination> call_destination) override;
@@ -106,11 +109,13 @@ class ChaoticGoodServerTransport final : public ServerTransport {
   };
   using StreamMap = absl::flat_hash_map<uint32_t, RefCountedPtr<Stream> >;
 
-  class StreamDispatch : public FrameTransportSink {
+  class StreamDispatch final : public FrameTransportSink,
+                               public channelz::DataSource {
    public:
     StreamDispatch(const ChannelArgs& args, FrameTransport* frame_transport,
                    MessageChunker message_chunker,
                    RefCountedPtr<UnstartedCallDestination> call_destination);
+    ~StreamDispatch() override { SourceDestructing(); }
 
     void OnIncomingFrame(IncomingFrame incoming_frame) override;
     void OnFrameTransportClosed(absl::Status status) override;
@@ -119,6 +124,8 @@ class ChaoticGoodServerTransport final : public ServerTransport {
         grpc_connectivity_state state,
         OrphanablePtr<ConnectivityStateWatcherInterface> watcher);
     void StopConnectivityWatch(ConnectivityStateWatcherInterface* watcher);
+
+    void AddData(channelz::DataSink sink) override;
 
    private:
     absl::Status NewStream(
@@ -137,9 +144,11 @@ class ChaoticGoodServerTransport final : public ServerTransport {
                            BeginMessageFrame frame);
     auto PushFrameIntoCall(RefCountedPtr<Stream> stream,
                            MessageChunkFrame frame);
-    auto SendCallInitialMetadataAndBody(uint32_t stream_id,
-                                        CallInitiator call_initiator);
-    auto SendCallBody(uint32_t stream_id, CallInitiator call_initiator);
+    auto SendCallInitialMetadataAndBody(
+        uint32_t stream_id, CallInitiator call_initiator,
+        std::shared_ptr<TcpCallTracer> call_tracer);
+    auto SendCallBody(uint32_t stream_id, CallInitiator call_initiator,
+                      std::shared_ptr<TcpCallTracer> call_tracer);
     auto CallOutboundLoop(uint32_t stream_id, CallInitiator call_initiator);
     auto ProcessNextFrame(IncomingFrame frame);
 
@@ -153,7 +162,7 @@ class ChaoticGoodServerTransport final : public ServerTransport {
     const RefCountedPtr<UnstartedCallDestination> call_destination_;
     Party::SpawnSerializer* incoming_frame_spawner_;
     MessageChunker message_chunker_;
-    MpscSender<Frame> outgoing_frames_;
+    MpscSender<OutgoingFrame> outgoing_frames_;
     RefCountedPtr<Party> party_;
   };
 

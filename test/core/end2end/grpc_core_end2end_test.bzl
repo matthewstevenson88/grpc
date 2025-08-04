@@ -62,11 +62,13 @@ _DEPS = [
     "//src/core:channel_fwd",
     "//src/core:channel_init",
     "//src/core:channel_stack_type",
+    "//src/core:chaotic_good",
     "//src/core:closure",
     "//src/core:error",
     "//src/core:experiments",
     "//src/core:grpc_authorization_base",
     "//src/core:grpc_fake_credentials",
+    "//src/core:endpoint_transport",
     "//src/core:iomgr_port",
     "//src/core:json",
     "//src/core:lb_policy",
@@ -77,7 +79,7 @@ _DEPS = [
     "//src/core:slice",
     "//src/core:stats_data",
     "//src/core:status_helper",
-    "//:tcp_tracer",
+    "//src/core:tcp_tracer",
     "//src/core:time",
     "//src/core:unique_type_name",
     "//test/core/test_util:fail_first_call_filter",
@@ -85,6 +87,7 @@ _DEPS = [
     "//test/core/test_util:grpc_test_util",
     "//test/core/test_util:test_call_creds",
     "//test/core/test_util:test_lb_policies",
+    "//test/core/test_util:passthrough_endpoint",
 ]
 
 _EXTERNAL_DEPS = [

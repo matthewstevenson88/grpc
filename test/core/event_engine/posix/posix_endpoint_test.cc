@@ -78,7 +78,8 @@ std::list<Connection> CreateConnectedEndpoints(
     std::shared_ptr<EventEngine> posix_ee,
     std::shared_ptr<EventEngine> oracle_ee) {
   std::list<Connection> connections;
-  auto memory_quota = std::make_unique<grpc_core::MemoryQuota>("bar");
+  auto memory_quota = std::make_unique<grpc_core::MemoryQuota>(
+      grpc_core::MakeRefCounted<grpc_core::channelz::ResourceQuotaNode>("bar"));
   std::string target_addr = absl::StrCat(
       "ipv6:[::1]:", std::to_string(grpc_pick_unused_port_or_die()));
   auto resolved_addr = URIToResolvedAddress(target_addr);
@@ -105,7 +106,9 @@ std::list<Connection> CreateConnectedEndpoints(
   auto listener = oracle_ee->CreateListener(
       std::move(accept_cb),
       [](absl::Status status) { ASSERT_TRUE(status.ok()); }, config,
-      std::make_unique<grpc_core::MemoryQuota>("foo"));
+      std::make_unique<grpc_core::MemoryQuota>(
+          grpc_core::MakeRefCounted<grpc_core::channelz::ResourceQuotaNode>(
+              "bar")));
   CHECK_OK(listener);
 
   EXPECT_TRUE((*listener)->Bind(*resolved_addr).ok());
@@ -115,7 +118,8 @@ std::list<Connection> CreateConnectedEndpoints(
   for (int i = 0; i < num_connections; ++i) {
     int client_fd = ConnectToServerOrDie(*resolved_addr);
     EventHandle* handle =
-        poller.CreateHandle(client_fd, "test", poller.CanTrackErrors());
+        poller.CreateHandle(poller.posix_interface().Adopt(client_fd), "test",
+                            poller.CanTrackErrors());
     EXPECT_NE(handle, nullptr);
     server_signal->WaitForNotification();
     EXPECT_NE(server_endpoint, nullptr);
@@ -209,9 +213,6 @@ class PosixEndpointTest : public ::testing::TestWithParam<bool> {
   }
 
   void TearDown() override {
-    if (poller_ != nullptr) {
-      poller_->Shutdown();
-    }
     grpc_core::WaitForSingleOwner(std::move(posix_ee_));
     grpc_core::WaitForSingleOwner(std::move(oracle_ee_));
   }

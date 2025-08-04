@@ -27,6 +27,7 @@
 #include <utility>
 
 #include "absl/log/check.h"
+#include "absl/strings/escaping.h"
 #include "opentelemetry/metrics/meter.h"
 #include "opentelemetry/metrics/meter_provider.h"
 #include "opentelemetry/metrics/sync_instruments.h"
@@ -263,9 +264,9 @@ absl::Status OpenTelemetryPluginBuilderImpl::BuildAndRegisterGlobal() {
 
 absl::StatusOr<std::shared_ptr<grpc::experimental::OpenTelemetryPlugin>>
 OpenTelemetryPluginBuilderImpl::Build() {
-  if (meter_provider_ == nullptr) {
+  if (meter_provider_ == nullptr && tracer_provider_ == nullptr) {
     return absl::InvalidArgumentError(
-        "Need to configure a valid meter provider.");
+        "Need to configure a valid meter provider or tracer provider.");
   }
   return std::make_shared<OpenTelemetryPluginImpl>(
       metrics_, meter_provider_, std::move(target_attribute_filter_),
@@ -501,9 +502,36 @@ OpenTelemetryPluginImpl::OpenTelemetryPluginImpl(
                       kServerCallRcvdTotalCompressedMessageSizeInstrumentName),
               "Compressed message bytes received per server call", "By");
     }
+    if (metrics.contains(grpc::OpenTelemetryPluginBuilder::
+                             kClientCallRetriesInstrumentName)) {
+      client_.call.retries = meter->CreateUInt64Histogram(
+          std::string(grpc::OpenTelemetryPluginBuilder::
+                          kClientCallRetriesInstrumentName),
+          "EXPERIMENTAL: Number of retries during the client call. If there "
+          "were no retries, 0 is not reported.",
+          "{retry}");
+    }
+    if (metrics.contains(grpc::OpenTelemetryPluginBuilder::
+                             kClientCallTransparentRetriesInstrumentName)) {
+      client_.call.transparent_retries = meter->CreateUInt64Histogram(
+          std::string(grpc::OpenTelemetryPluginBuilder::
+                          kClientCallTransparentRetriesInstrumentName),
+          "EXPERIMENTAL: Number of transparent retries during the client call. "
+          "If there were no transparent retries, 0 is not reported.",
+          "{transparent_retry}");
+    }
+    if (metrics.contains(grpc::OpenTelemetryPluginBuilder::
+                             kClientCallRetryDelayInstrumentName)) {
+      client_.call.retry_delay = meter->CreateDoubleHistogram(
+          std::string(grpc::OpenTelemetryPluginBuilder::
+                          kClientCallRetryDelayInstrumentName),
+          "EXPERIMENTAL: Total time of delay while there is no active attempt "
+          "during the client call",
+          "s");
+    }
     // Store optional label keys for per call metrics
-    CHECK(static_cast<size_t>(grpc_core::ClientCallTracer::CallAttemptTracer::
-                                  OptionalLabelKey::kSize) <=
+    CHECK(static_cast<size_t>(grpc_core::ClientCallTracerInterface::
+                                  CallAttemptTracer::OptionalLabelKey::kSize) <=
           kOptionalLabelsSizeLimit);
     for (const auto& key : optional_label_keys) {
       auto optional_key = OptionalLabelStringToKey(key);
@@ -658,21 +686,23 @@ constexpr absl::string_view kLocality = "grpc.lb.locality";
 }
 
 absl::string_view OpenTelemetryPluginImpl::OptionalLabelKeyToString(
-    grpc_core::ClientCallTracer::CallAttemptTracer::OptionalLabelKey key) {
+    grpc_core::ClientCallTracerInterface::CallAttemptTracer::OptionalLabelKey
+        key) {
   switch (key) {
-    case grpc_core::ClientCallTracer::CallAttemptTracer::OptionalLabelKey::
-        kLocality:
+    case grpc_core::ClientCallTracerInterface::CallAttemptTracer::
+        OptionalLabelKey::kLocality:
       return kLocality;
     default:
       grpc_core::Crash("Illegal OptionalLabelKey index");
   }
 }
 
-std::optional<grpc_core::ClientCallTracer::CallAttemptTracer::OptionalLabelKey>
+std::optional<
+    grpc_core::ClientCallTracerInterface::CallAttemptTracer::OptionalLabelKey>
 OpenTelemetryPluginImpl::OptionalLabelStringToKey(absl::string_view key) {
   if (key == kLocality) {
-    return grpc_core::ClientCallTracer::CallAttemptTracer::OptionalLabelKey::
-        kLocality;
+    return grpc_core::ClientCallTracerInterface::CallAttemptTracer::
+        OptionalLabelKey::kLocality;
   }
   return std::nullopt;
 }
@@ -1038,24 +1068,28 @@ void OpenTelemetryPluginImpl::CallbackGaugeState<ValueType>::
   }
 }
 
-grpc_core::ClientCallTracer* OpenTelemetryPluginImpl::GetClientCallTracer(
+grpc_core::ClientCallTracerInterface*
+OpenTelemetryPluginImpl::GetClientCallTracer(
     const grpc_core::Slice& path, bool registered_method,
     std::shared_ptr<grpc_core::StatsPlugin::ScopeConfig> scope_config) {
   return grpc_core::GetContext<grpc_core::Arena>()
-      ->ManagedNew<ClientCallTracer>(
+      ->ManagedNew<ClientCallTracerInterface>(
           path, grpc_core::GetContext<grpc_core::Arena>(), registered_method,
           this,
           std::static_pointer_cast<OpenTelemetryPluginImpl::ClientScopeConfig>(
               scope_config));
 }
 
-grpc_core::ServerCallTracer* OpenTelemetryPluginImpl::GetServerCallTracer(
+grpc_core::ServerCallTracerInterface*
+OpenTelemetryPluginImpl::GetServerCallTracer(
     std::shared_ptr<grpc_core::StatsPlugin::ScopeConfig> scope_config) {
-  return grpc_core::GetContext<grpc_core::Arena>()
-      ->ManagedNew<ServerCallTracer>(
-          this,
+  auto arena = grpc_core::GetContext<grpc_core::Arena>();
+  return arena
+      ->MakeRefCounted<ServerCallTracerInterface>(
+          this, arena,
           std::static_pointer_cast<OpenTelemetryPluginImpl::ServerScopeConfig>(
-              scope_config));
+              scope_config))
+      .release();
 }
 
 bool OpenTelemetryPluginImpl::IsInstrumentEnabled(
@@ -1207,6 +1241,35 @@ void GrpcTextMapCarrier::Set(opentelemetry::nostd::string_view key,
                             << "Failed to add tracing information in metadata.";
                       });
   }
+}
+
+std::string OTelSpanTraceIdToString(opentelemetry::trace::Span* span) {
+  if (span == nullptr) {
+    return "";
+  }
+  auto context = span->GetContext();
+  auto trace_id = context.trace_id();
+  if (!trace_id.IsValid()) {
+    return "";
+  }
+  auto trace_id_span = trace_id.Id();
+  return absl::BytesToHexString(
+      absl::string_view(reinterpret_cast<const char*>(trace_id_span.data()),
+                        trace_id_span.size()));
+}
+
+std::string OTelSpanSpanIdToString(opentelemetry::trace::Span* span) {
+  if (span == nullptr) {
+    return "";
+  }
+  auto context = span->GetContext();
+  auto span_id = context.span_id();
+  if (!span_id.IsValid()) {
+    return "";
+  }
+  auto span_id_span = span_id.Id();
+  return absl::BytesToHexString(absl::string_view(
+      reinterpret_cast<const char*>(span_id_span.data()), span_id_span.size()));
 }
 
 }  // namespace internal

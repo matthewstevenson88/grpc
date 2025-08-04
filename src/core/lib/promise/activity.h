@@ -122,6 +122,7 @@ class Waker {
   }
 
   std::string DebugString() const {
+    if (is_unwakeable()) return "<unwakeable>";
     return absl::StrFormat("Waker{%p, %d}", wakeable_and_arg_.wakeable,
                            wakeable_and_arg_.wakeup_mask);
   }
@@ -564,7 +565,7 @@ class PromiseActivity final
   }
 
   void WakeupAsync(WakeupMask) final {
-    GRPC_LATENT_SEE_INNER_SCOPE("PromiseActivity::WakeupAsync");
+    GRPC_LATENT_SEE_SCOPE("PromiseActivity::WakeupAsync");
     wakeup_flow_.Begin(GRPC_LATENT_SEE_METADATA("Activity::Wakeup"));
     if (!wakeup_scheduled_.exchange(true, std::memory_order_acq_rel)) {
       // Can't safely run, so ask to run later.
@@ -589,7 +590,7 @@ class PromiseActivity final
   // In response to Wakeup, run the Promise state machine again until it
   // settles. Then check for completion, and if we have completed, call on_done.
   void Step() ABSL_LOCKS_EXCLUDED(mu()) {
-    GRPC_LATENT_SEE_PARENT_SCOPE("PromiseActivity::Step");
+    GRPC_LATENT_SEE_SCOPE("PromiseActivity::Step");
     wakeup_flow_.End();
     // Poll the promise until things settle out under a lock.
     mu()->Lock();

@@ -167,14 +167,40 @@ inline constexpr bool HasAnyAsyncErrorInterceptor(Interceptors...) {
   return (HasAsyncErrorInterceptor<Interceptors>::value || ...);
 }
 
+// value is true if Derived has a member called IsFused.
+template <typename Derived>
+struct IsFusedFilter {
+  template <typename V>
+  static std::true_type test(decltype(&V::IsFused));  // SFINAE context
+  template <typename V>
+  static std::false_type test(...);
+
+  using type = decltype(test<Derived>(nullptr));
+  static constexpr bool value = std::is_same_v<type, std::true_type>;
+};
+
+template <typename Derived, typename Ignored = void>
+struct CallHasAsyncErrorInterceptor;
+
 // Composite for a given channel type to determine if any of its interceptors
 // fall into this category: later code should use this.
 template <typename Derived>
-inline constexpr bool CallHasAsyncErrorInterceptor() {
-  return HasAnyAsyncErrorInterceptor(&Derived::Call::OnClientToServerMessage,
-                                     &Derived::Call::OnServerInitialMetadata,
-                                     &Derived::Call::OnServerToClientMessage);
-}
+struct CallHasAsyncErrorInterceptor<
+    Derived, std::enable_if_t<!IsFusedFilter<Derived>::value>> {
+  static constexpr bool value =
+      HasAnyAsyncErrorInterceptor(&Derived::Call::OnClientToServerMessage,
+                                  &Derived::Call::OnServerInitialMetadata,
+                                  &Derived::Call::OnServerToClientMessage);
+};
+
+template <typename Derived>
+struct CallHasAsyncErrorInterceptor<
+    Derived, std::enable_if_t<IsFusedFilter<Derived>::value>> {
+  // Fused filter types return a promise, which resolves to a
+  // ServerMetadataHandle type. So we assume that an async error interceptor is
+  // always needed.
+  static constexpr bool value = true;
+};
 
 // Given a boolean X export a type:
 // either T if X is true
@@ -246,7 +272,7 @@ struct FilterCallData {
   GPR_NO_UNIQUE_ADDRESS CallWrapper<Derived> call;
   GPR_NO_UNIQUE_ADDRESS
   typename TypeIfNeeded<Latch<ServerMetadataHandle>,
-                        CallHasAsyncErrorInterceptor<Derived>()>::Type
+                        CallHasAsyncErrorInterceptor<Derived>::value>::Type
       error_latch;
   GPR_NO_UNIQUE_ADDRESS
   typename TypeIfNeeded<
@@ -317,7 +343,7 @@ auto MapResult(void (Derived::Call::*fn)(ServerMetadata&, Derived*), Promise x,
 // For fused filters whose OnServerTrailingMetadata takes pointer to the
 // channel.
 template <typename P, typename Call, typename Derived,
-          typename = std::enable_if_t<Derived::IsFused>>
+          typename = std::enable_if_t<IsFusedFilter<Derived>::value>>
 auto MapResult(void (Call::*fn)(ServerMetadata&, Derived*), P x,
                FilterCallData<Derived>* call_data) {
   DCHECK(fn == &Derived::Call::OnServerTrailingMetadata);
@@ -338,7 +364,7 @@ auto MapResult(void (Call::*fn)(ServerMetadata&, Derived*), P x,
 // For fused filters whose OnServerTrailingMetadata does not take pointer to the
 // channel.
 template <typename P, typename Call, typename Derived,
-          typename = std::enable_if_t<Derived::IsFused>>
+          typename = std::enable_if_t<IsFusedFilter<Derived>::value>>
 auto MapResult(void (Call::*fn)(ServerMetadata&), P x,
                FilterCallData<Derived>* call_data) {
   DCHECK(fn == &Derived::Call::OnServerTrailingMetadata);
@@ -1183,7 +1209,8 @@ class ImplementChannelFilter : public ChannelFilter,
     return promise_filter_detail::MapResult(
         &Derived::Call::OnServerTrailingMetadata,
         promise_filter_detail::RaceAsyncCompletion<
-            promise_filter_detail::CallHasAsyncErrorInterceptor<Derived>()>::
+            promise_filter_detail::CallHasAsyncErrorInterceptor<
+                Derived>::value>::
             Run(promise_filter_detail::RunCall(
                     &Derived::Call::OnClientInitialMetadata,
                     std::move(call_args), std::move(next_promise_factory),
@@ -1280,11 +1307,9 @@ class BaseCallData : public Activity, private Wakeable {
     }
   };
 
-  class Flusher : public latent_see::InnerScope {
+  class Flusher {
    public:
-    explicit Flusher(BaseCallData* call,
-                     latent_see::Metadata* desc = GRPC_LATENT_SEE_METADATA(
-                         "PromiseBasedFilter::Flusher"));
+    explicit Flusher(BaseCallData* call);
     // Calls closures, schedules batches, relinquishes call combiner.
     ~Flusher();
 
@@ -1955,11 +1980,11 @@ struct ChannelFilterWithFlagsMethods {
   static absl::Status InitChannelElem(grpc_channel_element* elem,
                                       grpc_channel_element_args* args) {
     CHECK(args->is_last == ((kFlags & kFilterIsLast) != 0));
-    auto status = F::Create(
-        args->channel_args,
-        ChannelFilter::Args(args->channel_stack, elem,
-                            grpc_channel_stack_filter_instance_number,
-                            args->old_blackboard, args->new_blackboard));
+    auto status =
+        F::Create(args->channel_args,
+                  ChannelFilter::Args(args->channel_stack, elem,
+                                      grpc_channel_stack_filter_instance_number,
+                                      args->blackboard));
     if (!status.ok()) {
       new (elem->channel_data) F*(nullptr);
       return absl_status_to_grpc_error(status.status());

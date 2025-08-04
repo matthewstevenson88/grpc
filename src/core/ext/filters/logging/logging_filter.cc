@@ -354,8 +354,7 @@ ClientLoggingFilter::Create(const ChannelArgs& args,
 
 void ClientLoggingFilter::Call::OnClientInitialMetadata(
     ClientMetadata& md, ClientLoggingFilter* filter) {
-  GRPC_LATENT_SEE_INNER_SCOPE(
-      "ClientLoggingFilter::Call::OnClientInitialMetadata");
+  GRPC_LATENT_SEE_SCOPE("ClientLoggingFilter::Call::OnClientInitialMetadata");
   call_data_.emplace(true, md, filter->default_authority_);
   if (!call_data_->ShouldLog()) {
     call_data_.reset();
@@ -366,8 +365,7 @@ void ClientLoggingFilter::Call::OnClientInitialMetadata(
 }
 
 void ClientLoggingFilter::Call::OnServerInitialMetadata(ServerMetadata& md) {
-  GRPC_LATENT_SEE_INNER_SCOPE(
-      "ClientLoggingFilter::Call::OnServerInitialMetadata");
+  GRPC_LATENT_SEE_SCOPE("ClientLoggingFilter::Call::OnServerInitialMetadata");
   if (!call_data_.has_value()) return;
   call_data_->LogServerHeader(
       /*is_client=*/true, MaybeGetContext<CallTracerAnnotationInterface>(),
@@ -375,8 +373,7 @@ void ClientLoggingFilter::Call::OnServerInitialMetadata(ServerMetadata& md) {
 }
 
 void ClientLoggingFilter::Call::OnServerTrailingMetadata(ServerMetadata& md) {
-  GRPC_LATENT_SEE_INNER_SCOPE(
-      "ClientLoggingFilter::Call::OnServerTrailingMetadata");
+  GRPC_LATENT_SEE_SCOPE("ClientLoggingFilter::Call::OnServerTrailingMetadata");
   if (!call_data_.has_value()) return;
   if (md.get(GrpcCallWasCancelled()).value_or(false) &&
       md.get(GrpcStatusMetadata()) == GRPC_STATUS_CANCELLED) {
@@ -391,8 +388,7 @@ void ClientLoggingFilter::Call::OnServerTrailingMetadata(ServerMetadata& md) {
 
 void ClientLoggingFilter::Call::OnClientToServerMessage(
     const Message& message) {
-  GRPC_LATENT_SEE_INNER_SCOPE(
-      "ClientLoggingFilter::Call::OnClientToServerMessage");
+  GRPC_LATENT_SEE_SCOPE("ClientLoggingFilter::Call::OnClientToServerMessage");
   if (!call_data_.has_value()) return;
   call_data_->LogClientMessage(
       /*is_client=*/true, MaybeGetContext<CallTracerAnnotationInterface>(),
@@ -400,8 +396,7 @@ void ClientLoggingFilter::Call::OnClientToServerMessage(
 }
 
 void ClientLoggingFilter::Call::OnClientToServerHalfClose() {
-  GRPC_LATENT_SEE_INNER_SCOPE(
-      "ClientLoggingFilter::Call::OnClientToServerHalfClose");
+  GRPC_LATENT_SEE_SCOPE("ClientLoggingFilter::Call::OnClientToServerHalfClose");
   if (!call_data_.has_value()) return;
   call_data_->LogClientHalfClose(
       /*is_client=*/true, MaybeGetContext<CallTracerAnnotationInterface>());
@@ -409,8 +404,7 @@ void ClientLoggingFilter::Call::OnClientToServerHalfClose() {
 
 void ClientLoggingFilter::Call::OnServerToClientMessage(
     const Message& message) {
-  GRPC_LATENT_SEE_INNER_SCOPE(
-      "ClientLoggingFilter::Call::OnServerToClientMessage");
+  GRPC_LATENT_SEE_SCOPE("ClientLoggingFilter::Call::OnServerToClientMessage");
   if (!call_data_.has_value()) return;
   call_data_->LogServerMessage(
       /*is_client=*/true, MaybeGetContext<CallTracerAnnotationInterface>(),
@@ -431,8 +425,7 @@ ServerLoggingFilter::Create(const ChannelArgs& /*args*/,
 
 // Construct a promise for one call.
 void ServerLoggingFilter::Call::OnClientInitialMetadata(ClientMetadata& md) {
-  GRPC_LATENT_SEE_INNER_SCOPE(
-      "ServerLoggingFilter::Call::OnClientInitialMetadata");
+  GRPC_LATENT_SEE_SCOPE("ServerLoggingFilter::Call::OnClientInitialMetadata");
   call_data_.emplace(false, md, "");
   if (!call_data_->ShouldLog()) {
     call_data_.reset();
@@ -444,8 +437,7 @@ void ServerLoggingFilter::Call::OnClientInitialMetadata(ClientMetadata& md) {
 }
 
 void ServerLoggingFilter::Call::OnServerInitialMetadata(ServerMetadata& md) {
-  GRPC_LATENT_SEE_INNER_SCOPE(
-      "ServerLoggingFilter::Call::OnServerInitialMetadata");
+  GRPC_LATENT_SEE_SCOPE("ServerLoggingFilter::Call::OnServerInitialMetadata");
   if (!call_data_.has_value()) return;
   call_data_->LogServerHeader(
       /*is_client=*/false, MaybeGetContext<CallTracerAnnotationInterface>(),
@@ -453,8 +445,7 @@ void ServerLoggingFilter::Call::OnServerInitialMetadata(ServerMetadata& md) {
 }
 
 void ServerLoggingFilter::Call::OnServerTrailingMetadata(ServerMetadata& md) {
-  GRPC_LATENT_SEE_INNER_SCOPE(
-      "ServerLoggingFilter::Call::OnServerTrailingMetadata");
+  GRPC_LATENT_SEE_SCOPE("ServerLoggingFilter::Call::OnServerTrailingMetadata");
   if (!call_data_.has_value()) return;
   if (md.get(GrpcCallWasCancelled()).value_or(false) &&
       md.get(GrpcStatusMetadata()) == GRPC_STATUS_CANCELLED) {
@@ -469,8 +460,7 @@ void ServerLoggingFilter::Call::OnServerTrailingMetadata(ServerMetadata& md) {
 
 void ServerLoggingFilter::Call::OnClientToServerMessage(
     const Message& message) {
-  GRPC_LATENT_SEE_INNER_SCOPE(
-      "ServerLoggingFilter::Call::OnClientToServerMessage");
+  GRPC_LATENT_SEE_SCOPE("ServerLoggingFilter::Call::OnClientToServerMessage");
   if (!call_data_.has_value()) return;
   call_data_->LogClientMessage(
       /*is_client=*/false, MaybeGetContext<CallTracerAnnotationInterface>(),
@@ -478,8 +468,7 @@ void ServerLoggingFilter::Call::OnClientToServerMessage(
 }
 
 void ServerLoggingFilter::Call::OnClientToServerHalfClose() {
-  GRPC_LATENT_SEE_INNER_SCOPE(
-      "ServerLoggingFilter::Call::OnClientToServerHalfClose");
+  GRPC_LATENT_SEE_SCOPE("ServerLoggingFilter::Call::OnClientToServerHalfClose");
   if (!call_data_.has_value()) return;
   call_data_->LogClientHalfClose(
       /*is_client=*/false, MaybeGetContext<CallTracerAnnotationInterface>());
@@ -487,8 +476,7 @@ void ServerLoggingFilter::Call::OnClientToServerHalfClose() {
 
 void ServerLoggingFilter::Call::OnServerToClientMessage(
     const Message& message) {
-  GRPC_LATENT_SEE_INNER_SCOPE(
-      "ServerLoggingFilter::Call::OnServerToClientMessage");
+  GRPC_LATENT_SEE_SCOPE("ServerLoggingFilter::Call::OnServerToClientMessage");
   if (!call_data_.has_value()) return;
   call_data_->LogServerMessage(
       /*is_client=*/false, MaybeGetContext<CallTracerAnnotationInterface>(),
@@ -503,16 +491,17 @@ const grpc_channel_filter ServerLoggingFilter::kFilter =
 
 void RegisterLoggingFilter(LoggingSink* sink) {
   g_logging_sink = sink;
-  CoreConfiguration::RegisterBuilder([](CoreConfiguration::Builder* builder) {
-    builder->channel_init()
-        ->RegisterV2Filter<ServerLoggingFilter>(GRPC_SERVER_CHANNEL)
-        // TODO(yashykt) : Figure out a good place to place this channel arg
-        .IfChannelArg("grpc.experimental.enable_observability", true);
-    builder->channel_init()
-        ->RegisterV2Filter<ClientLoggingFilter>(GRPC_CLIENT_CHANNEL)
-        // TODO(yashykt) : Figure out a good place to place this channel arg
-        .IfChannelArg("grpc.experimental.enable_observability", true);
-  });
+  CoreConfiguration::RegisterEphemeralBuilder(
+      [](CoreConfiguration::Builder* builder) {
+        builder->channel_init()
+            ->RegisterV2Filter<ServerLoggingFilter>(GRPC_SERVER_CHANNEL)
+            // TODO(yashykt) : Figure out a good place to place this channel arg
+            .IfChannelArg("grpc.experimental.enable_observability", true);
+        builder->channel_init()
+            ->RegisterV2Filter<ClientLoggingFilter>(GRPC_CLIENT_CHANNEL)
+            // TODO(yashykt) : Figure out a good place to place this channel arg
+            .IfChannelArg("grpc.experimental.enable_observability", true);
+      });
 }
 
 }  // namespace grpc_core

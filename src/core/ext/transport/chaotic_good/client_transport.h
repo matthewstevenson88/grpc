@@ -66,7 +66,8 @@
 namespace grpc_core {
 namespace chaotic_good {
 
-class ChaoticGoodClientTransport final : public ClientTransport {
+class ChaoticGoodClientTransport final : public ClientTransport,
+                                         public channelz::DataSource {
  public:
   ChaoticGoodClientTransport(const ChannelArgs& args,
                              OrphanablePtr<FrameTransport> frame_transport,
@@ -81,6 +82,10 @@ class ChaoticGoodClientTransport final : public ClientTransport {
   void SetPollsetSet(grpc_stream*, grpc_pollset_set*) override {}
   void PerformOp(grpc_transport_op*) override;
   void Orphan() override;
+  RefCountedPtr<channelz::SocketNode> GetSocketNode() const override {
+    return ctx_->socket_node;
+  }
+  void AddData(channelz::DataSink sink) override;
 
   void StartCall(CallHandler call_handler) override;
 
@@ -98,7 +103,7 @@ class ChaoticGoodClientTransport final : public ClientTransport {
 
   class StreamDispatch final : public FrameTransportSink {
    public:
-    explicit StreamDispatch(MpscSender<Frame> outgoing_frames);
+    explicit StreamDispatch(MpscSender<OutgoingFrame> outgoing_frames);
 
     void OnIncomingFrame(IncomingFrame incoming_frame) override;
     void OnFrameTransportClosed(absl::Status status) override;
@@ -137,7 +142,7 @@ class ChaoticGoodClientTransport final : public ClientTransport {
     StreamMap stream_map_ ABSL_GUARDED_BY(mu_);
     ConnectivityStateTracker state_tracker_ ABSL_GUARDED_BY(mu_){
         "chaotic_good_client", GRPC_CHANNEL_READY};
-    MpscSender<Frame> outgoing_frames_;
+    MpscSender<OutgoingFrame> outgoing_frames_;
   };
 
   auto CallOutboundLoop(uint32_t stream_id, CallHandler call_handler);
@@ -145,7 +150,7 @@ class ChaoticGoodClientTransport final : public ClientTransport {
   const TransportContextPtr ctx_;
   grpc_event_engine::experimental::MemoryAllocator allocator_;
   RefCountedPtr<StreamDispatch> stream_dispatch_;
-  MpscSender<Frame> outgoing_frames_;
+  MpscSender<OutgoingFrame> outgoing_frames_;
   RefCountedPtr<Party> party_;
   MessageChunker message_chunker_;
   OrphanablePtr<FrameTransport> frame_transport_;

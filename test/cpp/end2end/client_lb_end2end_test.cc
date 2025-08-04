@@ -73,6 +73,7 @@
 #include "src/proto/grpc/health/v1/health.grpc.pb.h"
 #include "src/proto/grpc/testing/echo.grpc.pb.h"
 #include "test/core/test_util/port.h"
+#include "test/core/test_util/postmortem.h"
 #include "test/core/test_util/resolve_localhost_ip46.h"
 #include "test/core/test_util/test_config.h"
 #include "test/core/test_util/test_lb_policies.h"
@@ -597,9 +598,10 @@ class ClientLbEnd2endTest : public ::testing::Test {
         "(Failed to connect to remote host: )?"
         "(Timeout occurred: )?"
         // Parenthetical wrappers
-        "((Secure read failed|"
-        "Handshake read failed|"
-        "Delayed close due to in-progress write) \\()?"
+        "( ?\\(*("
+        "Secure read failed|"
+        "Handshake (read|write) failed|"
+        "Delayed close due to in-progress write|"
         // Syscall
         "((connect|sendmsg|recvmsg|getsockopt\\(SO\\_ERROR\\)): ?)?"
         // strerror() output or other message
@@ -610,11 +612,12 @@ class ClientLbEnd2endTest : public ::testing::Test {
         "|Endpoint closing)"
         // errno value
         "( \\([0-9]+\\))?"
-        // close paren from "(Secure|Handshake) read failed \\(" above
-        "\\)?");
+        // close paren from wrappers above
+        ")\\)*)+");
   }
 
   std::vector<std::unique_ptr<ServerData>> servers_;
+  grpc_core::PostMortem port_mortem_;
 };
 
 TEST_F(ClientLbEnd2endTest, ChannelStateConnectingWhenResolving) {
@@ -681,7 +684,7 @@ class AuthorityOverrideTest : public ClientLbEnd2endTest {
  protected:
   static void SetUpTestSuite() {
     grpc_core::CoreConfiguration::Reset();
-    grpc_core::CoreConfiguration::RegisterBuilder(
+    grpc_core::CoreConfiguration::RegisterEphemeralBuilder(
         [](grpc_core::CoreConfiguration::Builder* builder) {
           grpc_core::RegisterAuthorityOverrideLoadBalancingPolicy(builder);
         });
@@ -1536,22 +1539,18 @@ TEST_F(RoundRobinTest, Basic) {
   auto stub = BuildStub(channel);
   response_generator.SetNextResolution(GetServersPorts());
   // Wait until all backends are ready.
-  do {
-    CheckRpcSendOk(DEBUG_LOCATION, stub);
-  } while (!SeenAllServers());
-  ResetCounters();
+  WaitForServers(DEBUG_LOCATION, stub);
   // "Sync" to the end of the list. Next sequence of picks will start at the
   // first server (index 0).
   WaitForServer(DEBUG_LOCATION, stub, servers_.size() - 1);
+  // Backends should be iterated over in the order in which the addresses were
+  // given.
   std::vector<int> connection_order;
   for (size_t i = 0; i < servers_.size(); ++i) {
     CheckRpcSendOk(DEBUG_LOCATION, stub);
     UpdateConnectionOrder(servers_, &connection_order);
   }
-  // Backends should be iterated over in the order in which the addresses were
-  // given.
-  const auto expected = std::vector<int>{0, 1, 2};
-  EXPECT_EQ(expected, connection_order);
+  EXPECT_THAT(connection_order, ::testing::ElementsAre(0, 1, 2));
   // Check LB policy name for the channel.
   EXPECT_EQ("round_robin", channel->GetLoadBalancingPolicyName());
 }
@@ -2305,7 +2304,7 @@ class ClientLbPickArgsTest : public ClientLbEnd2endTest {
 
   static void SetUpTestSuite() {
     grpc_core::CoreConfiguration::Reset();
-    grpc_core::CoreConfiguration::RegisterBuilder(
+    grpc_core::CoreConfiguration::RegisterEphemeralBuilder(
         [](grpc_core::CoreConfiguration::Builder* builder) {
           grpc_core::RegisterTestPickArgsLoadBalancingPolicy(builder,
                                                              SavePickArgs);
@@ -2488,7 +2487,7 @@ class ClientLbInterceptTrailingMetadataTest : public ClientLbEnd2endTest {
 
   static void SetUpTestSuite() {
     grpc_core::CoreConfiguration::Reset();
-    grpc_core::CoreConfiguration::RegisterBuilder(
+    grpc_core::CoreConfiguration::RegisterEphemeralBuilder(
         [](grpc_core::CoreConfiguration::Builder* builder) {
           grpc_core::RegisterInterceptRecvTrailingMetadataLoadBalancingPolicy(
               builder, ReportTrailerIntercepted);
@@ -2891,7 +2890,7 @@ class ClientLbAddressTest : public ClientLbEnd2endTest {
 
   static void SetUpTestSuite() {
     grpc_core::CoreConfiguration::Reset();
-    grpc_core::CoreConfiguration::RegisterBuilder(
+    grpc_core::CoreConfiguration::RegisterEphemeralBuilder(
         [](grpc_core::CoreConfiguration::Builder* builder) {
           grpc_core::RegisterAddressTestLoadBalancingPolicy(builder,
                                                             SaveAddress);
@@ -2960,7 +2959,7 @@ class OobBackendMetricTest : public ClientLbEnd2endTest {
 
   static void SetUpTestSuite() {
     grpc_core::CoreConfiguration::Reset();
-    grpc_core::CoreConfiguration::RegisterBuilder(
+    grpc_core::CoreConfiguration::RegisterEphemeralBuilder(
         [](grpc_core::CoreConfiguration::Builder* builder) {
           grpc_core::RegisterOobBackendMetricTestLoadBalancingPolicy(
               builder, BackendMetricCallback);
@@ -3081,7 +3080,7 @@ class ControlPlaneStatusRewritingTest : public ClientLbEnd2endTest {
  protected:
   static void SetUpTestSuite() {
     grpc_core::CoreConfiguration::Reset();
-    grpc_core::CoreConfiguration::RegisterBuilder(
+    grpc_core::CoreConfiguration::RegisterEphemeralBuilder(
         [](grpc_core::CoreConfiguration::Builder* builder) {
           grpc_core::RegisterFailLoadBalancingPolicy(
               builder, absl::AbortedError("nope"));

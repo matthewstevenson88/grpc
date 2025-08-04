@@ -153,15 +153,16 @@ class FakeCertificateProvider final : public grpc_tls_certificate_provider {
             "No certificates available for cert_name \"", cert_name, "\""));
         distributor_->SetErrorForCert(cert_name, error, error);
       } else {
-        std::optional<std::string> root_certificate;
+        std::shared_ptr<RootCertInfo> root_cert_info;
         std::optional<grpc_core::PemKeyCertPairList> pem_key_cert_pairs;
         if (root_being_watched) {
-          root_certificate = it->second.root_certificate;
+          root_cert_info =
+              std::make_shared<RootCertInfo>(it->second.root_certificate);
         }
         if (identity_being_watched) {
           pem_key_cert_pairs = it->second.identity_key_cert_pairs;
         }
-        distributor_->SetKeyMaterials(cert_name, std::move(root_certificate),
+        distributor_->SetKeyMaterials(cert_name, std::move(root_cert_info),
                                       std::move(pem_key_cert_pairs));
       }
     });
@@ -455,8 +456,6 @@ TEST_P(XdsSecurityTest,
 }
 
 TEST_P(XdsSecurityTest, UseSystemRootCerts) {
-  grpc_core::testing::ScopedExperimentalEnvVar env1(
-      "GRPC_EXPERIMENTAL_XDS_SYSTEM_ROOT_CERTS");
   grpc_core::testing::ScopedEnvVar env2("GRPC_DEFAULT_SSL_ROOTS_FILE_PATH",
                                         kCaCertPath);
   g_fake1_cert_data_map->Set({{"", {root_cert_, identity_pair_}}});
@@ -1073,7 +1072,7 @@ TEST_P(XdsServerSecurityTest, CertificatesNotAvailable) {
           true /* test_expects_failure */, grpc::StatusCode::UNAVAILABLE,
           MakeConnectionFailureRegex(
               "failed to connect to all addresses; last error: ",
-              /*has_resolution_note=*/false));
+              /*resolution_note=*/""));
 }
 
 TEST_P(XdsServerSecurityTest, TestMtls) {
@@ -1100,7 +1099,7 @@ TEST_P(XdsServerSecurityTest, TestMtlsWithRootPluginUpdate) {
           true /* test_expects_failure */, grpc::StatusCode::UNAVAILABLE,
           MakeConnectionFailureRegex(
               "failed to connect to all addresses; last error: ",
-              /*has_resolution_note=*/false));
+              /*resolution_note=*/""));
 }
 
 TEST_P(XdsServerSecurityTest, TestMtlsWithIdentityPluginUpdate) {
@@ -1153,7 +1152,7 @@ TEST_P(XdsServerSecurityTest, TestMtlsWithRootCertificateNameUpdate) {
           true /* test_expects_failure */, grpc::StatusCode::UNAVAILABLE,
           MakeConnectionFailureRegex(
               "failed to connect to all addresses; last error: ",
-              /*has_resolution_note=*/false));
+              /*resolution_note=*/""));
 }
 
 TEST_P(XdsServerSecurityTest, TestMtlsWithIdentityCertificateNameUpdate) {
@@ -1264,7 +1263,7 @@ TEST_P(XdsServerSecurityTest, TestMtlsToTls) {
           true /* test_expects_failure */, grpc::StatusCode::UNAVAILABLE,
           MakeConnectionFailureRegex(
               "failed to connect to all addresses; last error: ",
-              /*has_resolution_note=*/false));
+              /*resolution_note=*/""));
   SetLdsUpdate("", "", "fake_plugin1", "", false);
   SendRpc([this]() { return CreateTlsChannel(); },
           RpcOptions().set_wait_for_ready(true), server_authenticated_identity_,
@@ -1284,7 +1283,7 @@ TEST_P(XdsServerSecurityTest, TestTlsToMtls) {
           true /* test_expects_failure */, grpc::StatusCode::UNAVAILABLE,
           MakeConnectionFailureRegex(
               "failed to connect to all addresses; last error: ",
-              /*has_resolution_note=*/false));
+              /*resolution_note=*/""));
 }
 
 TEST_P(XdsServerSecurityTest, TestMtlsToFallback) {
@@ -2643,7 +2642,7 @@ int main(int argc, char** argv) {
   grpc::testing::g_fake1_cert_data_map = &cert_data_map_1;
   grpc::testing::FakeCertificateProvider::CertDataMapWrapper cert_data_map_2;
   grpc::testing::g_fake2_cert_data_map = &cert_data_map_2;
-  grpc_core::CoreConfiguration::RegisterBuilder(
+  grpc_core::CoreConfiguration::RegisterEphemeralBuilder(
       [](grpc_core::CoreConfiguration::Builder* builder) {
         builder->certificate_provider_registry()
             ->RegisterCertificateProviderFactory(

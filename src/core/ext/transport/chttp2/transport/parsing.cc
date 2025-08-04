@@ -54,6 +54,7 @@
 #include "src/core/ext/transport/chttp2/transport/hpack_parser.h"
 #include "src/core/ext/transport/chttp2/transport/hpack_parser_table.h"
 #include "src/core/ext/transport/chttp2/transport/http2_settings.h"
+#include "src/core/ext/transport/chttp2/transport/http2_settings_manager.h"
 #include "src/core/ext/transport/chttp2/transport/http2_status.h"
 #include "src/core/ext/transport/chttp2/transport/http2_ztrace_collector.h"
 #include "src/core/ext/transport/chttp2/transport/internal.h"
@@ -212,7 +213,7 @@ std::string FrameTypeString(uint8_t frame_type, uint8_t flags) {
 std::variant<size_t, absl::Status> grpc_chttp2_perform_read(
     grpc_chttp2_transport* t, const grpc_slice& slice,
     size_t& requests_started) {
-  GRPC_LATENT_SEE_INNER_SCOPE("grpc_chttp2_perform_read");
+  GRPC_LATENT_SEE_SCOPE("grpc_chttp2_perform_read");
 
   const uint8_t* beg = GRPC_SLICE_START_PTR(slice);
   const uint8_t* end = GRPC_SLICE_END_PTR(slice);
@@ -545,8 +546,7 @@ void grpc_chttp2_parsing_become_skip_parser(grpc_chttp2_transport* t) {
 static grpc_error_handle init_data_frame_parser(grpc_chttp2_transport* t) {
   // Update BDP accounting since we have received a data frame.
   grpc_core::BdpEstimator* bdp_est = t->flow_control.bdp_estimator();
-  grpc_core::global_stats().IncrementHttp2ReadDataFrameSize(
-      t->incoming_frame_size);
+  t->http2_stats->IncrementHttp2ReadDataFrameSize(t->incoming_frame_size);
   if (bdp_est) {
     if (t->bdp_ping_blocked) {
       t->bdp_ping_blocked = false;
@@ -671,8 +671,7 @@ static grpc_error_handle init_header_frame_parser(grpc_chttp2_transport* t,
                         nullptr, &t->http2_ztrace_collector));
       grpc_chttp2_initiate_write(t, GRPC_CHTTP2_INITIATE_WRITE_RST_STREAM);
       return init_header_skip_frame_parser(t, priority_type, is_eoh);
-    } else if (grpc_core::IsRqFastRejectEnabled() &&
-               GPR_UNLIKELY(t->memory_owner.IsMemoryPressureHigh())) {
+    } else if (GPR_UNLIKELY(t->memory_owner.IsMemoryPressureHigh())) {
       // We have more streams allocated than we'd like, so apply some pushback
       // by refusing this stream.
       grpc_core::global_stats().IncrementRqCallsRejected();
@@ -981,10 +980,7 @@ grpc_error_handle grpc_chttp2_header_parser_parse(void* hpack_parser,
   if (s != nullptr) {
     s->call_tracer_wrapper.RecordIncomingBytes(
         {0, 0, GRPC_SLICE_LENGTH(slice)});
-    call_tracer =
-        grpc_core::IsCallTracerTransportFixEnabled()
-            ? s->call_tracer
-            : s->arena->GetContext<grpc_core::CallTracerAnnotationInterface>();
+    call_tracer = s->call_tracer;
   }
   grpc_core::SharedBitGen g;
   grpc_error_handle error =

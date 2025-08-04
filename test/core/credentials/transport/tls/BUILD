@@ -64,6 +64,9 @@ grpc_cc_test(
         "//src/core/tsi/test_creds:server0.pem",
         "//src/core/tsi/test_creds:server1.key",
         "//src/core/tsi/test_creds:server1.pem",
+        "//test/core/credentials/transport/tls/test_data:spiffe/client_spiffebundle.json",
+        "//test/core/credentials/transport/tls/test_data:spiffe/test_bundles/spiffebundle2.json",
+        "//test/core/credentials/transport/tls/test_data:spiffe/test_bundles/spiffebundle_malformed.json",
     ],
     external_deps = [
         "absl/log:check",
@@ -115,6 +118,10 @@ grpc_cc_test(
 grpc_cc_test(
     name = "grpc_tls_certificate_distributor_test",
     srcs = ["grpc_tls_certificate_distributor_test.cc"],
+    data = [
+        "//test/core/credentials/transport/tls/test_data:spiffe/client_spiffebundle.json",
+        "//test/core/credentials/transport/tls/test_data:spiffe/test_bundles/spiffebundle.json",
+    ],
     external_deps = [
         "absl/log:check",
         "gtest",
@@ -122,6 +129,7 @@ grpc_cc_test(
     deps = [
         "//:gpr",
         "//:grpc",
+        "//src/core:match",
         "//src/core:slice",
         "//test/core/test_util:grpc_test_util",
         "//test/core/test_util:grpc_test_util_base",
@@ -141,6 +149,9 @@ grpc_cc_test(
         "//src/core/tsi/test_creds:server0.pem",
         "//src/core/tsi/test_creds:server1.key",
         "//src/core/tsi/test_creds:server1.pem",
+        "//test/core/credentials/transport/tls/test_data:spiffe/client_spiffebundle.json",
+        "//test/core/credentials/transport/tls/test_data:spiffe/test_bundles/spiffebundle2.json",
+        "//test/core/credentials/transport/tls/test_data:spiffe/test_bundles/spiffebundle_malformed.json",
     ],
     external_deps = [
         "absl/log:check",
@@ -149,6 +160,7 @@ grpc_cc_test(
     deps = [
         "//:gpr",
         "//:grpc",
+        "//src/core:match",
         "//src/core:slice",
         "//test/core/test_util:grpc_test_util",
         "//test/core/test_util:grpc_test_util_base",
@@ -206,5 +218,42 @@ grpc_cc_test(
         "//test/core/test_util:fuzz_config_vars_cc_proto",
         "//test/core/test_util:grpc_test_util",
         "//test/core/tsi:transport_security_test_lib",
+    ],
+)
+
+grpc_cc_test(
+    name = "spiffe_utils_test",
+    srcs = ["spiffe_utils_test.cc"],
+    data = [
+        "//test/core/credentials/transport/tls/test_data:spiffe/client_spiffebundle.json",
+        "//test/core/credentials/transport/tls/test_data:spiffe/spiffe_cert.pem",
+        "//test/core/credentials/transport/tls/test_data:spiffe/test_bundles/server1_spiffe.pem",
+        "//test/core/credentials/transport/tls/test_data:spiffe/test_bundles/spiffe-openssl.cnf",
+        "//test/core/credentials/transport/tls/test_data:spiffe/test_bundles/spiffe_cert.pem",
+        "//test/core/credentials/transport/tls/test_data:spiffe/test_bundles/spiffe_multi_uri_san_cert.pem",
+        "//test/core/credentials/transport/tls/test_data:spiffe/test_bundles/spiffe_test.json",
+        "//test/core/credentials/transport/tls/test_data:spiffe/test_bundles/spiffebundle.json",
+        "//test/core/credentials/transport/tls/test_data:spiffe/test_bundles/spiffebundle2.json",
+        "//test/core/credentials/transport/tls/test_data:spiffe/test_bundles/spiffebundle_corrupted_cert.json",
+        "//test/core/credentials/transport/tls/test_data:spiffe/test_bundles/spiffebundle_empty_keys.json",
+        "//test/core/credentials/transport/tls/test_data:spiffe/test_bundles/spiffebundle_empty_string_key.json",
+        "//test/core/credentials/transport/tls/test_data:spiffe/test_bundles/spiffebundle_invalid_trustdomain.json",
+        "//test/core/credentials/transport/tls/test_data:spiffe/test_bundles/spiffebundle_malformed.json",
+        "//test/core/credentials/transport/tls/test_data:spiffe/test_bundles/spiffebundle_match_client_spiffe.json",
+        "//test/core/credentials/transport/tls/test_data:spiffe/test_bundles/spiffebundle_wrong_kid.json",
+        "//test/core/credentials/transport/tls/test_data:spiffe/test_bundles/spiffebundle_wrong_kty.json",
+        "//test/core/credentials/transport/tls/test_data:spiffe/test_bundles/spiffebundle_wrong_multi_certs.json",
+        "//test/core/credentials/transport/tls/test_data:spiffe/test_bundles/spiffebundle_wrong_root.json",
+        "//test/core/credentials/transport/tls/test_data:spiffe/test_bundles/spiffebundle_wrong_seq_type.json",
+        "//test/core/credentials/transport/tls/test_data:spiffe/test_bundles/spiffebundle_wrong_use.json",
+    ],
+    external_deps = [
+        "gtest",
+    ],
+    deps = [
+        "//:gpr",
+        "//:grpc",
+        "//src/core:spiffe_utils",
+        "//test/core/test_util:grpc_test_util",
     ],
 )
