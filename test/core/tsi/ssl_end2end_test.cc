@@ -38,8 +38,7 @@ using ::testing::NotNull;
 const char* kAlpnProtocols[] = {"h2"};
 
 // Constants defining the paths to test credentials.
-constexpr absl::string_view kCaCertPath =
-    "src/core/tsi/test_creds/ca.pem";
+constexpr absl::string_view kCaCertPath = "src/core/tsi/test_creds/ca.pem";
 constexpr absl::string_view kServerKeyPath =
     "src/core/tsi/test_creds/server0.key";
 constexpr absl::string_view kServerCertPath =
