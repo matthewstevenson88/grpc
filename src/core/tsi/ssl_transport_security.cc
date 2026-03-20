@@ -2753,7 +2753,7 @@ static int server_handshaker_factory_new_session_callback(
 template <typename T>
 static void ssl_keylogging_callback(const SSL* ssl, const char* info) {
   GRPC_CHECK_NE(ssl, nullptr);
-  void* arg = SSL_CTX_ex_data(ssl, g_ssl_ctx_ex_factory_index);
+  void* arg = SSL_get_ex_data(ssl, g_ssl_ctx_ex_factory_index);
   T* factory = static_cast<T*>(arg);
   factory->key_logger->LogSessionKeys(info);
 }
