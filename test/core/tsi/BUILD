@@ -280,8 +280,8 @@ grpc_cc_test(
         "gtest",
     ],
     deps = [
-	    "//:grpc",
         "//:gpr",
+        "//:grpc",
         "//:tsi_base",
         "//:tsi_fake_credentials",
         "//:tsi_ssl_credentials",

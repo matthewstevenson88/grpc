@@ -23480,6 +23480,16 @@ targets:
   - gtest
   - grpc_test_util
   uses_polling: false
+- name: ssl_end2end_test
+  gtest: true
+  build: test
+  language: c++
+  headers: []
+  src:
+  - test/core/tsi/ssl_end2end_test.cc
+  deps:
+  - gtest
+  - grpc_test_util
 - name: ssl_transport_security_test
   gtest: true
   build: test
